@@ -23,31 +23,32 @@ export class GLEntryRepository {
    * モックデータの初期化
    */
   private initializeMockData() {
+    const currentYear = new Date().getFullYear();
     const mockEntries: GLEntry[] = [
       {
         id: "gl-1",
-        voucherNo: "V2024-001",
-        transactionDate: "2024-04-15",
+        voucherNo: `V${currentYear}-001`,
+        transactionDate: `${currentYear}-04-15`,
         accountCode: "4000",
         accountName: "売上高",
         amount: "1500000",
         debitCredit: "credit",
         description: "システム開発売上",
-        period: "2024-04",
+        period: `${currentYear}-04`,
         reconciliationStatus: "unmatched",
         orderMatchId: null,
         createdAt: new Date(),
       },
       {
         id: "gl-2",
-        voucherNo: "V2024-002",
-        transactionDate: "2024-05-20",
+        voucherNo: `V${currentYear}-002`,
+        transactionDate: `${currentYear}-05-20`,
         accountCode: "4000",
         accountName: "売上高",
         amount: "800000",
         debitCredit: "credit",
         description: "保守サービス売上",
-        period: "2024-05",
+        period: `${currentYear}-05`,
         reconciliationStatus: "unmatched",
         orderMatchId: null,
         createdAt: new Date(),

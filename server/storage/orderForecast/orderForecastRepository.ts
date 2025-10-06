@@ -23,6 +23,7 @@ export class OrderForecastRepository {
    * モックデータの初期化
    */
   private initializeMockData() {
+    const currentYear = new Date().getFullYear();
     const mockForecasts: OrderForecast[] = [
       {
         id: "of-1",
@@ -32,12 +33,12 @@ export class OrderForecastRepository {
         customerId: "1",
         customerCode: "C001",
         customerName: "株式会社A商事",
-        accountingPeriod: "2024-04",
+        accountingPeriod: `${currentYear}-04`,
         accountingItem: "売上高",
         description: "システム開発売上",
         amount: "1500000",
         remarks: null,
-        period: "2024-04",
+        period: `${currentYear}-04`,
         reconciliationStatus: "unmatched",
         glMatchId: null,
         version: 1,
@@ -52,12 +53,12 @@ export class OrderForecastRepository {
         customerId: "2",
         customerCode: "C002",
         customerName: "B物産株式会社",
-        accountingPeriod: "2024-05",
+        accountingPeriod: `${currentYear}-05`,
         accountingItem: "売上高",
         description: "保守サービス売上",
         amount: "800000",
         remarks: null,
-        period: "2024-05",
+        period: `${currentYear}-05`,
         reconciliationStatus: "unmatched",
         glMatchId: null,
         version: 1,
