@@ -1,4 +1,4 @@
-import { Home, BarChart3, FileText, Users, Calendar, Building2, DollarSign, TrendingUp, FolderKanban } from "lucide-react";
+import { Home, BarChart3, FileText, Users, Calendar, Building2, DollarSign, TrendingUp, FolderKanban, GitMerge } from "lucide-react";
 import { useLocation } from "wouter";
 import {
   Sidebar,
@@ -22,6 +22,11 @@ const menuItems = {
       title: "プロジェクト分析",
       url: "/project-analysis",
       icon: BarChart3,
+    },
+    {
+      title: "GL突合",
+      url: "/gl-reconciliation",
+      icon: GitMerge,
     },
   ],
   input: [
