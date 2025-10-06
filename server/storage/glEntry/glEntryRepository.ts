@@ -16,6 +16,44 @@ export class GLEntryRepository {
 
   constructor() {
     this.glEntries = new Map();
+    this.initializeMockData();
+  }
+
+  /**
+   * モックデータの初期化
+   */
+  private initializeMockData() {
+    const mockEntries: GLEntry[] = [
+      {
+        id: "gl-1",
+        voucherNo: "V2024-001",
+        transactionDate: "2024-04-15",
+        accountCode: "4000",
+        accountName: "売上高",
+        amount: "1500000",
+        debitCredit: "credit",
+        description: "システム開発売上",
+        period: "2024-04",
+        reconciliationStatus: "unmatched",
+        orderMatchId: null,
+        createdAt: new Date(),
+      },
+      {
+        id: "gl-2",
+        voucherNo: "V2024-002",
+        transactionDate: "2024-05-20",
+        accountCode: "4000",
+        accountName: "売上高",
+        amount: "800000",
+        debitCredit: "credit",
+        description: "保守サービス売上",
+        period: "2024-05",
+        reconciliationStatus: "unmatched",
+        orderMatchId: null,
+        createdAt: new Date(),
+      },
+    ];
+    mockEntries.forEach(gl => this.glEntries.set(gl.id, gl));
   }
 
   /**

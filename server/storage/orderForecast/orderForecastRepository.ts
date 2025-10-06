@@ -16,6 +16,56 @@ export class OrderForecastRepository {
 
   constructor() {
     this.orderForecasts = new Map();
+    this.initializeMockData();
+  }
+
+  /**
+   * モックデータの初期化
+   */
+  private initializeMockData() {
+    const mockForecasts: OrderForecast[] = [
+      {
+        id: "of-1",
+        projectId: "1",
+        projectCode: "P001",
+        projectName: "プロジェクトA",
+        customerId: "1",
+        customerCode: "C001",
+        customerName: "株式会社A商事",
+        accountingPeriod: "2024-04",
+        accountingItem: "売上高",
+        description: "システム開発売上",
+        amount: "1500000",
+        remarks: null,
+        period: "2024-04",
+        reconciliationStatus: "unmatched",
+        glMatchId: null,
+        version: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: "of-2",
+        projectId: "2",
+        projectCode: "P002",
+        projectName: "プロジェクトB",
+        customerId: "2",
+        customerCode: "C002",
+        customerName: "B物産株式会社",
+        accountingPeriod: "2024-05",
+        accountingItem: "売上高",
+        description: "保守サービス売上",
+        amount: "800000",
+        remarks: null,
+        period: "2024-05",
+        reconciliationStatus: "unmatched",
+        glMatchId: null,
+        version: 1,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+    mockForecasts.forEach(of => this.orderForecasts.set(of.id, of));
   }
 
   /**
