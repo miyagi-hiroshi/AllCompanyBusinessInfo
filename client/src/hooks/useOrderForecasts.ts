@@ -19,8 +19,7 @@ export function useOrderForecasts(filter: OrderForecastFilter) {
     // Use scalar segments for stable cache keys
     queryKey: ["/api/order-forecasts", filter.fiscalYear, filter.month ?? null, filter.projectId ?? null],
     queryFn: async () => {
-      const res = await fetch(`/api/order-forecasts?${params}`);
-      if (!res.ok) throw new Error('Failed to fetch order forecasts');
+      const res = await apiRequest("GET", `/api/order-forecasts?${params}`, undefined);
       return res.json();
     },
     enabled: !!filter.fiscalYear,

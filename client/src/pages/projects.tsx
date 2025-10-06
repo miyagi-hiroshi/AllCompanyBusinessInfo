@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import type { Project, InsertProject, Customer } from "@shared/schema";
+import { Plus, Edit, Trash2, Copy, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Table,
@@ -39,9 +38,10 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, Copy, Loader2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/useToast";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import type { Project, InsertProject, Customer } from "@shared/schema";
 
 // 営業担当者リスト（別システムのデータを想定）
 const SALES_PERSONS = [
@@ -63,6 +63,9 @@ const SERVICE_TYPES = [
 ] as const;
 
 const ANALYSIS_TYPES = ["生産性", "粗利"] as const;
+
+type ServiceType = typeof SERVICE_TYPES[number];
+type AnalysisType = typeof ANALYSIS_TYPES[number];
 
 const FISCAL_YEARS = [2023, 2024, 2025, 2026];
 
@@ -91,8 +94,7 @@ export default function ProjectsPage() {
   const { data: projects = [], isLoading } = useQuery<Project[]>({
     queryKey: ["/api/projects", selectedYear],
     queryFn: async () => {
-      const response = await fetch(`/api/projects?fiscalYear=${selectedYear}`);
-      if (!response.ok) throw new Error("Failed to fetch projects");
+      const response = await apiRequest("GET", `/api/projects?fiscalYear=${selectedYear}`, undefined);
       return response.json();
     },
   });
@@ -105,10 +107,8 @@ export default function ProjectsPage() {
   // Create mutation
   const createMutation = useMutation({
     mutationFn: async (data: InsertProject) => {
-      return await apiRequest("/api/projects", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      const res = await apiRequest("POST", "/api/projects", data);
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
@@ -131,10 +131,8 @@ export default function ProjectsPage() {
   // Update mutation
   const updateMutation = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: Partial<InsertProject> }) => {
-      return await apiRequest(`/api/projects/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      });
+      const res = await apiRequest("PUT", `/api/projects/${id}`, data);
+      return res.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
@@ -158,9 +156,8 @@ export default function ProjectsPage() {
   // Delete mutation
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      return await apiRequest(`/api/projects/${id}`, {
-        method: "DELETE",
-      });
+      const res = await apiRequest("DELETE", `/api/projects/${id}`, undefined);
+      return res.ok;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
@@ -183,12 +180,10 @@ export default function ProjectsPage() {
   // Copy from previous year mutation
   const copyMutation = useMutation({
     mutationFn: async (targetYear: number) => {
-      return await apiRequest("/api/projects/copy-from-previous-year", {
-        method: "POST",
-        body: JSON.stringify({ targetYear }),
-      });
+      const res = await apiRequest("POST", "/api/projects/copy-from-previous-year", { targetYear });
+      return res.json() as Promise<{ success: boolean; count: number; projects: Project[] }>;
     },
-    onSuccess: (result: any) => {
+    onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       toast({
         title: "コピー完了",
@@ -281,8 +276,8 @@ export default function ProjectsPage() {
       customerId: project.customerId,
       customerName: project.customerName,
       salesPerson: project.salesPerson,
-      serviceType: project.serviceType as any,
-      analysisType: project.analysisType as any,
+      serviceType: project.serviceType as ServiceType,
+      analysisType: project.analysisType as AnalysisType,
     });
     setEditDialogOpen(true);
   };
@@ -467,7 +462,7 @@ export default function ProjectsPage() {
                 <Select
                   value={formData.serviceType}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, serviceType: value as any })
+                    setFormData({ ...formData, serviceType: value as ServiceType })
                   }
                 >
                   <SelectTrigger
@@ -493,7 +488,7 @@ export default function ProjectsPage() {
                 <Select
                   value={formData.analysisType}
                   onValueChange={(value) =>
-                    setFormData({ ...formData, analysisType: value as any })
+                    setFormData({ ...formData, analysisType: value as AnalysisType })
                   }
                 >
                   <SelectTrigger
@@ -712,7 +707,7 @@ export default function ProjectsPage() {
               <Select
                 value={formData.serviceType}
                 onValueChange={(value) =>
-                  setFormData({ ...formData, serviceType: value as any })
+                  setFormData({ ...formData, serviceType: value as ServiceType })
                 }
               >
                 <SelectTrigger
@@ -738,7 +733,7 @@ export default function ProjectsPage() {
               <Select
                 value={formData.analysisType}
                 onValueChange={(value) =>
-                  setFormData({ ...formData, analysisType: value as any })
+                  setFormData({ ...formData, analysisType: value as AnalysisType })
                 }
               >
                 <SelectTrigger

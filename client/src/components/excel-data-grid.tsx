@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, Trash2, Copy, Save, Search } from "lucide-react";
 import { AutocompleteSelect, type AutocompleteOption } from "./autocomplete-select";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 
 export interface GridColumn {
   key: string;
@@ -20,15 +20,16 @@ export interface GridColumn {
 
 export interface GridRow {
   id: string;
-  [key: string]: any;
   _modified?: boolean;
   _error?: string;
 }
 
+export type GridRowData = GridRow & Record<string, string | number | boolean | undefined>;
+
 interface ExcelDataGridProps {
   columns: GridColumn[];
-  rows: GridRow[];
-  onRowsChange: (rows: GridRow[]) => void;
+  rows: GridRowData[];
+  onRowsChange: (rows: GridRowData[]) => void;
   onSave?: () => void;
   onSearch?: () => void;
   enableKeyboardShortcuts?: boolean;
@@ -111,7 +112,7 @@ export function ExcelDataGrid({
   );
 
   const handleAddRow = () => {
-    const newRow: GridRow = {
+    const newRow: GridRowData = {
       id: `temp-${Date.now()}`,
       _modified: true,
     };
@@ -147,7 +148,7 @@ export function ExcelDataGrid({
 
   const handleDuplicateRow = (rowIndex: number) => {
     const sourceRow = rows[rowIndex];
-    const newRow: GridRow = {
+    const newRow: GridRowData = {
       ...sourceRow,
       id: `temp-${Date.now()}`,
       _modified: true,
@@ -163,7 +164,7 @@ export function ExcelDataGrid({
     });
   };
 
-  const handleCellChange = (rowIndex: number, colKey: string, value: any) => {
+  const handleCellChange = (rowIndex: number, colKey: string, value: string | number) => {
     const newRows = [...rows];
     newRows[rowIndex] = {
       ...newRows[rowIndex],
@@ -256,7 +257,7 @@ export function ExcelDataGrid({
     }
   };
 
-  const renderCell = (row: GridRow, rowIndex: number, column: GridColumn) => {
+  const renderCell = (row: GridRowData, rowIndex: number, column: GridColumn) => {
     const isActive = activeCell?.rowIndex === rowIndex && activeCell?.colKey === column.key;
     const isEditing = editingCell?.rowIndex === rowIndex && editingCell?.colKey === column.key;
     const value = row[column.key];
@@ -300,10 +301,10 @@ export function ExcelDataGrid({
         >
           {isEditing ? (
             <AutocompleteSelect
-              value={value}
+              value={value as string | undefined}
               onChange={(val, option) => {
                 const newRows = [...rows];
-                const updates: any = {
+                const updates: Record<string, string | number | boolean> = {
                   [column.key]: val,
                   _modified: true,
                 };
@@ -355,7 +356,7 @@ export function ExcelDataGrid({
         {isEditing ? (
           <Input
             type={column.type === "number" ? "number" : column.type === "date" ? "date" : "text"}
-            value={value || ""}
+            value={typeof value === 'boolean' ? String(value) : (value || "")}
             onChange={(e) => handleCellChange(rowIndex, column.key, e.target.value)}
             onBlur={() => setEditingCell(null)}
             autoFocus

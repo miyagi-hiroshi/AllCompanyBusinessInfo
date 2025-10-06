@@ -1,18 +1,18 @@
 import { useState, useMemo, useEffect, useRef } from "react";
-import { ExcelDataGrid, type GridColumn, type GridRow } from "@/components/excel-data-grid";
+import { FileSpreadsheet } from "lucide-react";
+import { ExcelDataGrid, type GridColumn, type GridRowData } from "@/components/excel-data-grid";
 import { GLReconciliationPanel } from "@/components/gl-reconciliation-panel";
 import { AdvancedFilterPanel, type FilterState } from "@/components/advanced-filter-panel";
 import { KeyboardShortcutsPanel } from "@/components/keyboard-shortcuts-panel";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ReconciliationStatusBadge } from "@/components/reconciliation-status-badge";
-import { useToast } from "@/hooks/use-toast";
-import { useOrderForecasts, useCreateOrderForecast, useUpdateOrderForecast, useDeleteOrderForecast } from "@/hooks/use-order-forecasts";
-import { useGLEntries } from "@/hooks/use-gl-entries";
-import { useCustomers, useProjects, useAccountingItems } from "@/hooks/use-masters";
-import { useReconciliation } from "@/hooks/use-reconciliation";
-import type { OrderForecast, InsertOrderForecast } from "@shared/schema";
-import { FileSpreadsheet } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useToast } from "@/hooks/useToast";
+import { useOrderForecasts, useCreateOrderForecast, useUpdateOrderForecast, useDeleteOrderForecast } from "@/hooks/useOrderForecasts";
+import { useGLEntries } from "@/hooks/useGLEntries";
+import { useCustomers, useProjects, useAccountingItems } from "@/hooks/useMasters";
+import { useReconciliation } from "@/hooks/useReconciliation";
+import type { OrderForecast, InsertOrderForecast } from "@shared/schema";
 
 export default function OrderForecastPage() {
   // Initialize filter with current year and month
@@ -150,7 +150,7 @@ export default function OrderForecastPage() {
   ];
 
   // GridRow形式に変換
-  const gridRows: GridRow[] = orderForecasts.map((order) => ({
+  const gridRows: GridRowData[] = orderForecasts.map((order) => ({
     id: order.id,
     projectId: order.projectId,
     projectCode: order.projectCode,
@@ -167,7 +167,7 @@ export default function OrderForecastPage() {
     _modified: false,
   }));
 
-  const [localRows, setLocalRows] = useState<GridRow[]>([]);
+  const [localRows, setLocalRows] = useState<GridRowData[]>([]);
   const lastSyncedDataRef = useRef<OrderForecast[]>([]);
   const deletedIdsRef = useRef<Set<string>>(new Set());
 
@@ -184,7 +184,7 @@ export default function OrderForecastPage() {
     
     // Only sync if data changed (prevents infinite loop from same-data re-renders)
     if (dataChanged) {
-      const freshGridRows: GridRow[] = orderForecasts.map((order) => ({
+      const freshGridRows: GridRowData[] = orderForecasts.map((order) => ({
         id: order.id,
         projectId: order.projectId,
         projectCode: order.projectCode,
@@ -205,7 +205,7 @@ export default function OrderForecastPage() {
     }
   }, [filter, orderForecasts, localRows]);
 
-  const handleRowsChange = (rows: GridRow[]) => {
+  const handleRowsChange = (rows: GridRowData[]) => {
     // Track deletions: find rows that were in localRows but not in new rows
     const newRowIds = new Set(rows.map(r => r.id));
     localRows.forEach(oldRow => {
@@ -246,20 +246,20 @@ export default function OrderForecastPage() {
       }
 
       for (const row of modifiedRows) {
-        if (row.id.startsWith("temp-")) {
+        if ((row.id as string).startsWith("temp-")) {
           // Create new order
           const newOrder: InsertOrderForecast = {
-            projectId: row.projectId,
-            projectCode: row.projectCode,
-            projectName: row.projectName,
-            customerId: row.customerId,
-            customerCode: row.customerCode,
-            customerName: row.customerName,
-            accountingPeriod: row.accountingPeriod,
-            accountingItem: row.accountingItem,
-            description: row.description,
+            projectId: row.projectId as string,
+            projectCode: row.projectCode as string,
+            projectName: row.projectName as string,
+            customerId: row.customerId as string,
+            customerCode: row.customerCode as string,
+            customerName: row.customerName as string,
+            accountingPeriod: row.accountingPeriod as string,
+            accountingItem: row.accountingItem as string,
+            description: row.description as string,
             amount: String(row.amount),
-            remarks: row.remarks || "",
+            remarks: (row.remarks as string) || "",
             period: currentPeriod,
           };
           await createMutation.mutateAsync({ ...newOrder, filter });
@@ -268,19 +268,19 @@ export default function OrderForecastPage() {
           const existing = orderForecasts.find((o) => o.id === row.id);
           if (existing) {
             await updateMutation.mutateAsync({
-              id: row.id,
+              id: row.id as string,
               data: {
-                projectId: row.projectId,
-                projectCode: row.projectCode,
-                projectName: row.projectName,
-                customerId: row.customerId,
-                customerCode: row.customerCode,
-                customerName: row.customerName,
-                accountingPeriod: row.accountingPeriod,
-                accountingItem: row.accountingItem,
-                description: row.description,
+                projectId: row.projectId as string,
+                projectCode: row.projectCode as string,
+                projectName: row.projectName as string,
+                customerId: row.customerId as string,
+                customerCode: row.customerCode as string,
+                customerName: row.customerName as string,
+                accountingPeriod: row.accountingPeriod as string,
+                accountingItem: row.accountingItem as string,
+                description: row.description as string,
                 amount: String(row.amount),
-                remarks: row.remarks || "",
+                remarks: (row.remarks as string) || "",
               },
               filter,
             });
@@ -298,7 +298,7 @@ export default function OrderForecastPage() {
       // Refetch and update local rows with fresh data
       const { data: freshData } = await refetchOrders();
       if (freshData) {
-        const freshRows: GridRow[] = freshData.map((order) => ({
+        const freshRows: GridRowData[] = freshData.map((order) => ({
           id: order.id,
           projectId: order.projectId,
           projectCode: order.projectCode,
@@ -350,7 +350,7 @@ export default function OrderForecastPage() {
       // Refetch and update local rows with reconciliation results
       const { data: freshData } = await refetchOrders();
       if (freshData) {
-        const freshRows: GridRow[] = freshData.map((order) => ({
+        const freshRows: GridRowData[] = freshData.map((order) => ({
           id: order.id,
           projectId: order.projectId,
           projectCode: order.projectCode,

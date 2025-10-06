@@ -17,8 +17,7 @@ export function useGLEntries(filter: GLEntryFilter) {
     // Use scalar segments for stable cache keys
     queryKey: ["/api/gl-entries", filter.fiscalYear, filter.month ?? null],
     queryFn: async () => {
-      const res = await fetch(`/api/gl-entries?${params}`);
-      if (!res.ok) throw new Error('Failed to fetch GL entries');
+      const res = await apiRequest("GET", `/api/gl-entries?${params}`, undefined);
       return res.json();
     },
     enabled: !!filter.fiscalYear,

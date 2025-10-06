@@ -9,7 +9,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+  let capturedJsonResponse: unknown;
 
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
@@ -21,8 +21,12 @@ app.use((req, res, next) => {
     const duration = Date.now() - start;
     if (path.startsWith("/api")) {
       let logLine = `${req.method} ${path} ${res.statusCode} in ${duration}ms`;
-      if (capturedJsonResponse) {
-        logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+      if (capturedJsonResponse !== undefined) {
+        try {
+          logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
+        } catch {
+          logLine += ` :: [non-serializable response]`;
+        }
       }
 
       if (logLine.length > 80) {
@@ -39,9 +43,15 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
+  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
+    const status = (err && typeof err === 'object' && 'status' in err) 
+      ? (err.status as number) 
+      : (err && typeof err === 'object' && 'statusCode' in err)
+      ? (err.statusCode as number)
+      : 500;
+    const message = (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string')
+      ? err.message
+      : "Internal Server Error";
 
     res.status(status).json({ message });
     throw err;

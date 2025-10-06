@@ -9,6 +9,7 @@ import {
   insertProjectSchema,
   insertAccountingItemSchema
 } from "@shared/schema";
+import { ReconciliationService, ReconciliationType } from "./services/reconciliation";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Order Forecasts API
@@ -379,96 +380,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/reconciliation/:period", async (req, res) => {
     try {
       const { period } = req.params;
-      const { type = "exact" } = req.body; // exact | fuzzy
+      const { type = "exact" } = req.body as { type?: ReconciliationType };
 
-      const orderForecasts = await storage.getOrderForecasts(period);
-      const glEntries = await storage.getGLEntries(period);
+      const reconciliationService = new ReconciliationService(storage);
+      const result = await reconciliationService.performReconciliation(period, type);
 
-      let matchedCount = 0;
-      let fuzzyMatchedCount = 0;
-
-      // Reconciliation logic
-      for (const order of orderForecasts) {
-        if (order.reconciliationStatus !== "unmatched") continue;
-
-        let matched = false;
-
-        // Exact matching (amount and accounting period match)
-        if (type === "exact" || type === "both") {
-          const matchedGL = glEntries.find(
-            (gl) =>
-              gl.reconciliationStatus === "unmatched" &&
-              gl.amount === order.amount &&
-              gl.period === order.accountingPeriod
-          );
-
-          if (matchedGL) {
-            await storage.updateOrderForecast(order.id, {
-              reconciliationStatus: "matched",
-              glMatchId: matchedGL.id,
-            });
-            await storage.updateGLEntry(matchedGL.id, {
-              reconciliationStatus: "matched",
-              orderMatchId: order.id,
-            });
-            matchedCount++;
-            matched = true;
-            continue;
-          }
-        }
-
-        // Fuzzy matching (amount match only)
-        if (!matched && (type === "fuzzy" || type === "both")) {
-          const fuzzyGL = glEntries.find((gl) => {
-            if (gl.reconciliationStatus !== "unmatched") return false;
-            if (gl.amount !== order.amount) return false;
-            return true;
-          });
-
-          if (fuzzyGL) {
-            await storage.updateOrderForecast(order.id, {
-              reconciliationStatus: "fuzzy",
-              glMatchId: fuzzyGL.id,
-            });
-            await storage.updateGLEntry(fuzzyGL.id, {
-              reconciliationStatus: "fuzzy",
-              orderMatchId: order.id,
-            });
-            fuzzyMatchedCount++;
-          }
-        }
-      }
-
-      // Get updated data
-      const updatedOrders = await storage.getOrderForecasts(period);
-      const updatedGL = await storage.getGLEntries(period);
-
-      const totalMatched = updatedOrders.filter((o) => o.reconciliationStatus === "matched").length;
-      const totalFuzzy = updatedOrders.filter((o) => o.reconciliationStatus === "fuzzy").length;
-      const totalUnmatched = updatedOrders.filter((o) => o.reconciliationStatus === "unmatched").length;
-      const unmatchedGL = updatedGL.filter((g) => g.reconciliationStatus === "unmatched").length;
-
-      // Create reconciliation log
-      await storage.createReconciliationLog({
-        period,
-        executedAt: new Date(),
-        matchedCount: totalMatched,
-        fuzzyMatchedCount: totalFuzzy,
-        unmatchedOrderCount: totalUnmatched,
-        unmatchedGlCount: unmatchedGL,
-        totalOrderCount: updatedOrders.length,
-        totalGlCount: updatedGL.length,
-      });
-
-      res.json({
-        success: true,
-        matchedCount,
-        fuzzyMatchedCount,
-        totalMatched,
-        totalFuzzy,
-        totalUnmatched,
-        unmatchedGL,
-      });
+      res.json(result);
     } catch (error) {
       res.status(500).json({ error: "Failed to perform reconciliation" });
     }

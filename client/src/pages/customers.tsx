@@ -31,7 +31,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { useToast } from "@/hooks/useToast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Customer, InsertCustomer } from "@shared/schema";
 import { Textarea } from "@/components/ui/textarea";
@@ -122,9 +122,9 @@ export default function CustomersPage() {
   const importMutation = useMutation({
     mutationFn: async (data: InsertCustomer[]) => {
       const res = await apiRequest("POST", "/api/customers/import", { data });
-      return res.json();
+      return res.json() as Promise<{ success: boolean; count: number; customers: Customer[] }>;
     },
-    onSuccess: (response: any) => {
+    onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       toast({
         title: "成功",
