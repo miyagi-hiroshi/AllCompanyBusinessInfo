@@ -293,6 +293,7 @@ export function ExcelDataGrid({
           onClick={() => {
             setActiveCell({ rowIndex, colKey: column.key });
           }}
+          onDoubleClick={() => setEditingCell({ rowIndex, colKey: column.key })}
           onKeyDown={(e) => handleKeyDown(e, rowIndex, column.key)}
           tabIndex={0}
           data-testid={`cell-${rowIndex}-${column.key}`}
@@ -304,11 +305,14 @@ export function ExcelDataGrid({
                 handleCellChange(rowIndex, column.key, val);
                 // Also update related fields if needed
                 if (column.key.includes("customer")) {
-                  handleCellChange(rowIndex, `${column.key}Code`, option.code || "");
-                  handleCellChange(rowIndex, `${column.key}Name`, option.label || "");
+                  handleCellChange(rowIndex, "customerCode", option.code || "");
+                  handleCellChange(rowIndex, "customerName", option.label || "");
+                } else if (column.key.includes("project")) {
+                  handleCellChange(rowIndex, "projectCode", option.code || "");
+                  handleCellChange(rowIndex, "projectName", option.label || "");
                 } else if (column.key.includes("item")) {
-                  handleCellChange(rowIndex, `${column.key}Code`, option.code || "");
-                  handleCellChange(rowIndex, `${column.key}Name`, option.label || "");
+                  handleCellChange(rowIndex, "itemCode", option.code || "");
+                  handleCellChange(rowIndex, "itemName", option.label || "");
                 }
               }}
               options={column.autocompleteOptions}
@@ -316,7 +320,7 @@ export function ExcelDataGrid({
               className="h-8"
             />
           ) : (
-            <div className="truncate" onDoubleClick={() => setEditingCell({ rowIndex, colKey: column.key })}>
+            <div className="truncate">
               {column.autocompleteOptions.find((opt) => opt.value === value)?.label || value}
             </div>
           )}
