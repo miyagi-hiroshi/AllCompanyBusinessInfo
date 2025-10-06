@@ -302,18 +302,30 @@ export function ExcelDataGrid({
             <AutocompleteSelect
               value={value}
               onChange={(val, option) => {
-                handleCellChange(rowIndex, column.key, val);
+                const newRows = [...rows];
+                const updates: any = {
+                  [column.key]: val,
+                  _modified: true,
+                };
+                
                 // Also update related fields if needed
                 if (column.key.includes("customer")) {
-                  handleCellChange(rowIndex, "customerCode", option.code || "");
-                  handleCellChange(rowIndex, "customerName", option.label || "");
+                  updates.customerCode = option.code || "";
+                  updates.customerName = option.label || "";
                 } else if (column.key.includes("project")) {
-                  handleCellChange(rowIndex, "projectCode", option.code || "");
-                  handleCellChange(rowIndex, "projectName", option.label || "");
+                  updates.projectCode = option.code || "";
+                  updates.projectName = option.label || "";
                 } else if (column.key.includes("item")) {
-                  handleCellChange(rowIndex, "itemCode", option.code || "");
-                  handleCellChange(rowIndex, "itemName", option.label || "");
+                  updates.itemCode = option.code || "";
+                  updates.itemName = option.label || "";
                 }
+                
+                newRows[rowIndex] = {
+                  ...newRows[rowIndex],
+                  ...updates,
+                };
+                onRowsChange(newRows);
+                
                 // Exit editing mode after selection
                 setEditingCell(null);
               }}
