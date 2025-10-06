@@ -1,0 +1,1 @@
+export { AccountingItemRepository } from "./accountingItemRepository";
