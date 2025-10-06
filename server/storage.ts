@@ -15,17 +15,29 @@ import {
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
+// Filter interfaces
+export interface OrderForecastFilter {
+  fiscalYear: number;
+  month?: number;
+  projectId?: string;
+}
+
+export interface GLEntryFilter {
+  fiscalYear: number;
+  month?: number;
+}
+
 // Storage interface for the application
 export interface IStorage {
   // Order Forecasts
-  getOrderForecasts(period: string): Promise<OrderForecast[]>;
+  getOrderForecasts(filter: OrderForecastFilter): Promise<OrderForecast[]>;
   getOrderForecast(id: string): Promise<OrderForecast | undefined>;
   createOrderForecast(data: InsertOrderForecast): Promise<OrderForecast>;
   updateOrderForecast(id: string, data: Partial<OrderForecast>): Promise<OrderForecast | undefined>;
   deleteOrderForecast(id: string): Promise<boolean>;
 
   // GL Entries
-  getGLEntries(period: string): Promise<GLEntry[]>;
+  getGLEntries(filter: GLEntryFilter): Promise<GLEntry[]>;
   getGLEntry(id: string): Promise<GLEntry | undefined>;
   createGLEntry(data: InsertGLEntry): Promise<GLEntry>;
   updateGLEntry(id: string, data: Partial<GLEntry>): Promise<GLEntry | undefined>;
@@ -102,11 +114,11 @@ export class MemStorage implements IStorage {
 
     // Mock projects
     const mockProjects: Project[] = [
-      { id: "1", code: "P001", name: "プロジェクトA", createdAt: new Date() },
-      { id: "2", code: "P002", name: "プロジェクトB", createdAt: new Date() },
-      { id: "3", code: "P003", name: "プロジェクトC", createdAt: new Date() },
-      { id: "4", code: "P004", name: "プロジェクトD", createdAt: new Date() },
-      { id: "5", code: "P005", name: "プロジェクトE", createdAt: new Date() },
+      { id: "1", code: "P001", name: "プロジェクトA", fiscalYear: 2024, createdAt: new Date() },
+      { id: "2", code: "P002", name: "プロジェクトB", fiscalYear: 2024, createdAt: new Date() },
+      { id: "3", code: "P003", name: "プロジェクトC", fiscalYear: 2025, createdAt: new Date() },
+      { id: "4", code: "P004", name: "プロジェクトD", fiscalYear: 2025, createdAt: new Date() },
+      { id: "5", code: "P005", name: "プロジェクトE", fiscalYear: 2025, createdAt: new Date() },
     ];
     mockProjects.forEach(p => this.projects.set(p.id, p));
 
@@ -122,9 +134,22 @@ export class MemStorage implements IStorage {
   }
 
   // Order Forecasts
-  async getOrderForecasts(period: string): Promise<OrderForecast[]> {
-    return Array.from(this.orderForecasts.values())
-      .filter(o => o.period === period);
+  async getOrderForecasts(filter: OrderForecastFilter): Promise<OrderForecast[]> {
+    return Array.from(this.orderForecasts.values()).filter(o => {
+      // Parse period (YYYY-MM) to get year and month
+      const [year, month] = o.period.split('-').map(Number);
+      
+      // Filter by fiscal year
+      if (year !== filter.fiscalYear) return false;
+      
+      // Filter by month if specified
+      if (filter.month !== undefined && month !== filter.month) return false;
+      
+      // Filter by project if specified
+      if (filter.projectId !== undefined && o.projectId !== filter.projectId) return false;
+      
+      return true;
+    });
   }
 
   async getOrderForecast(id: string): Promise<OrderForecast | undefined> {
@@ -167,9 +192,19 @@ export class MemStorage implements IStorage {
   }
 
   // GL Entries
-  async getGLEntries(period: string): Promise<GLEntry[]> {
-    return Array.from(this.glEntries.values())
-      .filter(g => g.period === period);
+  async getGLEntries(filter: GLEntryFilter): Promise<GLEntry[]> {
+    return Array.from(this.glEntries.values()).filter(g => {
+      // Parse period (YYYY-MM) to get year and month
+      const [year, month] = g.period.split('-').map(Number);
+      
+      // Filter by fiscal year
+      if (year !== filter.fiscalYear) return false;
+      
+      // Filter by month if specified
+      if (filter.month !== undefined && month !== filter.month) return false;
+      
+      return true;
+    });
   }
 
   async getGLEntry(id: string): Promise<GLEntry | undefined> {

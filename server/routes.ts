@@ -12,10 +12,21 @@ import {
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Order Forecasts API
-  app.get("/api/order-forecasts/:period", async (req, res) => {
+  app.get("/api/order-forecasts", async (req, res) => {
     try {
-      const { period } = req.params;
-      const orderForecasts = await storage.getOrderForecasts(period);
+      const fiscalYear = parseInt(req.query.fiscalYear as string);
+      const month = req.query.month ? parseInt(req.query.month as string) : undefined;
+      const projectId = req.query.projectId as string | undefined;
+      
+      if (!fiscalYear || isNaN(fiscalYear)) {
+        return res.status(400).json({ error: "fiscalYear is required and must be a number" });
+      }
+      
+      const orderForecasts = await storage.getOrderForecasts({ 
+        fiscalYear, 
+        month, 
+        projectId 
+      });
       res.json(orderForecasts);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch order forecasts" });
@@ -72,10 +83,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // GL Entries API
-  app.get("/api/gl-entries/:period", async (req, res) => {
+  app.get("/api/gl-entries", async (req, res) => {
     try {
-      const { period } = req.params;
-      const glEntries = await storage.getGLEntries(period);
+      const fiscalYear = parseInt(req.query.fiscalYear as string);
+      const month = req.query.month ? parseInt(req.query.month as string) : undefined;
+      
+      if (!fiscalYear || isNaN(fiscalYear)) {
+        return res.status(400).json({ error: "fiscalYear is required and must be a number" });
+      }
+      
+      const glEntries = await storage.getGLEntries({ 
+        fiscalYear, 
+        month 
+      });
       res.json(glEntries);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch GL entries" });

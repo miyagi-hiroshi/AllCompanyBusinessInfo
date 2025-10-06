@@ -2,10 +2,26 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { GLEntry, InsertGLEntry } from "@shared/schema";
 
-export function useGLEntries(period: string) {
+export interface GLEntryFilter {
+  fiscalYear: number;
+  month?: number;
+}
+
+export function useGLEntries(filter: GLEntryFilter) {
+  const params = new URLSearchParams({
+    fiscalYear: filter.fiscalYear.toString(),
+  });
+  if (filter.month) params.append('month', filter.month.toString());
+  
   return useQuery<GLEntry[]>({
-    queryKey: ["/api/gl-entries", period],
-    enabled: !!period,
+    // Use scalar segments for stable cache keys
+    queryKey: ["/api/gl-entries", filter.fiscalYear, filter.month ?? null],
+    queryFn: async () => {
+      const res = await fetch(`/api/gl-entries?${params}`);
+      if (!res.ok) throw new Error('Failed to fetch GL entries');
+      return res.json();
+    },
+    enabled: !!filter.fiscalYear,
   });
 }
 

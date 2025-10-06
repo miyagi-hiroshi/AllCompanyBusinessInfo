@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { ExcelDataGrid, type GridColumn, type GridRow } from "@/components/excel-data-grid";
 import { GLReconciliationPanel } from "@/components/gl-reconciliation-panel";
-import { PeriodSelector } from "@/components/period-selector";
+import { AdvancedFilterPanel, type FilterState } from "@/components/advanced-filter-panel";
 import { KeyboardShortcutsPanel } from "@/components/keyboard-shortcuts-panel";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { ReconciliationStatusBadge } from "@/components/reconciliation-status-badge";
@@ -15,17 +15,22 @@ import { FileSpreadsheet } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function OrderForecastPage() {
-  const currentPeriod = useMemo(() => {
+  // Initialize filter with current year and month
+  const [filter, setFilter] = useState<FilterState>(() => {
     const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  }, []);
-
-  const [period, setPeriod] = useState(currentPeriod);
+    return {
+      fiscalYear: now.getFullYear(),
+      month: now.getMonth() + 1,
+    };
+  });
   const { toast } = useToast();
 
-  // Fetch data from backend
-  const { data: orderForecasts = [], isLoading: ordersLoading, refetch: refetchOrders } = useOrderForecasts(period);
-  const { data: glEntries = [], isLoading: glLoading } = useGLEntries(period);
+  // Fetch data from backend with new filter
+  const { data: orderForecasts = [], isLoading: ordersLoading, refetch: refetchOrders } = useOrderForecasts(filter);
+  const { data: glEntries = [], isLoading: glLoading } = useGLEntries({
+    fiscalYear: filter.fiscalYear,
+    month: filter.month,
+  });
   const { data: customers = [], isLoading: customersLoading } = useCustomers();
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
   const { data: accountingItems = [], isLoading: accountingItemsLoading } = useAccountingItems();
@@ -36,12 +41,23 @@ export default function OrderForecastPage() {
   const deleteMutation = useDeleteOrderForecast();
   const reconcileMutation = useReconciliation();
 
-  // 期間変更時にデータを再取得
-  const handlePeriodChange = (newPeriod: string) => {
-    setPeriod(newPeriod);
+  // ヘルパー関数: フィルタから期間文字列を生成
+  // monthが未定義の場合は現在の月を使用（新規作成時のデフォルト値）
+  const getPeriodFromFilter = (filter: FilterState): string => {
+    const month = filter.month || new Date().getMonth() + 1;
+    return `${filter.fiscalYear}-${String(month).padStart(2, '0')}`;
+  };
+
+  // 現在のフィルタから期間を計算
+  const currentPeriod = getPeriodFromFilter(filter);
+
+  // フィルタ変更時にデータを再取得
+  const handleFilterChange = (newFilter: FilterState) => {
+    setFilter(newFilter);
+    const filterDesc = `${newFilter.fiscalYear}年度${newFilter.month ? ` ${newFilter.month}月` : ''}${newFilter.projectId ? ' (プロジェクト指定)' : ''}`;
     toast({
-      title: "期間を変更しました",
-      description: `${newPeriod}のデータを読み込みました`,
+      title: "フィルタを変更しました",
+      description: `${filterDesc}のデータを読み込みました`,
     });
   };
 
@@ -155,7 +171,7 @@ export default function OrderForecastPage() {
   const lastSyncedDataRef = useRef<OrderForecast[]>([]);
   const deletedIdsRef = useRef<Set<string>>(new Set());
 
-  // Sync local rows only when period changes or on initial load
+  // Sync local rows only when filter changes or on initial load
   useEffect(() => {
     // Don't sync if there are pending saves (modified rows exist)
     const hasModifiedRows = localRows.some(row => row._modified);
@@ -187,7 +203,7 @@ export default function OrderForecastPage() {
       setLocalRows(freshGridRows);
       lastSyncedDataRef.current = orderForecasts;
     }
-  }, [period, orderForecasts, localRows]);
+  }, [filter, orderForecasts, localRows]);
 
   const handleRowsChange = (rows: GridRow[]) => {
     // Track deletions: find rows that were in localRows but not in new rows
@@ -244,9 +260,9 @@ export default function OrderForecastPage() {
             description: row.description,
             amount: String(row.amount),
             remarks: row.remarks || "",
-            period,
+            period: currentPeriod,
           };
-          await createMutation.mutateAsync(newOrder);
+          await createMutation.mutateAsync({ ...newOrder, filter });
         } else {
           // Update existing order
           const existing = orderForecasts.find((o) => o.id === row.id);
@@ -265,8 +281,8 @@ export default function OrderForecastPage() {
                 description: row.description,
                 amount: String(row.amount),
                 remarks: row.remarks || "",
-                period, // Include period for cache invalidation
               },
+              filter,
             });
           }
         }
@@ -274,7 +290,7 @@ export default function OrderForecastPage() {
 
       // Delete explicitly deleted rows (tracked in deletedIdsRef)
       for (const deletedId of Array.from(deletedIdsRef.current)) {
-        await deleteMutation.mutateAsync({ id: deletedId, period });
+        await deleteMutation.mutateAsync({ id: deletedId, filter });
       }
       // Clear deleted IDs after successful deletion
       deletedIdsRef.current.clear();
@@ -315,9 +331,19 @@ export default function OrderForecastPage() {
   };
 
   const handleReconcile = async (type: "exact" | "fuzzy") => {
+    // Require month to be specified for reconciliation
+    if (!filter.month) {
+      toast({
+        title: "月を選択してください",
+        description: "突合処理を実行するには、特定の月を選択する必要があります",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
       const result = await reconcileMutation.mutateAsync({
-        period,
+        period: currentPeriod,
         type: type === "exact" ? "exact" : "fuzzy",
       });
 
@@ -400,7 +426,11 @@ export default function OrderForecastPage() {
             <h1 className="text-xl font-semibold" data-testid="text-page-title">受発注見込み入力</h1>
           </div>
           <div className="h-6 w-px bg-border" />
-          <PeriodSelector value={period} onChange={handlePeriodChange} />
+          <AdvancedFilterPanel 
+            filter={filter} 
+            onChange={handleFilterChange} 
+            projects={projects} 
+          />
         </div>
 
         <div className="flex items-center gap-2">
@@ -421,7 +451,7 @@ export default function OrderForecastPage() {
           </div>
 
           <GLReconciliationPanel
-            period={period}
+            period={currentPeriod}
             orderForecasts={orderForecasts}
             glEntries={glEntries}
             onReconcile={handleReconcile}

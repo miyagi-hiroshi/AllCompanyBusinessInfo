@@ -32,6 +32,7 @@ export const projects = pgTable("projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   code: text("code").notNull().unique(),
   name: text("name").notNull(),
+  fiscalYear: integer("fiscal_year").notNull(), // 年度 (例: 2024, 2025)
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
