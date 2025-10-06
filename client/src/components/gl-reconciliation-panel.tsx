@@ -151,11 +151,11 @@ export function GLReconciliationPanel({
                     data-testid={`matched-item-${order.id}`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{order.voucherNo}</span>
+                      <span className="text-sm font-medium">{order.description}</span>
                       <ReconciliationStatusBadge status="matched" />
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {order.orderDate} | {order.customerName} | ¥{Number(order.amount).toLocaleString()}
+                      {order.accountingPeriod} | {order.customerName} | ¥{Number(order.amount).toLocaleString()}
                     </div>
                   </div>
                 ))
@@ -175,11 +175,11 @@ export function GLReconciliationPanel({
                     data-testid={`fuzzy-item-${order.id}`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{order.voucherNo}</span>
+                      <span className="text-sm font-medium">{order.description}</span>
                       <ReconciliationStatusBadge status="fuzzy" />
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {order.orderDate} | {order.customerName} | ¥{Number(order.amount).toLocaleString()}
+                      {order.accountingPeriod} | {order.customerName} | ¥{Number(order.amount).toLocaleString()}
                     </div>
                   </div>
                 ))
@@ -200,11 +200,11 @@ export function GLReconciliationPanel({
                     data-testid={`unmatched-item-${order.id}`}
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">{order.voucherNo}</span>
+                      <span className="text-sm font-medium">{order.description}</span>
                       <ReconciliationStatusBadge status="unmatched" />
                     </div>
                     <div className="text-xs text-muted-foreground">
-                      {order.orderDate} | {order.customerName} | ¥{Number(order.amount).toLocaleString()}
+                      {order.accountingPeriod} | {order.customerName} | ¥{Number(order.amount).toLocaleString()}
                     </div>
                   </div>
                 ))

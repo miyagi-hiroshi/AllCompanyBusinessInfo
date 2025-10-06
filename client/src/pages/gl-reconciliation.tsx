@@ -124,14 +124,14 @@ export default function GLReconciliationPage() {
               <div className="space-y-2">
                 <label className="text-sm font-medium">月</label>
                 <Select
-                  value={month?.toString()}
-                  onValueChange={(value) => setMonth(value ? parseInt(value) : undefined)}
+                  value={month?.toString() || "all"}
+                  onValueChange={(value) => setMonth(value === "all" ? undefined : parseInt(value))}
                 >
                   <SelectTrigger className="w-[120px]" data-testid="select-month">
                     <SelectValue placeholder="全て" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">全て</SelectItem>
+                    <SelectItem value="all">全て</SelectItem>
                     {monthOptions.map((m) => (
                       <SelectItem key={m} value={m.toString()}>
                         {m}月
