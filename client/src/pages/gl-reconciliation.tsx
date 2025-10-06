@@ -51,10 +51,10 @@ export default function GLReconciliationPage() {
       return;
     }
 
+    const period = `${fiscalYear}-${String(month).padStart(2, '0')}`;
     reconcileMutation.mutate(
       {
-        fiscalYear,
-        month,
+        period,
         type,
       },
       {
@@ -275,8 +275,8 @@ export default function GLReconciliationPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>ステータス</TableHead>
-                          <TableHead>伝票No</TableHead>
-                          <TableHead>日付</TableHead>
+                          <TableHead>摘要</TableHead>
+                          <TableHead>計上年月</TableHead>
                           <TableHead>取引先</TableHead>
                           <TableHead className="text-right">金額</TableHead>
                         </TableRow>
@@ -285,10 +285,10 @@ export default function GLReconciliationPage() {
                         {orderForecasts.map((order) => (
                           <TableRow key={order.id} data-testid={`order-row-${order.id}`}>
                             <TableCell>
-                              <ReconciliationStatusBadge status={order.reconciliationStatus} />
+                              <ReconciliationStatusBadge status={order.reconciliationStatus as "matched" | "fuzzy" | "unmatched"} />
                             </TableCell>
-                            <TableCell className="font-medium">{order.voucherNo}</TableCell>
-                            <TableCell>{order.orderDate}</TableCell>
+                            <TableCell className="font-medium">{order.description}</TableCell>
+                            <TableCell>{order.accountingPeriod}</TableCell>
                             <TableCell>{order.customerName}</TableCell>
                             <TableCell className="text-right font-mono">{formatCurrency(order.amount)}</TableCell>
                           </TableRow>
@@ -318,8 +318,8 @@ export default function GLReconciliationPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>伝票No</TableHead>
-                          <TableHead>日付</TableHead>
+                          <TableHead>摘要</TableHead>
+                          <TableHead>計上年月</TableHead>
                           <TableHead>取引先</TableHead>
                           <TableHead className="text-right">金額</TableHead>
                         </TableRow>
@@ -327,8 +327,8 @@ export default function GLReconciliationPage() {
                       <TableBody>
                         {matched.map((order) => (
                           <TableRow key={order.id} className="bg-success/5" data-testid={`matched-row-${order.id}`}>
-                            <TableCell className="font-medium">{order.voucherNo}</TableCell>
-                            <TableCell>{order.orderDate}</TableCell>
+                            <TableCell className="font-medium">{order.description}</TableCell>
+                            <TableCell>{order.accountingPeriod}</TableCell>
                             <TableCell>{order.customerName}</TableCell>
                             <TableCell className="text-right font-mono">{formatCurrency(order.amount)}</TableCell>
                           </TableRow>
@@ -358,8 +358,8 @@ export default function GLReconciliationPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>伝票No</TableHead>
-                          <TableHead>日付</TableHead>
+                          <TableHead>摘要</TableHead>
+                          <TableHead>計上年月</TableHead>
                           <TableHead>取引先</TableHead>
                           <TableHead className="text-right">金額</TableHead>
                         </TableRow>
@@ -367,8 +367,8 @@ export default function GLReconciliationPage() {
                       <TableBody>
                         {fuzzy.map((order) => (
                           <TableRow key={order.id} className="bg-warning/5" data-testid={`fuzzy-row-${order.id}`}>
-                            <TableCell className="font-medium">{order.voucherNo}</TableCell>
-                            <TableCell>{order.orderDate}</TableCell>
+                            <TableCell className="font-medium">{order.description}</TableCell>
+                            <TableCell>{order.accountingPeriod}</TableCell>
                             <TableCell>{order.customerName}</TableCell>
                             <TableCell className="text-right font-mono">{formatCurrency(order.amount)}</TableCell>
                           </TableRow>
@@ -401,8 +401,8 @@ export default function GLReconciliationPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>伝票No</TableHead>
-                          <TableHead>日付</TableHead>
+                          <TableHead>摘要</TableHead>
+                          <TableHead>計上年月</TableHead>
                           <TableHead>取引先</TableHead>
                           <TableHead className="text-right">金額</TableHead>
                         </TableRow>
@@ -410,8 +410,8 @@ export default function GLReconciliationPage() {
                       <TableBody>
                         {unmatched.map((order) => (
                           <TableRow key={order.id} className="bg-destructive/5" data-testid={`unmatched-row-${order.id}`}>
-                            <TableCell className="font-medium">{order.voucherNo}</TableCell>
-                            <TableCell>{order.orderDate}</TableCell>
+                            <TableCell className="font-medium">{order.description}</TableCell>
+                            <TableCell>{order.accountingPeriod}</TableCell>
                             <TableCell>{order.customerName}</TableCell>
                             <TableCell className="text-right font-mono">{formatCurrency(order.amount)}</TableCell>
                           </TableRow>

@@ -8,6 +8,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import DashboardPage from "@/pages/dashboard";
 import ProjectAnalysisPage from "@/pages/project-analysis";
+import GLReconciliationPage from "@/pages/gl-reconciliation";
 import OrderForecastPage from "@/pages/order-forecast";
 import StaffingPage from "@/pages/staffing";
 import AngleBPage from "@/pages/angle-b";
@@ -21,6 +22,7 @@ function Router() {
     <Switch>
       <Route path="/" component={DashboardPage} />
       <Route path="/project-analysis" component={ProjectAnalysisPage} />
+      <Route path="/gl-reconciliation" component={GLReconciliationPage} />
       <Route path="/order-forecast" component={OrderForecastPage} />
       <Route path="/staffing" component={StaffingPage} />
       <Route path="/angle-b" component={AngleBPage} />
