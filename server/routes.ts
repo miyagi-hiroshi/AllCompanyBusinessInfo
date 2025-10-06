@@ -5,7 +5,9 @@ import {
   insertOrderForecastSchema, 
   insertGLEntrySchema,
   insertCustomerSchema,
-  insertItemSchema 
+  insertItemSchema,
+  insertProjectSchema,
+  insertAccountingItemSchema
 } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
@@ -195,6 +197,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Projects API
+  app.get("/api/projects", async (req, res) => {
+    try {
+      const projects = await storage.getProjects();
+      res.json(projects);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch projects" });
+    }
+  });
+
+  app.get("/api/projects/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const project = await storage.getProject(id);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch project" });
+    }
+  });
+
+  app.post("/api/projects", async (req, res) => {
+    try {
+      const validatedData = insertProjectSchema.parse(req.body);
+      const project = await storage.createProject(validatedData);
+      res.status(201).json(project);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid project data" });
+    }
+  });
+
+  // Accounting Items API
+  app.get("/api/accounting-items", async (req, res) => {
+    try {
+      const accountingItems = await storage.getAccountingItems();
+      res.json(accountingItems);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch accounting items" });
+    }
+  });
+
+  app.get("/api/accounting-items/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const accountingItem = await storage.getAccountingItem(id);
+      if (!accountingItem) {
+        return res.status(404).json({ error: "Accounting item not found" });
+      }
+      res.json(accountingItem);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch accounting item" });
+    }
+  });
+
+  app.post("/api/accounting-items", async (req, res) => {
+    try {
+      const validatedData = insertAccountingItemSchema.parse(req.body);
+      const accountingItem = await storage.createAccountingItem(validatedData);
+      res.status(201).json(accountingItem);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid accounting item data" });
+    }
+  });
+
   // Reconciliation API
   app.post("/api/reconciliation/:period", async (req, res) => {
     try {
@@ -213,14 +281,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         let matched = false;
 
-        // Exact matching
+        // Exact matching (amount and accounting period match)
         if (type === "exact" || type === "both") {
           const matchedGL = glEntries.find(
             (gl) =>
               gl.reconciliationStatus === "unmatched" &&
-              gl.voucherNo === order.voucherNo &&
-              gl.transactionDate === order.orderDate &&
-              gl.amount === order.amount
+              gl.amount === order.amount &&
+              gl.period === order.accountingPeriod
           );
 
           if (matchedGL) {
@@ -238,17 +305,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        // Fuzzy matching (date ±3 days, amount match)
+        // Fuzzy matching (amount match only)
         if (!matched && (type === "fuzzy" || type === "both")) {
-          const orderDate = new Date(order.orderDate);
-          
           const fuzzyGL = glEntries.find((gl) => {
             if (gl.reconciliationStatus !== "unmatched") return false;
             if (gl.amount !== order.amount) return false;
-            
-            const glDate = new Date(gl.transactionDate);
-            const diffDays = Math.abs((glDate.getTime() - orderDate.getTime()) / (1000 * 60 * 60 * 24));
-            return diffDays <= 3;
+            return true;
           });
 
           if (fuzzyGL) {

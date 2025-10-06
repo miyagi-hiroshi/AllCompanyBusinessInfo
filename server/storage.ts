@@ -7,6 +7,10 @@ import {
   type InsertCustomer,
   type Item,
   type InsertItem,
+  type Project,
+  type InsertProject,
+  type AccountingItem,
+  type InsertAccountingItem,
   type ReconciliationLog,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
@@ -37,6 +41,16 @@ export interface IStorage {
   getItem(id: string): Promise<Item | undefined>;
   createItem(data: InsertItem): Promise<Item>;
 
+  // Projects
+  getProjects(): Promise<Project[]>;
+  getProject(id: string): Promise<Project | undefined>;
+  createProject(data: InsertProject): Promise<Project>;
+
+  // Accounting Items
+  getAccountingItems(): Promise<AccountingItem[]>;
+  getAccountingItem(id: string): Promise<AccountingItem | undefined>;
+  createAccountingItem(data: InsertAccountingItem): Promise<AccountingItem>;
+
   // Reconciliation
   getReconciliationLogs(period?: string): Promise<ReconciliationLog[]>;
   createReconciliationLog(data: Omit<ReconciliationLog, "id">): Promise<ReconciliationLog>;
@@ -48,6 +62,8 @@ export class MemStorage implements IStorage {
   private glEntries: Map<string, GLEntry>;
   private customers: Map<string, Customer>;
   private items: Map<string, Item>;
+  private projects: Map<string, Project>;
+  private accountingItems: Map<string, AccountingItem>;
   private reconciliationLogs: Map<string, ReconciliationLog>;
 
   constructor() {
@@ -55,6 +71,8 @@ export class MemStorage implements IStorage {
     this.glEntries = new Map();
     this.customers = new Map();
     this.items = new Map();
+    this.projects = new Map();
+    this.accountingItems = new Map();
     this.reconciliationLogs = new Map();
     
     // Initialize with mock data
@@ -81,6 +99,26 @@ export class MemStorage implements IStorage {
       { id: "5", code: "I005", name: "部品E", createdAt: new Date() },
     ];
     mockItems.forEach(i => this.items.set(i.id, i));
+
+    // Mock projects
+    const mockProjects: Project[] = [
+      { id: "1", code: "P001", name: "プロジェクトA", createdAt: new Date() },
+      { id: "2", code: "P002", name: "プロジェクトB", createdAt: new Date() },
+      { id: "3", code: "P003", name: "プロジェクトC", createdAt: new Date() },
+      { id: "4", code: "P004", name: "プロジェクトD", createdAt: new Date() },
+      { id: "5", code: "P005", name: "プロジェクトE", createdAt: new Date() },
+    ];
+    mockProjects.forEach(p => this.projects.set(p.id, p));
+
+    // Mock accounting items
+    const mockAccountingItems: AccountingItem[] = [
+      { id: "1", code: "AC001", name: "売上高", createdAt: new Date() },
+      { id: "2", code: "AC002", name: "売上原価", createdAt: new Date() },
+      { id: "3", code: "AC003", name: "販売費及び一般管理費", createdAt: new Date() },
+      { id: "4", code: "AC004", name: "営業外収益", createdAt: new Date() },
+      { id: "5", code: "AC005", name: "営業外費用", createdAt: new Date() },
+    ];
+    mockAccountingItems.forEach(ai => this.accountingItems.set(ai.id, ai));
   }
 
   // Order Forecasts
@@ -98,7 +136,6 @@ export class MemStorage implements IStorage {
     const orderForecast: OrderForecast = {
       ...data,
       id,
-      unitPrice: String(data.unitPrice),
       amount: String(data.amount),
       remarks: data.remarks ?? null,
       reconciliationStatus: "unmatched",
@@ -208,6 +245,46 @@ export class MemStorage implements IStorage {
     };
     this.items.set(id, item);
     return item;
+  }
+
+  // Projects
+  async getProjects(): Promise<Project[]> {
+    return Array.from(this.projects.values());
+  }
+
+  async getProject(id: string): Promise<Project | undefined> {
+    return this.projects.get(id);
+  }
+
+  async createProject(data: InsertProject): Promise<Project> {
+    const id = randomUUID();
+    const project: Project = {
+      ...data,
+      id,
+      createdAt: new Date(),
+    };
+    this.projects.set(id, project);
+    return project;
+  }
+
+  // Accounting Items
+  async getAccountingItems(): Promise<AccountingItem[]> {
+    return Array.from(this.accountingItems.values());
+  }
+
+  async getAccountingItem(id: string): Promise<AccountingItem | undefined> {
+    return this.accountingItems.get(id);
+  }
+
+  async createAccountingItem(data: InsertAccountingItem): Promise<AccountingItem> {
+    const id = randomUUID();
+    const accountingItem: AccountingItem = {
+      ...data,
+      id,
+      createdAt: new Date(),
+    };
+    this.accountingItems.set(id, accountingItem);
+    return accountingItem;
   }
 
   // Reconciliation

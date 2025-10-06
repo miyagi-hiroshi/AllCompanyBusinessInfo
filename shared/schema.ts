@@ -27,19 +27,42 @@ export const insertItemSchema = createInsertSchema(items).omit({ id: true, creat
 export type InsertItem = z.infer<typeof insertItemSchema>;
 export type Item = typeof items.$inferSelect;
 
+// プロジェクトマスタ (Project Master)
+export const projects = pgTable("projects", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: text("code").notNull().unique(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertProjectSchema = createInsertSchema(projects).omit({ id: true, createdAt: true });
+export type InsertProject = z.infer<typeof insertProjectSchema>;
+export type Project = typeof projects.$inferSelect;
+
+// 計上科目マスタ (Accounting Item Master)
+export const accountingItems = pgTable("accounting_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: text("code").notNull().unique(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertAccountingItemSchema = createInsertSchema(accountingItems).omit({ id: true, createdAt: true });
+export type InsertAccountingItem = z.infer<typeof insertAccountingItemSchema>;
+export type AccountingItem = typeof accountingItems.$inferSelect;
+
 // 受発注データ (Order/Sales Forecast Data)
 export const orderForecasts = pgTable("order_forecasts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  voucherNo: text("voucher_no").notNull(), // 伝票番号
-  orderDate: date("order_date").notNull(), // 受発注日
+  projectId: varchar("project_id").notNull(),
+  projectCode: text("project_code").notNull(),
+  projectName: text("project_name").notNull(),
   customerId: varchar("customer_id").notNull(),
   customerCode: text("customer_code").notNull(),
   customerName: text("customer_name").notNull(),
-  itemId: varchar("item_id").notNull(),
-  itemCode: text("item_code").notNull(),
-  itemName: text("item_name").notNull(),
-  quantity: integer("quantity").notNull(),
-  unitPrice: decimal("unit_price", { precision: 12, scale: 2 }).notNull(),
+  accountingPeriod: text("accounting_period").notNull(), // 計上年月 (YYYY-MM形式)
+  accountingItem: text("accounting_item").notNull(), // 計上科目
+  description: text("description").notNull(), // 摘要文
   amount: decimal("amount", { precision: 14, scale: 2 }).notNull(), // 金額
   remarks: text("remarks"),
   period: text("period").notNull(), // 期間 (YYYY-MM形式)
@@ -58,9 +81,7 @@ export const insertOrderForecastSchema = createInsertSchema(orderForecasts).omit
   reconciliationStatus: true,
   glMatchId: true,
 }).extend({
-  orderDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  quantity: z.number().int().min(1),
-  unitPrice: z.string().or(z.number()),
+  accountingPeriod: z.string().regex(/^\d{4}-\d{2}$/),
   amount: z.string().or(z.number()),
   period: z.string().regex(/^\d{4}-\d{2}$/),
 });

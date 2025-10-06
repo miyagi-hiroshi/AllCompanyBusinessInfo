@@ -8,7 +8,7 @@ import { ReconciliationStatusBadge } from "@/components/reconciliation-status-ba
 import { useToast } from "@/hooks/use-toast";
 import { useOrderForecasts, useCreateOrderForecast, useUpdateOrderForecast, useDeleteOrderForecast } from "@/hooks/use-order-forecasts";
 import { useGLEntries } from "@/hooks/use-gl-entries";
-import { useCustomers, useItems } from "@/hooks/use-masters";
+import { useCustomers, useProjects, useAccountingItems } from "@/hooks/use-masters";
 import { useReconciliation } from "@/hooks/use-reconciliation";
 import type { OrderForecast, InsertOrderForecast } from "@shared/schema";
 import { FileSpreadsheet } from "lucide-react";
@@ -27,7 +27,8 @@ export default function OrderForecastPage() {
   const { data: orderForecasts = [], isLoading: ordersLoading, refetch: refetchOrders } = useOrderForecasts(period);
   const { data: glEntries = [], isLoading: glLoading } = useGLEntries(period);
   const { data: customers = [], isLoading: customersLoading } = useCustomers();
-  const { data: items = [], isLoading: itemsLoading } = useItems();
+  const { data: projects = [], isLoading: projectsLoading } = useProjects();
+  const { data: accountingItems = [], isLoading: accountingItemsLoading } = useAccountingItems();
 
   // Mutations
   const createMutation = useCreateOrderForecast();
@@ -47,18 +48,16 @@ export default function OrderForecastPage() {
   // グリッド列定義
   const columns: GridColumn[] = [
     {
-      key: "voucherNo",
-      label: "伝票番号",
-      type: "text",
-      width: 120,
+      key: "projectId",
+      label: "プロジェクト",
+      type: "autocomplete",
+      width: 200,
       required: true,
-    },
-    {
-      key: "orderDate",
-      label: "受発注日",
-      type: "date",
-      width: 140,
-      required: true,
+      autocompleteOptions: projects.map((p) => ({
+        value: p.id,
+        label: p.name,
+        code: p.code,
+      })),
     },
     {
       key: "customerId",
@@ -73,29 +72,42 @@ export default function OrderForecastPage() {
       })),
     },
     {
-      key: "itemId",
-      label: "品目",
+      key: "accountingPeriod",
+      label: "計上年月",
+      type: "autocomplete",
+      width: 140,
+      required: true,
+      autocompleteOptions: (() => {
+        const periods: string[] = [];
+        const now = new Date();
+        for (let i = 0; i < 12; i++) {
+          const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+          const periodValue = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          periods.push(periodValue);
+        }
+        return periods.map(p => ({
+          value: p,
+          label: `${p.split('-')[0]}年${p.split('-')[1]}月`,
+        }));
+      })(),
+    },
+    {
+      key: "accountingItem",
+      label: "計上科目",
       type: "autocomplete",
       width: 200,
       required: true,
-      autocompleteOptions: items.map((i) => ({
-        value: i.id,
-        label: i.name,
-        code: i.code,
+      autocompleteOptions: accountingItems.map((ai) => ({
+        value: ai.name,
+        label: ai.name,
+        code: ai.code,
       })),
     },
     {
-      key: "quantity",
-      label: "数量",
-      type: "number",
-      width: 100,
-      required: true,
-    },
-    {
-      key: "unitPrice",
-      label: "単価",
-      type: "number",
-      width: 120,
+      key: "description",
+      label: "摘要文",
+      type: "text",
+      width: 250,
       required: true,
     },
     {
@@ -124,16 +136,15 @@ export default function OrderForecastPage() {
   // GridRow形式に変換
   const gridRows: GridRow[] = orderForecasts.map((order) => ({
     id: order.id,
-    voucherNo: order.voucherNo,
-    orderDate: order.orderDate,
+    projectId: order.projectId,
+    projectCode: order.projectCode,
+    projectName: order.projectName,
     customerId: order.customerId,
     customerCode: order.customerCode,
     customerName: order.customerName,
-    itemId: order.itemId,
-    itemCode: order.itemCode,
-    itemName: order.itemName,
-    quantity: order.quantity,
-    unitPrice: order.unitPrice,
+    accountingPeriod: order.accountingPeriod,
+    accountingItem: order.accountingItem,
+    description: order.description,
     amount: order.amount,
     remarks: order.remarks || "",
     reconciliationStatus: order.reconciliationStatus,
@@ -159,16 +170,15 @@ export default function OrderForecastPage() {
     if (dataChanged) {
       const freshGridRows: GridRow[] = orderForecasts.map((order) => ({
         id: order.id,
-        voucherNo: order.voucherNo,
-        orderDate: order.orderDate,
+        projectId: order.projectId,
+        projectCode: order.projectCode,
+        projectName: order.projectName,
         customerId: order.customerId,
         customerCode: order.customerCode,
         customerName: order.customerName,
-        itemId: order.itemId,
-        itemCode: order.itemCode,
-        itemName: order.itemName,
-        quantity: order.quantity,
-        unitPrice: order.unitPrice,
+        accountingPeriod: order.accountingPeriod,
+        accountingItem: order.accountingItem,
+        description: order.description,
         amount: order.amount,
         remarks: order.remarks || "",
         reconciliationStatus: order.reconciliationStatus,
@@ -200,20 +210,12 @@ export default function OrderForecastPage() {
       // Validate all modified rows before saving
       const validationErrors: string[] = [];
       modifiedRows.forEach((row, index) => {
-        const quantity = Number(row.quantity);
-        const unitPrice = Number(row.unitPrice);
         const amount = Number(row.amount);
 
-        if (!Number.isInteger(quantity) || quantity < 1) {
-          validationErrors.push(`行${index + 1}: 数量は1以上の整数を入力してください`);
-        }
-        if (isNaN(unitPrice) || unitPrice < 0) {
-          validationErrors.push(`行${index + 1}: 単価は0以上の数値を入力してください`);
-        }
         if (isNaN(amount)) {
           validationErrors.push(`行${index + 1}: 金額は有効な数値を入力してください`);
         }
-        if (!row.voucherNo || !row.orderDate || !row.customerId || !row.itemId) {
+        if (!row.projectId || !row.customerId || !row.accountingPeriod || !row.accountingItem || !row.description) {
           validationErrors.push(`行${index + 1}: 必須項目を入力してください`);
         }
       });
@@ -231,16 +233,15 @@ export default function OrderForecastPage() {
         if (row.id.startsWith("temp-")) {
           // Create new order
           const newOrder: InsertOrderForecast = {
-            voucherNo: row.voucherNo,
-            orderDate: row.orderDate,
+            projectId: row.projectId,
+            projectCode: row.projectCode,
+            projectName: row.projectName,
             customerId: row.customerId,
             customerCode: row.customerCode,
             customerName: row.customerName,
-            itemId: row.itemId,
-            itemCode: row.itemCode,
-            itemName: row.itemName,
-            quantity: Number(row.quantity),
-            unitPrice: String(row.unitPrice),
+            accountingPeriod: row.accountingPeriod,
+            accountingItem: row.accountingItem,
+            description: row.description,
             amount: String(row.amount),
             remarks: row.remarks || "",
             period,
@@ -253,16 +254,15 @@ export default function OrderForecastPage() {
             await updateMutation.mutateAsync({
               id: row.id,
               data: {
-                voucherNo: row.voucherNo,
-                orderDate: row.orderDate,
+                projectId: row.projectId,
+                projectCode: row.projectCode,
+                projectName: row.projectName,
                 customerId: row.customerId,
                 customerCode: row.customerCode,
                 customerName: row.customerName,
-                itemId: row.itemId,
-                itemCode: row.itemCode,
-                itemName: row.itemName,
-                quantity: Number(row.quantity),
-                unitPrice: String(row.unitPrice),
+                accountingPeriod: row.accountingPeriod,
+                accountingItem: row.accountingItem,
+                description: row.description,
                 amount: String(row.amount),
                 remarks: row.remarks || "",
                 period, // Include period for cache invalidation
@@ -273,7 +273,7 @@ export default function OrderForecastPage() {
       }
 
       // Delete explicitly deleted rows (tracked in deletedIdsRef)
-      for (const deletedId of deletedIdsRef.current) {
+      for (const deletedId of Array.from(deletedIdsRef.current)) {
         await deleteMutation.mutateAsync({ id: deletedId, period });
       }
       // Clear deleted IDs after successful deletion
@@ -284,16 +284,15 @@ export default function OrderForecastPage() {
       if (freshData) {
         const freshRows: GridRow[] = freshData.map((order) => ({
           id: order.id,
-          voucherNo: order.voucherNo,
-          orderDate: order.orderDate,
+          projectId: order.projectId,
+          projectCode: order.projectCode,
+          projectName: order.projectName,
           customerId: order.customerId,
           customerCode: order.customerCode,
           customerName: order.customerName,
-          itemId: order.itemId,
-          itemCode: order.itemCode,
-          itemName: order.itemName,
-          quantity: order.quantity,
-          unitPrice: order.unitPrice,
+          accountingPeriod: order.accountingPeriod,
+          accountingItem: order.accountingItem,
+          description: order.description,
           amount: order.amount,
           remarks: order.remarks || "",
           reconciliationStatus: order.reconciliationStatus,
@@ -327,16 +326,15 @@ export default function OrderForecastPage() {
       if (freshData) {
         const freshRows: GridRow[] = freshData.map((order) => ({
           id: order.id,
-          voucherNo: order.voucherNo,
-          orderDate: order.orderDate,
+          projectId: order.projectId,
+          projectCode: order.projectCode,
+          projectName: order.projectName,
           customerId: order.customerId,
           customerCode: order.customerCode,
           customerName: order.customerName,
-          itemId: order.itemId,
-          itemCode: order.itemCode,
-          itemName: order.itemName,
-          quantity: order.quantity,
-          unitPrice: order.unitPrice,
+          accountingPeriod: order.accountingPeriod,
+          accountingItem: order.accountingItem,
+          description: order.description,
           amount: order.amount,
           remarks: order.remarks || "",
           reconciliationStatus: order.reconciliationStatus,
@@ -378,7 +376,7 @@ export default function OrderForecastPage() {
   const unmatchedCount = orderForecasts.filter((o) => o.reconciliationStatus === "unmatched").length;
 
   // Loading state
-  if (ordersLoading || glLoading || customersLoading || itemsLoading) {
+  if (ordersLoading || glLoading || customersLoading || projectsLoading || accountingItemsLoading) {
     return (
       <div className="flex flex-col h-screen">
         <header className="flex items-center justify-between px-6 py-4 border-b">
