@@ -314,6 +314,8 @@ export function ExcelDataGrid({
                   handleCellChange(rowIndex, "itemCode", option.code || "");
                   handleCellChange(rowIndex, "itemName", option.label || "");
                 }
+                // Exit editing mode after selection
+                setEditingCell(null);
               }}
               options={column.autocompleteOptions}
               placeholder={column.label}
