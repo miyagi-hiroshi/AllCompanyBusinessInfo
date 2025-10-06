@@ -184,6 +184,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.put("/api/customers/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = insertCustomerSchema.partial().parse(req.body);
+      const customer = await storage.updateCustomer(id, validatedData);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      res.json(customer);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid customer data" });
+    }
+  });
+
+  app.delete("/api/customers/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteCustomer(id);
+      if (!success) {
+        return res.status(404).json({ error: "Customer not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete customer" });
+    }
+  });
+
+  app.post("/api/customers/import", async (req, res) => {
+    try {
+      const { data } = req.body;
+      if (!Array.isArray(data)) {
+        return res.status(400).json({ error: "Invalid data format. Expected array." });
+      }
+      
+      const validatedData = data.map(item => insertCustomerSchema.parse(item));
+      const customers = await storage.bulkCreateCustomers(validatedData);
+      res.status(201).json({ 
+        success: true, 
+        count: customers.length,
+        customers 
+      });
+    } catch (error) {
+      res.status(400).json({ error: "Invalid CSV data" });
+    }
+  });
+
   // Items API
   app.get("/api/items", async (req, res) => {
     try {

@@ -47,6 +47,9 @@ export interface IStorage {
   getCustomers(): Promise<Customer[]>;
   getCustomer(id: string): Promise<Customer | undefined>;
   createCustomer(data: InsertCustomer): Promise<Customer>;
+  updateCustomer(id: string, data: Partial<Customer>): Promise<Customer | undefined>;
+  deleteCustomer(id: string): Promise<boolean>;
+  bulkCreateCustomers(data: InsertCustomer[]): Promise<Customer[]>;
 
   // Items
   getItems(): Promise<Item[]>;
@@ -260,6 +263,33 @@ export class MemStorage implements IStorage {
     };
     this.customers.set(id, customer);
     return customer;
+  }
+
+  async updateCustomer(id: string, data: Partial<Customer>): Promise<Customer | undefined> {
+    const existing = this.customers.get(id);
+    if (!existing) return undefined;
+
+    const updated: Customer = {
+      ...existing,
+      ...data,
+      id: existing.id,
+      createdAt: existing.createdAt,
+    };
+    this.customers.set(id, updated);
+    return updated;
+  }
+
+  async deleteCustomer(id: string): Promise<boolean> {
+    return this.customers.delete(id);
+  }
+
+  async bulkCreateCustomers(data: InsertCustomer[]): Promise<Customer[]> {
+    const customers: Customer[] = [];
+    for (const item of data) {
+      const customer = await this.createCustomer(item);
+      customers.push(customer);
+    }
+    return customers;
   }
 
   // Items
