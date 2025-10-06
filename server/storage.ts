@@ -57,9 +57,12 @@ export interface IStorage {
   createItem(data: InsertItem): Promise<Item>;
 
   // Projects
-  getProjects(): Promise<Project[]>;
+  getProjects(fiscalYear?: number): Promise<Project[]>;
   getProject(id: string): Promise<Project | undefined>;
   createProject(data: InsertProject): Promise<Project>;
+  updateProject(id: string, data: Partial<Project>): Promise<Project | undefined>;
+  deleteProject(id: string): Promise<boolean>;
+  copyProjectsFromPreviousYear(targetYear: number): Promise<Project[]>;
 
   // Accounting Items
   getAccountingItems(): Promise<AccountingItem[]>;
@@ -117,11 +120,66 @@ export class MemStorage implements IStorage {
 
     // Mock projects
     const mockProjects: Project[] = [
-      { id: "1", code: "P001", name: "プロジェクトA", fiscalYear: 2024, createdAt: new Date() },
-      { id: "2", code: "P002", name: "プロジェクトB", fiscalYear: 2024, createdAt: new Date() },
-      { id: "3", code: "P003", name: "プロジェクトC", fiscalYear: 2025, createdAt: new Date() },
-      { id: "4", code: "P004", name: "プロジェクトD", fiscalYear: 2025, createdAt: new Date() },
-      { id: "5", code: "P005", name: "プロジェクトE", fiscalYear: 2025, createdAt: new Date() },
+      { 
+        id: "1", 
+        code: "P001", 
+        name: "プロジェクトA", 
+        fiscalYear: 2024, 
+        customerId: "1",
+        customerName: "株式会社A商事",
+        salesPerson: "山田太郎",
+        serviceType: "インテグレーション",
+        analysisType: "生産性",
+        createdAt: new Date() 
+      },
+      { 
+        id: "2", 
+        code: "P002", 
+        name: "プロジェクトB", 
+        fiscalYear: 2024, 
+        customerId: "2",
+        customerName: "B物産株式会社",
+        salesPerson: "佐藤花子",
+        serviceType: "エンジニアリング",
+        analysisType: "粗利",
+        createdAt: new Date() 
+      },
+      { 
+        id: "3", 
+        code: "P003", 
+        name: "プロジェクトC", 
+        fiscalYear: 2025, 
+        customerId: "3",
+        customerName: "C工業株式会社",
+        salesPerson: "鈴木一郎",
+        serviceType: "ソフトウェアマネージド",
+        analysisType: "生産性",
+        createdAt: new Date() 
+      },
+      { 
+        id: "4", 
+        code: "P004", 
+        name: "プロジェクトD", 
+        fiscalYear: 2025, 
+        customerId: "4",
+        customerName: "株式会社Dサービス",
+        salesPerson: "高橋次郎",
+        serviceType: "リセール",
+        analysisType: "粗利",
+        createdAt: new Date() 
+      },
+      { 
+        id: "5", 
+        code: "P005", 
+        name: "プロジェクトE", 
+        fiscalYear: 2025, 
+        customerId: "5",
+        customerName: "E商事株式会社",
+        salesPerson: "田中三郎",
+        serviceType: "インテグレーション",
+        analysisType: "生産性",
+        createdAt: new Date() 
+      },
     ];
     mockProjects.forEach(p => this.projects.set(p.id, p));
 
@@ -313,8 +371,12 @@ export class MemStorage implements IStorage {
   }
 
   // Projects
-  async getProjects(): Promise<Project[]> {
-    return Array.from(this.projects.values());
+  async getProjects(fiscalYear?: number): Promise<Project[]> {
+    const allProjects = Array.from(this.projects.values());
+    if (fiscalYear !== undefined) {
+      return allProjects.filter(p => p.fiscalYear === fiscalYear);
+    }
+    return allProjects;
   }
 
   async getProject(id: string): Promise<Project | undefined> {
@@ -330,6 +392,48 @@ export class MemStorage implements IStorage {
     };
     this.projects.set(id, project);
     return project;
+  }
+
+  async updateProject(id: string, data: Partial<Project>): Promise<Project | undefined> {
+    const existing = this.projects.get(id);
+    if (!existing) return undefined;
+
+    const updated: Project = {
+      ...existing,
+      ...data,
+      id: existing.id,
+      createdAt: existing.createdAt,
+    };
+    this.projects.set(id, updated);
+    return updated;
+  }
+
+  async deleteProject(id: string): Promise<boolean> {
+    return this.projects.delete(id);
+  }
+
+  async copyProjectsFromPreviousYear(targetYear: number): Promise<Project[]> {
+    const sourceYear = targetYear - 1;
+    const sourceProjects = await this.getProjects(sourceYear);
+    
+    const copiedProjects: Project[] = [];
+    for (const sourceProject of sourceProjects) {
+      // Generate new code with target year
+      const newCode = sourceProject.code.replace(String(sourceYear), String(targetYear));
+      
+      const newProject: Project = {
+        ...sourceProject,
+        id: randomUUID(),
+        code: newCode,
+        fiscalYear: targetYear,
+        createdAt: new Date(),
+      };
+      
+      this.projects.set(newProject.id, newProject);
+      copiedProjects.push(newProject);
+    }
+    
+    return copiedProjects;
   }
 
   // Accounting Items

@@ -266,7 +266,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Projects API
   app.get("/api/projects", async (req, res) => {
     try {
-      const projects = await storage.getProjects();
+      const { fiscalYear } = req.query;
+      const year = fiscalYear ? parseInt(fiscalYear as string) : undefined;
+      const projects = await storage.getProjects(year);
       res.json(projects);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch projects" });
@@ -293,6 +295,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(project);
     } catch (error) {
       res.status(400).json({ error: "Invalid project data" });
+    }
+  });
+
+  app.put("/api/projects/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const validatedData = insertProjectSchema.partial().parse(req.body);
+      const project = await storage.updateProject(id, validatedData);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.json(project);
+    } catch (error) {
+      res.status(400).json({ error: "Invalid project data" });
+    }
+  });
+
+  app.delete("/api/projects/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const success = await storage.deleteProject(id);
+      if (!success) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete project" });
+    }
+  });
+
+  app.post("/api/projects/copy-from-previous-year", async (req, res) => {
+    try {
+      const { targetYear } = req.body;
+      if (!targetYear || typeof targetYear !== 'number') {
+        return res.status(400).json({ error: "Target year is required" });
+      }
+      const copiedProjects = await storage.copyProjectsFromPreviousYear(targetYear);
+      res.status(201).json({ 
+        success: true, 
+        count: copiedProjects.length,
+        projects: copiedProjects 
+      });
+    } catch (error) {
+      res.status(400).json({ error: "Failed to copy projects" });
     }
   });
 
