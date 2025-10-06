@@ -6,13 +6,27 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
+import DashboardPage from "@/pages/dashboard";
+import ProjectAnalysisPage from "@/pages/project-analysis";
 import OrderForecastPage from "@/pages/order-forecast";
+import StaffingPage from "@/pages/staffing";
+import AngleBPage from "@/pages/angle-b";
+import BudgetPage from "@/pages/budget";
+import ProjectsPage from "@/pages/projects";
+import CustomersPage from "@/pages/customers";
 import NotFound from "@/pages/not-found";
 
 function Router() {
   return (
     <Switch>
+      <Route path="/" component={DashboardPage} />
+      <Route path="/project-analysis" component={ProjectAnalysisPage} />
       <Route path="/order-forecast" component={OrderForecastPage} />
+      <Route path="/staffing" component={StaffingPage} />
+      <Route path="/angle-b" component={AngleBPage} />
+      <Route path="/budget" component={BudgetPage} />
+      <Route path="/projects" component={ProjectsPage} />
+      <Route path="/customers" component={CustomersPage} />
       <Route component={NotFound} />
     </Switch>
   );
