@@ -81,26 +81,41 @@ glEntries (GLデータ)
 ### コンポーネント構成
 ```
 App.tsx
-└─ OrderForecastPage
-    ├─ PeriodSelector (期間選択)
+├─ SidebarProvider
+│   ├─ AppSidebar (サイドバーメニュー)
+│   │   ├─ 分析系
+│   │   │   ├─ ダッシュボード (/)
+│   │   │   └─ プロジェクト分析 (/project-analysis)
+│   │   ├─ 入力系
+│   │   │   ├─ 受発注見込み入力 (/order-forecast)
+│   │   │   ├─ 要員山積み登録 (/staffing)
+│   │   │   ├─ 角度B案件登録 (/angle-b)
+│   │   │   └─ 予算登録 (/budget)
+│   │   └─ マスタ系
+│   │       ├─ 年度別プロジェクトマスタ (/projects)
+│   │       └─ 取引先マスタ (/customers)
+│   └─ Router (メインコンテンツ)
+│
+└─ OrderForecastPage (受発注見込み入力)
+    ├─ AdvancedFilterPanel (年度・月・プロジェクト選択)
     ├─ ExcelDataGrid (メイングリッド)
     │   ├─ AutocompleteSelect (取引先・品目選択)
     │   └─ キーボードショートカット統合
     ├─ GLReconciliationPanel (突合パネル)
     │   └─ ReconciliationStatusBadge
-    ├─ KeyboardShortcutsPanel (ショートカットヘルプ)
-    └─ ThemeToggle (テーマ切替)
+    └─ KeyboardShortcutsPanel (ショートカットヘルプ)
 ```
 
 ## 開発状況
 
 ### ✅ 完了した機能
+- [x] サイドバーメニューシステム（3カテゴリ・8メニュー項目）
+- [x] 多段階フィルタシステム（年度・月・プロジェクト）
 - [x] Excel風データグリッドコンポーネント
 - [x] キーボードナビゲーション（Tab, Enter, 矢印キー）
 - [x] キーボードショートカット（Ctrl+Enter, Ctrl+Shift+↓など）
 - [x] オートコンプリート選択（取引先・品目）
 - [x] GL突合パネル（厳格・ファジーマッチング）
-- [x] 期間選択機能
 - [x] ステータスバッジ・可視化
 - [x] ダークモード対応
 - [x] レスポンシブデザイン
