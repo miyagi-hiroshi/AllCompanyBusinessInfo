@@ -1,2 +1,1 @@
-export { OrderForecastRepository } from "./orderForecastRepository";
-export type { OrderForecastFilter } from "./types";
+export * from './orderForecastRepository';

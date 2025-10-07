@@ -1,171 +1,243 @@
-import { 
-  type Project, 
-  type InsertProject,
-} from "@shared/schema";
-import { randomUUID } from "crypto";
-
 /**
- * プロジェクトマスタリポジトリ
+ * プロジェクト管理リポジトリ
  * 
- * 操作対象テーブル: projects
- * 責務: プロジェクトマスタのCRUD操作、年度コピー機能
+ * 責務:
+ * - プロジェクトマスタテーブル（projects）のCRUD操作
+ * - プロジェクトデータの検索・フィルタリング
+ * - プロジェクトデータのバリデーション
  */
+
+import { db } from '../../db';
+import { projects } from '@shared/schema/project';
+import { eq, like, desc, asc, and, or } from 'drizzle-orm';
+import type { Project, NewProject } from '@shared/schema/integrated';
+
+export interface ProjectFilter {
+  search?: string;
+  code?: string;
+  name?: string;
+  fiscalYear?: number;
+  customerId?: string;
+  customerName?: string;
+  salesPerson?: string;
+  serviceType?: string;
+  analysisType?: string;
+}
+
+export interface ProjectSearchOptions {
+  filter?: ProjectFilter;
+  limit?: number;
+  offset?: number;
+  sortBy?: 'code' | 'name' | 'fiscalYear' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
 export class ProjectRepository {
-  private projects: Map<string, Project>;
-
-  constructor() {
-    this.projects = new Map();
-    this.initializeMockData();
-  }
-
   /**
-   * モックデータの初期化
+   * 全てのプロジェクトを取得
    */
-  private initializeMockData() {
-    const mockProjects: Project[] = [
-      { 
-        id: "1", 
-        code: "P001", 
-        name: "プロジェクトA", 
-        fiscalYear: 2024, 
-        customerId: "1",
-        customerName: "株式会社A商事",
-        salesPerson: "山田太郎",
-        serviceType: "インテグレーション",
-        analysisType: "生産性",
-        createdAt: new Date() 
-      },
-      { 
-        id: "2", 
-        code: "P002", 
-        name: "プロジェクトB", 
-        fiscalYear: 2024, 
-        customerId: "2",
-        customerName: "B物産株式会社",
-        salesPerson: "佐藤花子",
-        serviceType: "エンジニアリング",
-        analysisType: "粗利",
-        createdAt: new Date() 
-      },
-      { 
-        id: "3", 
-        code: "P003", 
-        name: "プロジェクトC", 
-        fiscalYear: 2025, 
-        customerId: "3",
-        customerName: "C工業株式会社",
-        salesPerson: "鈴木一郎",
-        serviceType: "ソフトウェアマネージド",
-        analysisType: "生産性",
-        createdAt: new Date() 
-      },
-      { 
-        id: "4", 
-        code: "P004", 
-        name: "プロジェクトD", 
-        fiscalYear: 2025, 
-        customerId: "4",
-        customerName: "株式会社Dサービス",
-        salesPerson: "高橋次郎",
-        serviceType: "リセール",
-        analysisType: "粗利",
-        createdAt: new Date() 
-      },
-      { 
-        id: "5", 
-        code: "P005", 
-        name: "プロジェクトE", 
-        fiscalYear: 2025, 
-        customerId: "5",
-        customerName: "E商事株式会社",
-        salesPerson: "田中三郎",
-        serviceType: "インテグレーション",
-        analysisType: "生産性",
-        createdAt: new Date() 
-      },
-    ];
-    mockProjects.forEach(p => this.projects.set(p.id, p));
-  }
-
-  /**
-   * プロジェクトを取得（年度フィルタ可能）
-   */
-  async getProjects(fiscalYear?: number): Promise<Project[]> {
-    const allProjects = Array.from(this.projects.values());
-    if (fiscalYear !== undefined) {
-      return allProjects.filter(p => p.fiscalYear === fiscalYear);
+  async findAll(options: ProjectSearchOptions = {}): Promise<Project[]> {
+    const { filter, limit = 100, offset = 0, sortBy = 'createdAt', sortOrder = 'desc' } = options;
+    
+    let query = db.select().from(projects);
+    
+    // フィルタリング
+    if (filter) {
+      const conditions = [];
+      
+      if (filter.search) {
+        conditions.push(
+          or(
+            like(projects.code, `%${filter.search}%`),
+            like(projects.name, `%${filter.search}%`),
+            like(projects.customerName, `%${filter.search}%`),
+            like(projects.salesPerson, `%${filter.search}%`)
+          )
+        );
+      }
+      
+      if (filter.code) {
+        conditions.push(like(projects.code, `%${filter.code}%`));
+      }
+      
+      if (filter.name) {
+        conditions.push(like(projects.name, `%${filter.name}%`));
+      }
+      
+      if (filter.fiscalYear) {
+        conditions.push(eq(projects.fiscalYear, filter.fiscalYear));
+      }
+      
+      if (filter.customerId) {
+        conditions.push(eq(projects.customerId, filter.customerId));
+      }
+      
+      if (filter.customerName) {
+        conditions.push(like(projects.customerName, `%${filter.customerName}%`));
+      }
+      
+      if (filter.salesPerson) {
+        conditions.push(like(projects.salesPerson, `%${filter.salesPerson}%`));
+      }
+      
+      if (filter.serviceType) {
+        conditions.push(eq(projects.serviceType, filter.serviceType));
+      }
+      
+      if (filter.analysisType) {
+        conditions.push(eq(projects.analysisType, filter.analysisType));
+      }
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
     }
-    return allProjects;
+    
+    // ソート
+    const sortColumn = projects[sortBy];
+    if (sortOrder === 'asc') {
+      query = query.orderBy(asc(sortColumn));
+    } else {
+      query = query.orderBy(desc(sortColumn));
+    }
+    
+    // ページネーション
+    query = query.limit(limit).offset(offset);
+    
+    return await query;
   }
-
+  
   /**
    * IDでプロジェクトを取得
    */
-  async getProject(id: string): Promise<Project | undefined> {
-    return this.projects.get(id);
+  async findById(id: string): Promise<Project | null> {
+    const result = await db.select().from(projects).where(eq(projects.id, id));
+    return result[0] || null;
   }
-
+  
+  /**
+   * プロジェクトコードでプロジェクトを取得
+   */
+  async findByCode(code: string): Promise<Project | null> {
+    const result = await db.select().from(projects).where(eq(projects.code, code));
+    return result[0] || null;
+  }
+  
+  /**
+   * 年度でプロジェクトを取得
+   */
+  async findByFiscalYear(fiscalYear: number): Promise<Project[]> {
+    return await db.select().from(projects).where(eq(projects.fiscalYear, fiscalYear));
+  }
+  
+  /**
+   * 顧客IDでプロジェクトを取得
+   */
+  async findByCustomerId(customerId: string): Promise<Project[]> {
+    return await db.select().from(projects).where(eq(projects.customerId, customerId));
+  }
+  
   /**
    * プロジェクトを作成
    */
-  async createProject(data: InsertProject): Promise<Project> {
-    const id = randomUUID();
-    const project: Project = {
-      ...data,
-      id,
-      createdAt: new Date(),
-    };
-    this.projects.set(id, project);
-    return project;
+  async create(data: NewProject): Promise<Project> {
+    const result = await db.insert(projects).values(data).returning();
+    return result[0];
   }
-
+  
   /**
    * プロジェクトを更新
    */
-  async updateProject(id: string, data: Partial<Project>): Promise<Project | undefined> {
-    const existing = this.projects.get(id);
-    if (!existing) return undefined;
-
-    const updated: Project = {
-      ...existing,
-      ...data,
-      id: existing.id,
-      createdAt: existing.createdAt,
-    };
-    this.projects.set(id, updated);
-    return updated;
+  async update(id: string, data: Partial<NewProject>): Promise<Project | null> {
+    const result = await db
+      .update(projects)
+      .set({ ...data })
+      .where(eq(projects.id, id))
+      .returning();
+    
+    return result[0] || null;
   }
-
+  
   /**
    * プロジェクトを削除
    */
-  async deleteProject(id: string): Promise<boolean> {
-    return this.projects.delete(id);
+  async delete(id: string): Promise<boolean> {
+    const result = await db.delete(projects).where(eq(projects.id, id));
+    return result.rowCount > 0;
   }
-
+  
   /**
-   * 前年度のプロジェクトをコピーして新年度用プロジェクトを作成
+   * プロジェクトコードの重複チェック
    */
-  async copyProjectsFromPreviousYear(targetYear: number): Promise<Project[]> {
-    const sourceYear = targetYear - 1;
-    const sourceProjects = await this.getProjects(sourceYear);
+  async isCodeExists(code: string, excludeId?: string): Promise<boolean> {
+    let query = db.select().from(projects).where(eq(projects.code, code));
     
-    const copiedProjects: Project[] = [];
-    for (const sourceProject of sourceProjects) {
-      const newCode = sourceProject.code.replace(String(sourceYear), String(targetYear));
-      
-      const newProject: Project = {
-        ...sourceProject,
-        id: randomUUID(),
-        code: newCode,
-        fiscalYear: targetYear,
-        createdAt: new Date(),
-      };
-      
-      this.projects.set(newProject.id, newProject);
-      copiedProjects.push(newProject);
+    if (excludeId) {
+      query = query.where(and(eq(projects.code, code), eq(projects.id, excludeId)));
     }
     
-    return copiedProjects;
+    const result = await query;
+    return result.length > 0;
+  }
+  
+  /**
+   * プロジェクト総数を取得
+   */
+  async count(filter?: ProjectFilter): Promise<number> {
+    let query = db.select({ count: projects.id }).from(projects);
+    
+    if (filter) {
+      const conditions = [];
+      
+      if (filter.search) {
+        conditions.push(
+          or(
+            like(projects.code, `%${filter.search}%`),
+            like(projects.name, `%${filter.search}%`),
+            like(projects.customerName, `%${filter.search}%`),
+            like(projects.salesPerson, `%${filter.search}%`)
+          )
+        );
+      }
+      
+      if (filter.code) {
+        conditions.push(like(projects.code, `%${filter.code}%`));
+      }
+      
+      if (filter.name) {
+        conditions.push(like(projects.name, `%${filter.name}%`));
+      }
+      
+      if (filter.fiscalYear) {
+        conditions.push(eq(projects.fiscalYear, filter.fiscalYear));
+      }
+      
+      if (filter.customerId) {
+        conditions.push(eq(projects.customerId, filter.customerId));
+      }
+      
+      if (filter.customerName) {
+        conditions.push(like(projects.customerName, `%${filter.customerName}%`));
+      }
+      
+      if (filter.salesPerson) {
+        conditions.push(like(projects.salesPerson, `%${filter.salesPerson}%`));
+      }
+      
+      if (filter.serviceType) {
+        conditions.push(eq(projects.serviceType, filter.serviceType));
+      }
+      
+      if (filter.analysisType) {
+        conditions.push(eq(projects.analysisType, filter.analysisType));
+      }
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+    }
+    
+    const result = await query;
+    return result.length;
   }
 }

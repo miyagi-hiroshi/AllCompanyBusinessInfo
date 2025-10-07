@@ -1,120 +1,269 @@
-import { 
-  type GLEntry, 
-  type InsertGLEntry,
-} from "@shared/schema";
-import { randomUUID } from "crypto";
-import type { GLEntryFilter } from "./types";
-
 /**
- * GLエントリデータリポジトリ
+ * GL総勘定元帳リポジトリ
  * 
- * 操作対象テーブル: gl_entries
- * 責務: 総勘定元帳データのCRUD操作
+ * 責務:
+ * - GL総勘定元帳テーブル（gl_entries）のCRUD操作
+ * - GLデータの検索・フィルタリング
+ * - 突合処理のためのデータ操作
  */
+
+import { db } from '../../db';
+import { glEntries } from '@shared/schema/glEntry';
+import { eq, like, desc, asc, and, or, gte, lte } from 'drizzle-orm';
+import type { GLEntry, NewGLEntry } from '@shared/schema/integrated';
+
+export interface GLEntryFilter {
+  search?: string;
+  voucherNo?: string;
+  transactionDateFrom?: string;
+  transactionDateTo?: string;
+  accountCode?: string;
+  accountName?: string;
+  debitCredit?: 'debit' | 'credit';
+  period?: string;
+  reconciliationStatus?: 'matched' | 'fuzzy' | 'unmatched';
+}
+
+export interface GLEntrySearchOptions {
+  filter?: GLEntryFilter;
+  limit?: number;
+  offset?: number;
+  sortBy?: 'voucherNo' | 'transactionDate' | 'accountCode' | 'amount' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
 export class GLEntryRepository {
-  private glEntries: Map<string, GLEntry>;
-
-  constructor() {
-    this.glEntries = new Map();
-    this.initializeMockData();
-  }
-
   /**
-   * モックデータの初期化
+   * 全てのGLデータを取得
    */
-  private initializeMockData() {
-    const currentYear = new Date().getFullYear();
-    const mockEntries: GLEntry[] = [
-      {
-        id: "gl-1",
-        voucherNo: `V${currentYear}-001`,
-        transactionDate: `${currentYear}-04-15`,
-        accountCode: "4000",
-        accountName: "売上高",
-        amount: "1500000",
-        debitCredit: "credit",
-        description: "システム開発売上",
-        period: `${currentYear}-04`,
-        reconciliationStatus: "unmatched",
-        orderMatchId: null,
-        createdAt: new Date(),
-      },
-      {
-        id: "gl-2",
-        voucherNo: `V${currentYear}-002`,
-        transactionDate: `${currentYear}-05-20`,
-        accountCode: "4000",
-        accountName: "売上高",
-        amount: "800000",
-        debitCredit: "credit",
-        description: "保守サービス売上",
-        period: `${currentYear}-05`,
-        reconciliationStatus: "unmatched",
-        orderMatchId: null,
-        createdAt: new Date(),
-      },
-    ];
-    mockEntries.forEach(gl => this.glEntries.set(gl.id, gl));
-  }
-
-  /**
-   * フィルタ条件に基づいてGLエントリを取得
-   */
-  async getGLEntries(filter: GLEntryFilter): Promise<GLEntry[]> {
-    return Array.from(this.glEntries.values()).filter(g => {
-      const [year, month] = g.period.split('-').map(Number);
+  async findAll(options: GLEntrySearchOptions = {}): Promise<GLEntry[]> {
+    const { filter, limit = 100, offset = 0, sortBy = 'createdAt', sortOrder = 'desc' } = options;
+    
+    let query = db.select().from(glEntries);
+    
+    // フィルタリング
+    if (filter) {
+      const conditions = [];
       
-      if (year !== filter.fiscalYear) return false;
-      if (filter.month !== undefined && month !== filter.month) return false;
+      if (filter.search) {
+        conditions.push(
+          or(
+            like(glEntries.voucherNo, `%${filter.search}%`),
+            like(glEntries.accountCode, `%${filter.search}%`),
+            like(glEntries.accountName, `%${filter.search}%`),
+            like(glEntries.description, `%${filter.search}%`)
+          )
+        );
+      }
       
-      return true;
-    });
+      if (filter.voucherNo) {
+        conditions.push(like(glEntries.voucherNo, `%${filter.voucherNo}%`));
+      }
+      
+      if (filter.transactionDateFrom) {
+        conditions.push(gte(glEntries.transactionDate, filter.transactionDateFrom));
+      }
+      
+      if (filter.transactionDateTo) {
+        conditions.push(lte(glEntries.transactionDate, filter.transactionDateTo));
+      }
+      
+      if (filter.accountCode) {
+        conditions.push(like(glEntries.accountCode, `%${filter.accountCode}%`));
+      }
+      
+      if (filter.accountName) {
+        conditions.push(like(glEntries.accountName, `%${filter.accountName}%`));
+      }
+      
+      if (filter.debitCredit) {
+        conditions.push(eq(glEntries.debitCredit, filter.debitCredit));
+      }
+      
+      if (filter.period) {
+        conditions.push(eq(glEntries.period, filter.period));
+      }
+      
+      if (filter.reconciliationStatus) {
+        conditions.push(eq(glEntries.reconciliationStatus, filter.reconciliationStatus));
+      }
+      
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+      }
+    }
+    
+    // ソート
+    const sortColumn = glEntries[sortBy];
+    if (sortOrder === 'asc') {
+      query = query.orderBy(asc(sortColumn));
+    } else {
+      query = query.orderBy(desc(sortColumn));
+    }
+    
+    // ページネーション
+    query = query.limit(limit).offset(offset);
+    
+    return await query;
   }
-
+  
   /**
-   * IDでGLエントリを取得
+   * IDでGLデータを取得
    */
-  async getGLEntry(id: string): Promise<GLEntry | undefined> {
-    return this.glEntries.get(id);
+  async findById(id: string): Promise<GLEntry | null> {
+    const result = await db.select().from(glEntries).where(eq(glEntries.id, id));
+    return result[0] || null;
   }
-
+  
   /**
-   * GLエントリを作成
+   * 伝票番号でGLデータを取得
    */
-  async createGLEntry(data: InsertGLEntry): Promise<GLEntry> {
-    const id = randomUUID();
-    const glEntry: GLEntry = {
-      ...data,
-      id,
-      amount: String(data.amount),
-      description: data.description ?? null,
-      reconciliationStatus: "unmatched",
-      orderMatchId: null,
-      createdAt: new Date(),
+  async findByVoucherNo(voucherNo: string): Promise<GLEntry[]> {
+    return await db.select().from(glEntries).where(eq(glEntries.voucherNo, voucherNo));
+  }
+  
+  /**
+   * 期間でGLデータを取得
+   */
+  async findByPeriod(period: string): Promise<GLEntry[]> {
+    return await db.select().from(glEntries).where(eq(glEntries.period, period));
+  }
+  
+  /**
+   * 突合されていないGLデータを取得
+   */
+  async findUnmatched(period?: string): Promise<GLEntry[]> {
+    if (period) {
+      return await db.select().from(glEntries).where(and(
+        eq(glEntries.reconciliationStatus, 'unmatched'),
+        eq(glEntries.period, period)
+      ));
+    }
+    
+    return await db.select().from(glEntries).where(eq(glEntries.reconciliationStatus, 'unmatched'));
+  }
+  
+  /**
+   * 突合済みGLデータを取得
+   */
+  async findMatched(period?: string): Promise<GLEntry[]> {
+    if (period) {
+      return await db.select().from(glEntries).where(and(
+        eq(glEntries.reconciliationStatus, 'matched'),
+        eq(glEntries.period, period)
+      ));
+    }
+    
+    return await db.select().from(glEntries).where(eq(glEntries.reconciliationStatus, 'matched'));
+  }
+  
+  /**
+   * GLデータを作成
+   */
+  async create(data: NewGLEntry): Promise<GLEntry> {
+    const result = await db.insert(glEntries).values(data).returning();
+    return result[0];
+  }
+  
+  /**
+   * GLデータを更新
+   */
+  async update(id: string, data: Partial<NewGLEntry>): Promise<GLEntry | null> {
+    const result = await db
+      .update(glEntries)
+      .set({ ...data })
+      .where(eq(glEntries.id, id))
+      .returning();
+    
+    return result[0] || null;
+  }
+  
+  /**
+   * GLデータを削除
+   */
+  async delete(id: string): Promise<boolean> {
+    const result = await db.delete(glEntries).where(eq(glEntries.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+  
+  /**
+   * 突合ステータスを更新
+   */
+  async updateReconciliationStatus(
+    id: string, 
+    status: 'matched' | 'fuzzy' | 'unmatched',
+    orderMatchId?: string
+  ): Promise<GLEntry | null> {
+    const updateData: any = {
+      reconciliationStatus: status
     };
-    this.glEntries.set(id, glEntry);
-    return glEntry;
+    
+    if (orderMatchId) {
+      updateData.orderMatchId = orderMatchId;
+    } else if (status === 'unmatched') {
+      updateData.orderMatchId = null;
+    }
+    
+    const result = await db
+      .update(glEntries)
+      .set(updateData)
+      .where(eq(glEntries.id, id))
+      .returning();
+    
+    return result[0] || null;
   }
-
+  
   /**
-   * GLエントリを更新
+   * GLデータ総数を取得
    */
-  async updateGLEntry(id: string, data: Partial<GLEntry>): Promise<GLEntry | undefined> {
-    const existing = this.glEntries.get(id);
-    if (!existing) return undefined;
-
-    const updated: GLEntry = {
-      ...existing,
-      ...data,
-    };
-    this.glEntries.set(id, updated);
-    return updated;
-  }
-
-  /**
-   * GLエントリを削除
-   */
-  async deleteGLEntry(id: string): Promise<boolean> {
-    return this.glEntries.delete(id);
+  async count(filter?: GLEntryFilter): Promise<number> {
+    let query = db.select({ count: glEntries.id }).from(glEntries);
+    
+    if (filter) {
+      const conditions = [];
+      
+      if (filter.search) {
+        conditions.push(
+          or(
+            like(glEntries.voucherNo, `%${filter.search}%`),
+            like(glEntries.accountCode, `%${filter.search}%`),
+            like(glEntries.accountName, `%${filter.search}%`),
+            like(glEntries.description, `%${filter.search}%`)
+          )
+        );
+      }
+      
+      if (filter.voucherNo) {
+        conditions.push(like(glEntries.voucherNo, `%${filter.voucherNo}%`));
+      }
+      
+      if (filter.transactionDateFrom) {
+        conditions.push(gte(glEntries.transactionDate, filter.transactionDateFrom));
+      }
+      
+      if (filter.transactionDateTo) {
+        conditions.push(lte(glEntries.transactionDate, filter.transactionDateTo));
+      }
+      
+      if (filter.accountCode) {
+        conditions.push(like(glEntries.accountCode, `%${filter.accountCode}%`));
+      }
+      
+      if (filter.period) {
+        conditions.push(eq(glEntries.period, filter.period));
+      }
+      
+      if (filter.reconciliationStatus) {
+        conditions.push(eq(glEntries.reconciliationStatus, filter.reconciliationStatus));
+      }
+      
+      if (conditions.length > 0) {
+        const result = await db.select({ count: glEntries.id }).from(glEntries).where(and(...conditions));
+        return result.length;
+      }
+    }
+    
+    const result = await query;
+    return result.length;
   }
 }

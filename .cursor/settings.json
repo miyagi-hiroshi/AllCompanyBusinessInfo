@@ -1,0 +1,13 @@
+{
+  "agentCanUpdateSnapshot": true,
+  "agentCanReadFiles": true,
+  "agentCanWriteFiles": true,
+  "agentCanRunTerminalCommands": true,
+  "agentCanAccessDatabase": true,
+  "agentCanExecuteCode": true,
+  "databaseAccess": {
+    "enabled": true,
+    "allowQueryExecution": true,
+    "allowSchemaInspection": true
+  }
+}

@@ -1,5 +1,7 @@
-import { Home, BarChart3, FileText, Users, Calendar, Building2, DollarSign, TrendingUp, FolderKanban, GitMerge } from "lucide-react";
+import { Home, BarChart3, FileText, Users, Calendar, Building2, DollarSign, TrendingUp, FolderKanban, GitMerge, LogOut, User } from "lucide-react";
 import { useLocation } from "wouter";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
@@ -9,6 +11,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarFooter,
 } from "@/components/ui/sidebar";
 
 const menuItems = {
@@ -67,6 +70,7 @@ const menuItems = {
 
 export function AppSidebar() {
   const [location, setLocation] = useLocation();
+  const { user, logout, isLoggingOut } = useAuth();
 
   return (
     <Sidebar>
@@ -148,6 +152,34 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* ユーザー情報とログアウト */}
+        <SidebarFooter>
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <div className="flex items-center gap-2 px-2 py-1 text-sm text-muted-foreground">
+                    <User className="h-4 w-4" />
+                    <span className="truncate">{user?.name}</span>
+                  </div>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start"
+                    onClick={logout}
+                    disabled={isLoggingOut}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>{isLoggingOut ? 'ログアウト中...' : 'ログアウト'}</span>
+                  </Button>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarFooter>
       </SidebarContent>
     </Sidebar>
   );

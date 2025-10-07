@@ -1,0 +1,64 @@
+---
+description: 認証必須ルール
+globs: ["client/src/hooks/**/*.ts", "server/routes/**/*.ts", "server/middleware/**/*.ts"]
+alwaysApply: true
+---
+
+# 認証必須ルール
+
+## 🚫 絶対禁止事項
+
+### 絶対禁止
+- **認証チェックなしのAPI呼び出し**
+- **認証状態の不適切な管理**
+- **セッション設定の不備**
+- **CSRF保護の無効化**
+- **機密情報のログ出力**
+
+## 🔐 サーバーサイド必須実装
+
+### 必須認証チェック
+- **全APIエンドポイント**: 認証チェックは必須
+- **ミドルウェア**: `requireOperationPermission`ミドルウェア使用必須
+- **ユーザーID取得**: `req.user.userId`を使用必須
+- **認証処理**: ルートでユーザーIDを取得する際は`req.user.employeeId`を使用（`req.user.employee.id`は使用禁止）
+
+
+### 必須セッション管理
+- **タイムアウト**: 2時間設定必須
+- **設定**: Secure、HttpOnly、SameSite設定必須
+
+## 🔧 フロントエンド必須実装
+
+### 必須認証状態管理
+- **useAuthフック**: 認証状態の管理必須
+- **ローディング状態**: ローディング完了後のAPI呼び出し必須
+- **認証チェック**: `enabled: isAuthenticated && !isLoading`条件必須
+
+### 認証状態管理具体例
+```typescript
+// useAuthフックの実装例
+export function useAuth() {
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // 認証状態の初期化
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  return { user, isAuthenticated, isLoading };
+}
+
+// API呼び出し時の認証チェック例
+const { data } = useQuery({
+  queryKey: ['/api/customers'],
+  queryFn: fetchCustomers,
+  enabled: isAuthenticated && !isLoading
+});
+```
+
+### 必須API呼び出しパターン
+- **apiRequest使用**: 認証済みAPI呼び出しにapiRequest使用必須
+- **エラーハンドリング**: 認証エラー時の適切な処理必須

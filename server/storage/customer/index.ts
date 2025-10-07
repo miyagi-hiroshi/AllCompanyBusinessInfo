@@ -1,1 +1,1 @@
-export { CustomerRepository } from "./customerRepository";
+export * from './customerRepository';

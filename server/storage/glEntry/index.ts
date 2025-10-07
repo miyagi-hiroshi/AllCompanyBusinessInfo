@@ -1,2 +1,1 @@
-export { GLEntryRepository } from "./glEntryRepository";
-export type { GLEntryFilter } from "./types";
+export * from './glEntryRepository';

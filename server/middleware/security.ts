@@ -1,4 +1,6 @@
 import type { Request, Response, NextFunction, Express } from 'express';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
 /**
  * セキュリティミドルウェア
@@ -18,7 +20,70 @@ import type { Request, Response, NextFunction, Express } from 'express';
  * @param app - Expressアプリケーションインスタンス
  */
 export function setupSecurityMiddleware(app: Express): void {
-  // TODO: 実装予定 - Helmet、レート制限、CSRF保護の設定
+  // Helmet設定 - セキュリティヘッダー
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'"],
+        imgSrc: ["'self'", "data:", "https:"],
+        connectSrc: ["'self'"],
+        fontSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false,
+  }));
+
+  // レート制限設定
+  const generalLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15分
+    max: 100, // 最大100リクエスト
+    message: {
+      success: false,
+      message: 'リクエストが多すぎます。しばらく時間をおいてから再試行してください。'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15分
+    max: 5, // 最大5リクエスト
+    message: {
+      success: false,
+      message: 'ログイン試行回数が上限に達しました。しばらく時間をおいてから再試行してください。'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  const uploadLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15分
+    max: 10, // 最大10リクエスト
+    message: {
+      success: false,
+      message: 'ファイルアップロードの制限に達しました。しばらく時間をおいてから再試行してください。'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+  });
+
+  // 全般のレート制限
+  app.use('/api', generalLimiter);
+  
+  // 認証関連のレート制限
+  app.use('/api/auth/login', authLimiter);
+  
+  // ファイルアップロードのレート制限
+  app.use('/api/upload', uploadLimiter);
+  app.use('/api/customers/import', uploadLimiter);
+
+  // サニタイゼーションミドルウェア
+  app.use(sanitizeMiddleware);
 }
 
 /**
@@ -29,7 +94,26 @@ export function setupSecurityMiddleware(app: Express): void {
  * @returns サニタイズされた値
  */
 export function sanitizeInput(input: any): any {
-  // TODO: 実装予定 - 入力値のサニタイゼーション
+  if (typeof input === 'string') {
+    return input
+      .replace(/[<>]/g, '') // HTMLタグの除去
+      .replace(/javascript:/gi, '') // JavaScript URLの除去
+      .replace(/on\w+=/gi, '') // イベントハンドラーの除去
+      .trim();
+  }
+  
+  if (Array.isArray(input)) {
+    return input.map(item => sanitizeInput(item));
+  }
+  
+  if (typeof input === 'object' && input !== null) {
+    const sanitized: any = {};
+    for (const [key, value] of Object.entries(input)) {
+      sanitized[key] = sanitizeInput(value);
+    }
+    return sanitized;
+  }
+  
   return input;
 }
 
@@ -41,8 +125,17 @@ export function sanitizeInput(input: any): any {
  * @returns サニタイズされたHTML
  */
 export function sanitizeHTML(html: string): string {
-  // TODO: 実装予定 - HTMLのサニタイゼーション
-  return html;
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // scriptタグの除去
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '') // iframeタグの除去
+    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '') // objectタグの除去
+    .replace(/<embed\b[^<]*>/gi, '') // embedタグの除去
+    .replace(/<link\b[^>]*>/gi, '') // linkタグの除去
+    .replace(/<meta\b[^>]*>/gi, '') // metaタグの除去
+    .replace(/on\w+\s*=\s*["'][^"']*["']/gi, '') // イベントハンドラーの除去
+    .replace(/javascript:/gi, '') // JavaScript URLの除去
+    .replace(/vbscript:/gi, '') // VBScript URLの除去
+    .replace(/data:text\/html/gi, ''); // data URLの除去
 }
 
 /**
@@ -53,8 +146,14 @@ export function sanitizeHTML(html: string): string {
  * @returns サニタイズされたファイル名
  */
 export function sanitizeFileName(filename: string): string {
-  // TODO: 実装予定 - ファイル名のサニタイゼーション
-  return filename;
+  return filename
+    .replace(/[<>:"/\\|?*]/g, '') // 危険な文字の除去
+    .replace(/\.\./g, '') // パストラバーサル攻撃の防止
+    .replace(/^\.+/, '') // 先頭のドットの除去
+    .replace(/\.+$/, '') // 末尾のドットの除去
+    .replace(/\s+/g, '_') // スペースをアンダースコアに変換
+    .substring(0, 255) // ファイル名長制限
+    .trim();
 }
 
 /**
@@ -65,7 +164,31 @@ export function sanitizeFileName(filename: string): string {
  * @returns サニタイズされたログデータ
  */
 export function sanitizeLogData(data: any): any {
-  // TODO: 実装予定 - ログデータのサニタイゼーション
+  const sensitiveKeys = ['password', 'token', 'secret', 'key', 'auth', 'session'];
+  
+  if (typeof data === 'string') {
+    return data;
+  }
+  
+  if (Array.isArray(data)) {
+    return data.map(item => sanitizeLogData(item));
+  }
+  
+  if (typeof data === 'object' && data !== null) {
+    const sanitized: any = {};
+    for (const [key, value] of Object.entries(data)) {
+      const lowerKey = key.toLowerCase();
+      const isSensitive = sensitiveKeys.some(sensitive => lowerKey.includes(sensitive));
+      
+      if (isSensitive) {
+        sanitized[key] = '[REDACTED]';
+      } else {
+        sanitized[key] = sanitizeLogData(value);
+      }
+    }
+    return sanitized;
+  }
+  
   return data;
 }
 
@@ -74,6 +197,17 @@ export function sanitizeLogData(data: any): any {
  * リクエストボディを自動的にサニタイズする
  */
 export function sanitizeMiddleware(req: Request, res: Response, next: NextFunction): void {
-  // TODO: 実装予定 - リクエストボディの自動サニタイゼーション
+  if (req.body && typeof req.body === 'object') {
+    req.body = sanitizeInput(req.body);
+  }
+  
+  if (req.query && typeof req.query === 'object') {
+    req.query = sanitizeInput(req.query);
+  }
+  
+  if (req.params && typeof req.params === 'object') {
+    req.params = sanitizeInput(req.params);
+  }
+  
   next();
 }

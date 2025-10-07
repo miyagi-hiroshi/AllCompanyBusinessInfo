@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
+import crypto from 'crypto';
 
 /**
  * CSRF保護ミドルウェア
@@ -8,6 +9,9 @@ import type { Request, Response, NextFunction } from 'express';
  * - CSRFトークンの検証
  * - トークン取得エンドポイントの提供
  */
+
+// CSRFトークンのストレージ（メモリ実装）
+const csrfTokens = new Map<string, { token: string; expiresAt: Date }>();
 
 /**
  * CSRF保護クラス
@@ -21,8 +25,16 @@ export class CSRFProtection {
    * @returns 生成されたトークン
    */
   generateToken(req: Request): string {
-    // TODO: 実装予定 - CSRFトークン生成
-    return '';
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1時間有効
+    
+    // セッションIDをキーとしてトークンを保存
+    const sessionId = req.headers.authorization?.replace('Bearer ', '');
+    if (sessionId) {
+      csrfTokens.set(sessionId, { token, expiresAt });
+    }
+    
+    return token;
   }
 
   /**
@@ -33,8 +45,26 @@ export class CSRFProtection {
    * @returns 検証結果
    */
   verifyToken(req: Request, token: string): boolean {
-    // TODO: 実装予定 - CSRFトークン検証
-    return true;
+    const sessionId = req.headers.authorization?.replace('Bearer ', '');
+    
+    if (!sessionId || !token) {
+      return false;
+    }
+    
+    const storedToken = csrfTokens.get(sessionId);
+    
+    if (!storedToken) {
+      return false;
+    }
+    
+    // 有効期限チェック
+    if (storedToken.expiresAt < new Date()) {
+      csrfTokens.delete(sessionId);
+      return false;
+    }
+    
+    // トークンの一致チェック
+    return storedToken.token === token;
   }
 
   /**
@@ -43,7 +73,25 @@ export class CSRFProtection {
    */
   middleware() {
     return (req: Request, res: Response, next: NextFunction): void => {
-      // TODO: 実装予定 - CSRF検証ミドルウェア
+      // GET、HEAD、OPTIONSリクエストは除外
+      if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) {
+        return next();
+      }
+      
+      // 認証が不要なエンドポイントは除外
+      if (req.path === '/api/auth/login' || req.path === '/api/auth/csrf-token') {
+        return next();
+      }
+      
+      const token = req.headers['x-csrf-token'] as string;
+      
+      if (!this.verifyToken(req, token)) {
+        return res.status(403).json({
+          success: false,
+          message: 'CSRFトークンが無効または期限切れです'
+        });
+      }
+      
       next();
     };
   }
@@ -54,8 +102,19 @@ export class CSRFProtection {
    */
   tokenEndpoint() {
     return (req: Request, res: Response): void => {
-      // TODO: 実装予定 - トークン取得エンドポイント
-      res.json({ csrfToken: '' });
+      try {
+        const token = this.generateToken(req);
+        
+        res.json({
+          success: true,
+          data: { token }
+        });
+      } catch (error) {
+        res.status(500).json({
+          success: false,
+          message: 'CSRFトークンの生成に失敗しました'
+        });
+      }
     };
   }
 }

@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
+import { sanitizeLogData } from './security';
 
 /**
  * ログ記録ミドルウェア
@@ -9,6 +10,23 @@ import type { Request, Response, NextFunction } from 'express';
  * - セキュリティ監視
  * - WebSocketリアルタイム通知
  */
+
+// ログの種類
+export enum LogType {
+  OPERATION = 'operation',
+  LOGIN = 'login',
+  SECURITY = 'security',
+  ERROR = 'error',
+  API = 'api',
+}
+
+// ログレベル
+export enum LogLevel {
+  INFO = 'info',
+  WARN = 'warn',
+  ERROR = 'error',
+  DEBUG = 'debug',
+}
 
 /**
  * ログエントリの型定義
@@ -24,12 +42,89 @@ export interface LogEntry {
   details?: any;
 }
 
+// ログデータのインターフェース
+export interface LogData {
+  timestamp: string;
+  type: LogType;
+  level: LogLevel;
+  message: string;
+  userId?: string;
+  sessionId?: string;
+  ip?: string;
+  userAgent?: string;
+  method?: string;
+  url?: string;
+  statusCode?: number;
+  duration?: number;
+  details?: any;
+}
+
+/**
+ * ログ出力関数
+ */
+function writeLog(logData: LogData): void {
+  const sanitizedLog = sanitizeLogData(logData);
+  
+  // コンソール出力
+  const logMessage = `[${logData.timestamp}] ${logData.level.toUpperCase()} ${logData.type}: ${logData.message}`;
+  
+  switch (logData.level) {
+    case LogLevel.ERROR:
+      console.error(logMessage, sanitizedLog);
+      break;
+    case LogLevel.WARN:
+      console.warn(logMessage, sanitizedLog);
+      break;
+    case LogLevel.DEBUG:
+      if (process.env.NODE_ENV === 'development') {
+        console.debug(logMessage, sanitizedLog);
+      }
+      break;
+    default:
+      console.info(logMessage, sanitizedLog);
+  }
+}
+
 /**
  * ログ記録ミドルウェア
  * リクエストの操作ログを記録する
  */
 export function logMiddleware(req: Request, res: Response, next: NextFunction): void {
-  // TODO: 実装予定 - 操作ログ記録
+  const startTime = Date.now();
+  const originalJson = res.json;
+  
+  // レスポンスをキャプチャ
+  res.json = function(body: any) {
+    const duration = Date.now() - startTime;
+    
+    // 操作ログの記録
+    if (req.method !== 'GET' && req.path.startsWith('/api')) {
+      const logData: LogData = {
+        timestamp: new Date().toISOString(),
+        type: LogType.OPERATION,
+        level: LogLevel.INFO,
+        message: `${req.method} ${req.path} - ${res.statusCode}`,
+        userId: req.user?.id,
+        sessionId: req.headers.authorization?.replace('Bearer ', ''),
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        method: req.method,
+        url: req.url,
+        statusCode: res.statusCode,
+        duration,
+        details: {
+          body: req.body,
+          query: req.query,
+          params: req.params,
+        },
+      };
+      
+      writeLog(logData);
+    }
+    
+    return originalJson.call(this, body);
+  };
+  
   next();
 }
 
@@ -40,8 +135,22 @@ export function logMiddleware(req: Request, res: Response, next: NextFunction): 
  * @param success - ログイン成功/失敗
  * @param userId - ユーザーID
  */
-export function logLoginAttempt(req: Request, success: boolean, userId?: number): void {
-  // TODO: 実装予定 - ログイン試行記録
+export function logLoginAttempt(req: Request, success: boolean, userId?: string): void {
+  const logData: LogData = {
+    timestamp: new Date().toISOString(),
+    type: LogType.LOGIN,
+    level: success ? LogLevel.INFO : LogLevel.WARN,
+    message: `ログイン${success ? '成功' : '失敗'}`,
+    userId,
+    ip: req.ip,
+    userAgent: req.get('User-Agent'),
+    details: {
+      success,
+      email: req.body?.email,
+    },
+  };
+  
+  writeLog(logData);
 }
 
 /**

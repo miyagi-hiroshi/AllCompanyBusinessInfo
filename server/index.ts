@@ -1,10 +1,20 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { setupSecurityMiddleware } from "./middleware/security";
+import { auditDataChanges } from "./middleware/auditMiddleware";
+import { unifiedErrorHandler, notFoundHandler } from "./middleware/unifiedErrorHandler";
 
 const app = express();
+
+// セキュリティミドルウェアの設定
+setupSecurityMiddleware(app);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// 監査ログミドルウェア
+app.use(auditDataChanges);
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -43,19 +53,11 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
-  app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
-    const status = (err && typeof err === 'object' && 'status' in err) 
-      ? (err.status as number) 
-      : (err && typeof err === 'object' && 'statusCode' in err)
-      ? (err.statusCode as number)
-      : 500;
-    const message = (err && typeof err === 'object' && 'message' in err && typeof err.message === 'string')
-      ? err.message
-      : "Internal Server Error";
+  // 404エラーハンドリング
+  app.use(notFoundHandler);
 
-    res.status(status).json({ message });
-    throw err;
-  });
+  // 統一エラーハンドリング
+  app.use(unifiedErrorHandler);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
@@ -71,11 +73,13 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
+  const isWindows = process.platform === 'win32';
+  
+  const listenOptions = isWindows 
+    ? { port, host: "localhost" }
+    : { port, host: "0.0.0.0", reusePort: true };
+    
+  server.listen(listenOptions, () => {
     log(`serving on port ${port}`);
   });
 })();
