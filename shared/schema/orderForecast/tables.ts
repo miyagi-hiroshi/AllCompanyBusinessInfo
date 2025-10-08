@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { decimal, integer, pgSchema, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { decimal, integer, pgSchema, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
 // appスキーマを定義
 const appSchema = pgSchema("app");

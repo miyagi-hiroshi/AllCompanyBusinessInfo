@@ -1,15 +1,15 @@
 import js from "@eslint/js";
-import tseslint from "typescript-eslint";
+import compat from "eslint-plugin-compat";
+import importPlugin from "eslint-plugin-import";
+import a11y from "eslint-plugin-jsx-a11y";
+import promise from "eslint-plugin-promise";
 import react from "eslint-plugin-react";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
-import a11y from "eslint-plugin-jsx-a11y";
-import importPlugin from "eslint-plugin-import";
 import simpleImportSort from "eslint-plugin-simple-import-sort";
-import promise from "eslint-plugin-promise";
 import sonarjs from "eslint-plugin-sonarjs";
 import unicorn from "eslint-plugin-unicorn";
-import compat from "eslint-plugin-compat";
+import tseslint from "typescript-eslint";
 
 export default tseslint.config(
   // 無視するファイル・ディレクトリ
@@ -68,11 +68,12 @@ export default tseslint.config(
     },
     settings: {
       react: { version: "detect" },
-      "import/resolver": { 
-        typescript: { 
-          project: "./tsconfig.eslint.json" 
-        }, 
-        node: true 
+      "import/resolver": {
+        node: true,
+        typescript: {
+          alwaysTryTypes: true,
+          project: "./tsconfig.eslint.json",
+        },
       },
       // browserslist を参照（package.json または .browserslistrc に定義）
       targets: "> 0.5%, not dead", // compat 用のフェイルセーフ
@@ -121,6 +122,15 @@ export default tseslint.config(
       "@typescript-eslint/require-await": "warn",
       "@typescript-eslint/await-thenable": "warn",
       "@typescript-eslint/unbound-method": "warn",
+      
+      /** ---------- インポート/モジュール関連 ---------- */
+      // 循環参照を検出（エラーレベル）
+      "import/no-cycle": ["error", { maxDepth: 10, ignoreExternal: true }],
+      // 自己インポートを禁止（エラーレベル）
+      "import/no-self-import": "error",
+      // インポート順序の自動ソート
+      "simple-import-sort/imports": "error",
+      "simple-import-sort/exports": "error",
     }
   },
 

@@ -4,9 +4,9 @@
  */
 
 import dotenv from 'dotenv';
-import pg from 'pg';
 import fs from 'fs';
 import path from 'path';
+import pg from 'pg';
 
 dotenv.config();
 

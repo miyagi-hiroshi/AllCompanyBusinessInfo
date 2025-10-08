@@ -130,11 +130,6 @@ export function useAuth() {
     error: null,
   });
 
-  // デバッグ用：認証状態の変更をログ出力
-  useEffect(() => {
-    console.log("🔄 認証状態が変更されました:", authState);
-  }, [authState]);
-
   const { toast: _toast } = useToast(); // 未使用のためプレフィックス追加
   const queryClient = useQueryClient();
 
@@ -152,10 +147,8 @@ export function useAuth() {
       authApi.login(email, password),
     onSuccess: async () => {
       // ログイン成功後、認証状態を再取得
-      console.log("🔐 ログイン成功、認証状態を取得中...");
       try {
         const userData = await authApi.getCurrentUser();
-        console.log("👤 認証状態取得成功:", userData);
         setAuthState({
           user: userData.user,
           employee: userData.employee,
@@ -163,10 +156,9 @@ export function useAuth() {
           isLoading: false,
           error: null,
         });
-        console.log("✅ 認証状態を更新しました");
         showSuccessToast("ログイン成功", "認証が完了しました");
       } catch (error) {
-        console.error("❌ 認証状態の取得に失敗:", error);
+        console.error("認証状態の取得に失敗:", error);
         const appError = handleError(error, false);
         showErrorToast(appError);
       }

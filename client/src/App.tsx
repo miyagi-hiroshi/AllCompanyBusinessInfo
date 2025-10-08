@@ -64,11 +64,8 @@ function AuthenticatedApp() {
 function AppContent() {
   const { isAuthenticated, isLoading, login, isLoggingIn } = useAuth();
 
-  console.log("🔄 AppContent render:", { isAuthenticated, isLoading });
-
   // ローディング中は何も表示しない
   if (isLoading) {
-    console.log("⏳ ローディング中...");
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -78,8 +75,6 @@ function AppContent() {
       </div>
     );
   }
-
-  console.log("🎯 認証状態:", isAuthenticated ? "認証済み" : "未認証");
   
   return (
     <>
