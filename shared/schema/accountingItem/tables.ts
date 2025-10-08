@@ -1,7 +1,8 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { pgSchema, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
-import { appSchema } from "../app-schema";
+// appスキーマを定義
+const appSchema = pgSchema("app");
 
 // 計上科目マスタ (Accounting Item Master)
 export const accountingItems = appSchema.table("accounting_items", {

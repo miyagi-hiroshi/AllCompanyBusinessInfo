@@ -1,7 +1,8 @@
 import { sql } from "drizzle-orm";
-import { date, decimal, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { date, decimal, pgSchema, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
-import { appSchema } from "../app-schema";
+// appスキーマを定義
+const appSchema = pgSchema("app");
 
 // GLデータ (General Ledger Data)
 export const glEntries = appSchema.table("gl_entries", {

@@ -1,7 +1,8 @@
 import { sql } from "drizzle-orm";
-import { integer, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { integer, pgSchema, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
-import { appSchema } from "../app-schema";
+// appスキーマを定義
+const appSchema = pgSchema("app");
 
 // 突合ログ (Reconciliation Log)
 export const reconciliationLogs = appSchema.table("reconciliation_logs", {

@@ -4,24 +4,27 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAuth } from "@/hooks/useAuth";
 
-export function LoginForm() {
+interface LoginFormProps {
+  onLogin: (email: string, password: string) => void;
+  isLoggingIn: boolean;
+}
+
+export function LoginForm({ onLogin, isLoggingIn }: LoginFormProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const { login, isLoggingIn } = useAuth();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (email && password) {
-      login(email, password);
+      onLogin(email, password);
     }
   };
 
   const handleDemoLogin = (demoType: "admin" | "user") => {
     if (demoType === "admin") {
-      setEmail("admin@example.com");
-      setPassword("password");
+      setEmail("admin@infolinx.com");
+      setPassword("admin123");
     } else {
       setEmail("user@example.com");
       setPassword("password");

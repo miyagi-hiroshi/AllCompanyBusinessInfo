@@ -1,7 +1,8 @@
 import { sql } from "drizzle-orm";
-import { decimal, integer, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { decimal, integer, pgSchema, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
-import { appSchema } from "../app-schema";
+// appスキーマを定義
+const appSchema = pgSchema("app");
 
 // 受発注データ (Order/Sales Forecast Data)
 export const orderForecasts = appSchema.table("order_forecasts", {
