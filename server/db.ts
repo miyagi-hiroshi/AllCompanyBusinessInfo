@@ -3,8 +3,11 @@ import * as schema from "@shared/schema";
 import dotenv from "dotenv";
 import { drizzle as drizzleNeon, NeonDatabase } from "drizzle-orm/neon-serverless";
 import { drizzle as drizzlePg, NodePgDatabase } from "drizzle-orm/node-postgres";
-import { Pool as PgPool } from "pg";
+import pg from "pg";
 import ws from "ws";
+
+const { Pool: PgPool } = pg;
+type PgPoolType = InstanceType<typeof PgPool>;
 
 // 環境変数を読み込み
 dotenv.config();
@@ -15,7 +18,7 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-let pool: NeonPool | PgPool;
+let pool: NeonPool | PgPoolType;
 let db: NeonDatabase<typeof schema> | NodePgDatabase<typeof schema>;
 
 // Replit環境かどうかを判定 (REPL_IDの有無)
