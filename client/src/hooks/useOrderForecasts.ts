@@ -21,7 +21,8 @@ export function useOrderForecasts(filter: OrderForecastFilter) {
     queryKey: ["/api/order-forecasts", filter.fiscalYear, filter.month ?? null, filter.projectId ?? null],
     queryFn: async () => {
       const res = await apiRequest("GET", `/api/order-forecasts?${params}`, undefined);
-      return res.json();
+      const result = await res.json();
+      return result.data?.items || [];
     },
     enabled: !!filter.fiscalYear,
   });

@@ -31,6 +31,7 @@ export async function getExistingUserByEmail(email: string) {
     firstName: users.firstName,
     lastName: users.lastName,
     isFirstLogin: users.isFirstLogin,
+    password: users.password, // パスワードハッシュを含める
   }).from(users).where(eq(users.email, email));
   
   return result[0] || null;

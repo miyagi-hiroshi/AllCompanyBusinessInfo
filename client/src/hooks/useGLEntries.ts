@@ -19,7 +19,8 @@ export function useGLEntries(filter: GLEntryFilter) {
     queryKey: ["/api/gl-entries", filter.fiscalYear, filter.month ?? null],
     queryFn: async () => {
       const res = await apiRequest("GET", `/api/gl-entries?${params}`, undefined);
-      return res.json();
+      const result = await res.json();
+      return result.data?.items || [];
     },
     enabled: !!filter.fiscalYear,
   });
