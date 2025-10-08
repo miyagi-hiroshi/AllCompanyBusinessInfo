@@ -1,3 +1,9 @@
+---
+description: ESLint利用ガイドライン
+globs: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "eslint.config.js"]
+alwaysApply: false
+---
+
 # ESLint利用ガイドライン
 
 ## 🛠️ 設定推奨事項

@@ -1,7 +1,7 @@
 ---
 description: バックエンド推奨事項
 globs: ["server/**/*.ts"]
-alwaysApply: true
+alwaysApply: false
 ---
 
 # バックエンド推奨事項

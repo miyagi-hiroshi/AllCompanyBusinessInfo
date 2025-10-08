@@ -1,3 +1,9 @@
+---
+description: TypeScript設定ガイドライン
+globs: ["**/*.ts", "**/*.tsx", "tsconfig*.json"]
+alwaysApply: false
+---
+
 # TypeScript設定ガイドライン
 
 ## 🏗️ 設定推奨事項

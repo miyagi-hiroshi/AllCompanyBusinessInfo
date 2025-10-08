@@ -1,7 +1,7 @@
 ---
 description: フロントエンド推奨事項
 globs: ["client/**/*.ts", "client/**/*.tsx"]
-alwaysApply: true
+alwaysApply: false
 ---
 
 # フロントエンド推奨事項

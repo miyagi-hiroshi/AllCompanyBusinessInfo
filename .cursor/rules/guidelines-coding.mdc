@@ -1,7 +1,7 @@
 ---
 description: コーディング推奨事項
-globs:
-alwaysApply: true
+globs: ["**/*.ts", "**/*.tsx"]
+alwaysApply: false
 ---
 
 # コーディング推奨事項

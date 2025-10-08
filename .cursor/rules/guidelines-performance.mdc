@@ -1,7 +1,7 @@
 ---
 description: パフォーマンス推奨事項
 globs: ["**/*.ts", "**/*.tsx"]
-alwaysApply: true
+alwaysApply: false
 ---
 
 # パフォーマンス推奨事項

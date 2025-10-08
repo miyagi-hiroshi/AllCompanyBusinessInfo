@@ -1,7 +1,7 @@
 ---
 description: エラーハンドリング推奨事項
 globs: ["**/*.ts", "**/*.tsx"]
-alwaysApply: true
+alwaysApply: false
 ---
 
 # エラーハンドリング推奨事項

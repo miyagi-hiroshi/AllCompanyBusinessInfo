@@ -1,7 +1,7 @@
 ---
 description: 日付・時刻推奨事項
 globs: ["**/*.ts", "**/*.tsx"]
-alwaysApply: true
+alwaysApply: false
 ---
 
 # 日付・時刻推奨事項
