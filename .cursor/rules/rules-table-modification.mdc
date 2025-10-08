@@ -1,6 +1,6 @@
 ---
 description: テーブル変更時の手順ルール
-globs: ["server/**/*.ts", "shared/**/*.ts", "drizzle.config.ts"]
+globs: ["server/**/*.ts", "shared/schema/**/*.ts", "drizzle.config.ts"]
 alwaysApply: true
 ---
 

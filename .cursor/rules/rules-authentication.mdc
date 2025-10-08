@@ -1,6 +1,6 @@
 ---
 description: 認証必須ルール
-globs: ["client/src/hooks/**/*.ts", "server/routes/**/*.ts", "server/middleware/**/*.ts"]
+globs: ["**/*.ts", "**/*.tsx"]
 alwaysApply: true
 ---
 

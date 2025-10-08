@@ -1,6 +1,6 @@
 ---
 description: API呼び出し必須ルール
-globs: ["server/routes/**/*.ts", "client/src/hooks/**/*.ts"]
+globs: ["server/routes/**/*.ts", "client/src/**/*.ts", "client/src/**/*.tsx"]
 alwaysApply: true
 ---
 

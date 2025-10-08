@@ -1,6 +1,6 @@
 ---
 description: コーディング必須ルール
-globs: ["**/*.ts", "**/*.tsx", "server/**/*.ts", "client/**/*.tsx"]
+globs: ["**/*.ts", "**/*.tsx"]
 alwaysApply: true
 ---
 

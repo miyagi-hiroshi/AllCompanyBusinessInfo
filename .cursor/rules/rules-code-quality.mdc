@@ -1,5 +1,7 @@
 ---
 description: コード品質管理必須ルール
+globs: ["**/*.ts", "**/*.tsx"]
+alwaysApply: true
 ---
 
 # コード品質必須ルール

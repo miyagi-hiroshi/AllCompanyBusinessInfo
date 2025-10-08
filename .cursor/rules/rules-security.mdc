@@ -1,8 +1,7 @@
 ---
 description: セキュリティ必須ルール（最優先）
-globs: ["**/*.ts", "**/*.tsx", "server/**/*.ts", "client/**/*.tsx"]
+globs: ["**/*.ts", "**/*.tsx"]
 alwaysApply: true
-priority: 1
 ---
 
 # セキュリティ必須ルール

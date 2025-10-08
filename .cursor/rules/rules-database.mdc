@@ -1,6 +1,6 @@
 ---
 description: データベース必須ルール
-globs: ["server/**/*.ts", "shared/**/*.ts"]
+globs: ["server/**/*.ts", "shared/schema/**/*.ts", "drizzle.config.ts"]
 alwaysApply: true
 ---
 
