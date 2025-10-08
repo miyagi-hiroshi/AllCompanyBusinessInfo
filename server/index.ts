@@ -1,9 +1,10 @@
-import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
-import { setupSecurityMiddleware } from "./middleware/security";
+import express from "express";
+
 import { auditDataChanges } from "./middleware/auditMiddleware";
-import { unifiedErrorHandler, notFoundHandler } from "./middleware/unifiedErrorHandler";
+import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
+import { setupSecurityMiddleware } from "./middleware/security";
+import { registerRoutes } from "./routes";
+import { log,serveStatic, setupVite } from "./vite";
 
 const app = express();
 
@@ -50,14 +51,14 @@ app.use((req, res, next) => {
   next();
 });
 
-(async () => {
-  const server = await registerRoutes(app);
+void (async () => {
+  const server = registerRoutes(app);
 
   // 404エラーハンドリング
   app.use(notFoundHandler);
 
   // 統一エラーハンドリング
-  app.use(unifiedErrorHandler);
+  app.use(errorHandler);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route

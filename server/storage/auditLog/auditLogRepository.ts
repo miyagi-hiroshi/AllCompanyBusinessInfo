@@ -50,7 +50,7 @@ export interface AuditLogFilter {
 }
 
 // メモリ実装（本格実装時はデータベースに移行）
-class AuditLogRepository {
+export class AuditLogRepository {
   private auditLogs: AuditLog[] = [];
   private nextId = 1;
 

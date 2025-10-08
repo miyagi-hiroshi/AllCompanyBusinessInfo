@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp,varchar } from "drizzle-orm/pg-core";
 
 // 取引先マスタ (Customer Master)
 export const customers = pgTable("customers", {

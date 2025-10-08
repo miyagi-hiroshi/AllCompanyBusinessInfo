@@ -1,10 +1,10 @@
+import { neonConfig,Pool as NeonPool } from "@neondatabase/serverless";
+import * as schema from "@shared/schema";
+import dotenv from "dotenv";
 import { drizzle as drizzleNeon, NeonDatabase } from "drizzle-orm/neon-serverless";
-import { Pool as NeonPool, neonConfig } from "@neondatabase/serverless";
 import { drizzle as drizzlePg, NodePgDatabase } from "drizzle-orm/node-postgres";
 import { Pool as PgPool } from "pg";
 import ws from "ws";
-import * as schema from "@shared/schema";
-import dotenv from "dotenv";
 
 // 環境変数を読み込み
 dotenv.config();
@@ -38,7 +38,7 @@ if (isReplit) {
     connectionString: process.env.DATABASE_URL,
     ssl: sslConfig,
   });
-  db = drizzlePg(pool as PgPool, { schema });
+  db = drizzlePg(pool, { schema });
 }
 
-export { pool, db };
+export { db,pool };

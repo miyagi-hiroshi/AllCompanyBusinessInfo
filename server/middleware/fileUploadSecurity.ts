@@ -1,4 +1,4 @@
-import type { Request, Response, NextFunction } from 'express';
+import type { NextFunction,Request, Response } from 'express';
 
 /**
  * ファイルアップロードセキュリティミドルウェア
@@ -26,7 +26,7 @@ export interface UploadOptions {
  * @param options - アップロード設定オプション
  * @returns アップロードミドルウェア
  */
-export function createSecureUpload(options: UploadOptions) {
+export function createSecureUpload(_options: UploadOptions) {
   return (req: Request, res: Response, next: NextFunction): void => {
     // TODO: 実装予定 - セキュアなファイルアップロード設定
     next();
@@ -40,7 +40,7 @@ export function createSecureUpload(options: UploadOptions) {
  * @param file - 検証するファイル
  * @returns 検証結果
  */
-export function validateFileContent(file: Express.Multer.File): boolean {
+export function validateFileContent(_file: any): boolean {
   // TODO: 実装予定 - ファイル内容検証
   return true;
 }
@@ -52,7 +52,7 @@ export function validateFileContent(file: Express.Multer.File): boolean {
  * @param filename - 検証するファイル名
  * @returns 検証結果
  */
-export function validateFileName(filename: string): boolean {
+export function validateFileName(_filename: string): boolean {
   // TODO: 実装予定 - ファイル名検証
   return true;
 }

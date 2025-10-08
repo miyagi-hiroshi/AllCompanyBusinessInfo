@@ -1,8 +1,9 @@
+import { CreateGLEntryData, GLEntry, GLEntryFilter,UpdateGLEntryData } from '@shared/schema/integrated';
+
+// import { db } from '../db'; // 未使用のためコメントアウト
+import { AppError } from '../middleware/errorHandler';
 import { GLEntryRepository } from '../storage/glEntry';
 import { OrderForecastRepository } from '../storage/orderForecast';
-import { AppError } from '../middleware/errorHandler';
-import { CreateGLEntryData, UpdateGLEntryData, GLEntry, GLEntryFilter } from '@shared/schema/integrated';
-import { db } from '../db';
 
 /**
  * GL総勘定元帳管理サービスクラス

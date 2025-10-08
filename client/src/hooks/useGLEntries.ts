@@ -1,6 +1,7 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import type { GLEntry, NewGLEntry } from "@shared/schema";
+import { useMutation,useQuery } from "@tanstack/react-query";
+
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { GLEntry, InsertGLEntry } from "@shared/schema";
 
 export interface GLEntryFilter {
   fiscalYear: number;
@@ -11,7 +12,7 @@ export function useGLEntries(filter: GLEntryFilter) {
   const params = new URLSearchParams({
     fiscalYear: filter.fiscalYear.toString(),
   });
-  if (filter.month) params.append('month', filter.month.toString());
+  if (filter.month) {params.append("month", filter.month.toString());}
   
   return useQuery<GLEntry[]>({
     // Use scalar segments for stable cache keys
@@ -26,12 +27,12 @@ export function useGLEntries(filter: GLEntryFilter) {
 
 export function useCreateGLEntry() {
   return useMutation({
-    mutationFn: async (data: InsertGLEntry) => {
+    mutationFn: async (data: NewGLEntry) => {
       const res = await apiRequest("POST", "/api/gl-entries", data);
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/gl-entries"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/gl-entries"] });
     },
   });
 }
@@ -43,7 +44,7 @@ export function useUpdateGLEntry() {
       return await res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/gl-entries"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/gl-entries"] });
     },
   });
 }
@@ -55,7 +56,7 @@ export function useDeleteGLEntry() {
       return res.ok;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/gl-entries"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/gl-entries"] });
     },
   });
 }

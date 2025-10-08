@@ -7,10 +7,11 @@
  * - プロジェクトデータのバリデーション
  */
 
-import { db } from '../../db';
+import type { NewProject,Project } from '@shared/schema/integrated';
 import { projects } from '@shared/schema/project';
-import { eq, like, desc, asc, and, or } from 'drizzle-orm';
-import type { Project, NewProject } from '@shared/schema/integrated';
+import { and, asc, count,desc, eq, like, ne, or } from 'drizzle-orm';
+
+import { db } from '../../db';
 
 export interface ProjectFilter {
   search?: string;
@@ -89,20 +90,20 @@ export class ProjectRepository {
       }
       
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        query = query.where(and(...conditions)) as any;
       }
     }
     
     // ソート
     const sortColumn = projects[sortBy];
     if (sortOrder === 'asc') {
-      query = query.orderBy(asc(sortColumn));
+      query = query.orderBy(asc(sortColumn)) as any;
     } else {
-      query = query.orderBy(desc(sortColumn));
+      query = query.orderBy(desc(sortColumn)) as any;
     }
     
     // ページネーション
-    query = query.limit(limit).offset(offset);
+    query = query.limit(limit).offset(offset) as any;
     
     return await query;
   }
@@ -163,20 +164,19 @@ export class ProjectRepository {
    */
   async delete(id: string): Promise<boolean> {
     const result = await db.delete(projects).where(eq(projects.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
   
   /**
    * プロジェクトコードの重複チェック
    */
   async isCodeExists(code: string, excludeId?: string): Promise<boolean> {
-    let query = db.select().from(projects).where(eq(projects.code, code));
-    
     if (excludeId) {
-      query = query.where(and(eq(projects.code, code), eq(projects.id, excludeId)));
+      const result = await db.select().from(projects).where(and(eq(projects.code, code), ne(projects.id, excludeId)));
+      return result.length > 0;
     }
     
-    const result = await query;
+    const result = await db.select().from(projects).where(eq(projects.code, code));
     return result.length > 0;
   }
   
@@ -184,8 +184,6 @@ export class ProjectRepository {
    * プロジェクト総数を取得
    */
   async count(filter?: ProjectFilter): Promise<number> {
-    let query = db.select({ count: projects.id }).from(projects);
-    
     if (filter) {
       const conditions = [];
       
@@ -233,11 +231,12 @@ export class ProjectRepository {
       }
       
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        const result = await db.select({ count: count() }).from(projects).where(and(...conditions));
+        return result[0]?.count ?? 0;
       }
     }
     
-    const result = await query;
-    return result.length;
+    const result = await db.select({ count: count() }).from(projects);
+    return result[0]?.count ?? 0;
   }
 }

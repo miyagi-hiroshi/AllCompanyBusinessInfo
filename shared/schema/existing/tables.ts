@@ -6,7 +6,7 @@
  * 外部キー制約は設定せず、文字列参照のみで関連付けます。
  */
 
-import { pgTable, varchar, timestamp, serial, boolean, integer, date, text } from 'drizzle-orm/pg-core';
+import { boolean, integer, pgTable, serial, timestamp, varchar } from "drizzle-orm/pg-core";
 
 // 既存システムのユーザーテーブル（参照専用）
 export const users = pgTable("users", {

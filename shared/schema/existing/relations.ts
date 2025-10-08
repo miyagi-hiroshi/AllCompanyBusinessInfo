@@ -1,5 +1,6 @@
-import { relations } from 'drizzle-orm';
-import { users, employees, departments, sessions } from './tables';
+import { relations } from "drizzle-orm";
+
+import { departments, employees, sessions,users } from "./tables";
 
 // 既存システムのリレーション定義（参照専用、外部キー制約なし）
 export const existingUsersRelations = relations(users, ({ one, many }) => ({

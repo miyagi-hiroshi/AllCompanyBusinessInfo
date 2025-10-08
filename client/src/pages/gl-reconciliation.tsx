@@ -1,15 +1,16 @@
+import { AlertCircle, AlertTriangle,CheckCircle2, Sparkles } from "lucide-react";
 import { useState } from "react";
-import { AlertCircle, CheckCircle2, GitMerge, Sparkles, AlertTriangle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Skeleton } from "@/components/ui/skeleton";
+
 import { ReconciliationStatusBadge } from "@/components/reconciliation-status-badge";
-import { useOrderForecasts } from "@/hooks/useOrderForecasts";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGLEntries } from "@/hooks/useGLEntries";
+import { useOrderForecasts } from "@/hooks/useOrderForecasts";
 import { useReconciliation } from "@/hooks/useReconciliation";
 import { useToast } from "@/hooks/useToast";
 
@@ -51,7 +52,7 @@ export default function GLReconciliationPage() {
       return;
     }
 
-    const period = `${fiscalYear}-${String(month).padStart(2, '0')}`;
+    const period = `${fiscalYear}-${String(month).padStart(2, "0")}`;
     reconcileMutation.mutate(
       {
         period,
@@ -63,8 +64,8 @@ export default function GLReconciliationPage() {
             title: type === "exact" ? "厳格突合完了" : "ファジー突合完了",
             description: "GLデータとの突合が完了しました",
           });
-          refetchOrders();
-          refetchGL();
+          void refetchOrders();
+          void refetchGL();
         },
         onError: () => {
           toast({

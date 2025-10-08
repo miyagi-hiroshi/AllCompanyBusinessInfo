@@ -1,18 +1,19 @@
-import { useState, useMemo, useEffect, useRef } from "react";
+import type { NewOrderForecast,OrderForecast } from "@shared/schema";
 import { FileSpreadsheet } from "lucide-react";
+import { useEffect, useRef,useState } from "react";
+
+import { AdvancedFilterPanel, type FilterState } from "@/components/advanced-filter-panel";
 import { ExcelDataGrid, type GridColumn, type GridRowData } from "@/components/excel-data-grid";
 import { GLReconciliationPanel } from "@/components/gl-reconciliation-panel";
-import { AdvancedFilterPanel, type FilterState } from "@/components/advanced-filter-panel";
 import { KeyboardShortcutsPanel } from "@/components/keyboard-shortcuts-panel";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { ReconciliationStatusBadge } from "@/components/reconciliation-status-badge";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useToast } from "@/hooks/useToast";
-import { useOrderForecasts, useCreateOrderForecast, useUpdateOrderForecast, useDeleteOrderForecast } from "@/hooks/useOrderForecasts";
 import { useGLEntries } from "@/hooks/useGLEntries";
-import { useCustomers, useProjects, useAccountingItems } from "@/hooks/useMasters";
+import { useAccountingItems,useCustomers, useProjects } from "@/hooks/useMasters";
+import { useCreateOrderForecast, useDeleteOrderForecast,useOrderForecasts, useUpdateOrderForecast } from "@/hooks/useOrderForecasts";
 import { useReconciliation } from "@/hooks/useReconciliation";
-import type { OrderForecast, InsertOrderForecast } from "@shared/schema";
+import { useToast } from "@/hooks/useToast";
 
 export default function OrderForecastPage() {
   // Initialize filter with current year and month
@@ -45,7 +46,7 @@ export default function OrderForecastPage() {
   // monthが未定義の場合は現在の月を使用（新規作成時のデフォルト値）
   const getPeriodFromFilter = (filter: FilterState): string => {
     const month = filter.month || new Date().getMonth() + 1;
-    return `${filter.fiscalYear}-${String(month).padStart(2, '0')}`;
+    return `${filter.fiscalYear}-${String(month).padStart(2, "0")}`;
   };
 
   // 現在のフィルタから期間を計算
@@ -54,7 +55,7 @@ export default function OrderForecastPage() {
   // フィルタ変更時にデータを再取得
   const handleFilterChange = (newFilter: FilterState) => {
     setFilter(newFilter);
-    const filterDesc = `${newFilter.fiscalYear}年度${newFilter.month ? ` ${newFilter.month}月` : ''}${newFilter.projectId ? ' (プロジェクト指定)' : ''}`;
+    const filterDesc = `${newFilter.fiscalYear}年度${newFilter.month ? ` ${newFilter.month}月` : ""}${newFilter.projectId ? " (プロジェクト指定)" : ""}`;
     toast({
       title: "フィルタを変更しました",
       description: `${filterDesc}のデータを読み込みました`,
@@ -98,12 +99,12 @@ export default function OrderForecastPage() {
         const now = new Date();
         for (let i = 0; i < 12; i++) {
           const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-          const periodValue = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          const periodValue = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
           periods.push(periodValue);
         }
         return periods.map(p => ({
           value: p,
-          label: `${p.split('-')[0]}年${p.split('-')[1]}月`,
+          label: `${p.split("-")[0]}年${p.split("-")[1]}月`,
         }));
       })(),
     },
@@ -150,7 +151,7 @@ export default function OrderForecastPage() {
   ];
 
   // GridRow形式に変換
-  const gridRows: GridRowData[] = orderForecasts.map((order) => ({
+  const _gridRows: GridRowData[] = orderForecasts.map((order) => ({
     id: order.id,
     projectId: order.projectId,
     projectCode: order.projectCode,
@@ -239,16 +240,16 @@ export default function OrderForecastPage() {
       if (validationErrors.length > 0) {
         toast({
           title: "入力エラー",
-          description: validationErrors.join(', '),
+          description: validationErrors.join(", "),
           variant: "destructive",
         });
         return;
       }
 
       for (const row of modifiedRows) {
-        if ((row.id as string).startsWith("temp-")) {
+        if ((row.id).startsWith("temp-")) {
           // Create new order
-          const newOrder: InsertOrderForecast = {
+          const newOrder: NewOrderForecast = {
             projectId: row.projectId as string,
             projectCode: row.projectCode as string,
             projectName: row.projectName as string,
@@ -268,7 +269,7 @@ export default function OrderForecastPage() {
           const existing = orderForecasts.find((o) => o.id === row.id);
           if (existing) {
             await updateMutation.mutateAsync({
-              id: row.id as string,
+              id: row.id,
               data: {
                 projectId: row.projectId as string,
                 projectCode: row.projectCode as string,
@@ -321,7 +322,7 @@ export default function OrderForecastPage() {
         title: "保存しました",
         description: `${modifiedRows.length}件のデータを保存しました`,
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "保存に失敗しました",
         description: "データの保存中にエラーが発生しました",
@@ -373,7 +374,7 @@ export default function OrderForecastPage() {
         title: `${type === "exact" ? "厳格" : "ファジー"}突合完了`,
         description: `突合済: ${result.totalMatched}件、曖昧一致: ${result.totalFuzzy}件`,
       });
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "突合に失敗しました",
         description: "突合処理中にエラーが発生しました",
@@ -382,7 +383,7 @@ export default function OrderForecastPage() {
     }
   };
 
-  const handleManualMatch = (orderId: string, glId: string) => {
+  const handleManualMatch = (_orderId: string, _glId: string) => {
     // Manual matching would require a separate API endpoint
     toast({
       title: "手動突合",

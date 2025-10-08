@@ -1,10 +1,11 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp,varchar } from "drizzle-orm/pg-core";
 
 // 品目マスタ (Item Master)
 export const items = pgTable("items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   code: text("code").notNull().unique(),
   name: text("name").notNull(),
+  category: text("category"), // 品目カテゴリ（任意）
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

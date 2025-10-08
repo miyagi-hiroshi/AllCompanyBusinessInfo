@@ -7,10 +7,11 @@
  * - 突合処理のためのデータ操作
  */
 
-import { db } from '../../db';
 import { glEntries } from '@shared/schema/glEntry';
-import { eq, like, desc, asc, and, or, gte, lte } from 'drizzle-orm';
 import type { GLEntry, NewGLEntry } from '@shared/schema/integrated';
+import { and, asc, desc, eq, gte, like, lte,or } from 'drizzle-orm';
+
+import { db } from '../../db';
 
 export interface GLEntryFilter {
   search?: string;
@@ -89,20 +90,20 @@ export class GLEntryRepository {
       }
       
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        query = query.where(and(...conditions)) as any;
       }
     }
     
     // ソート
     const sortColumn = glEntries[sortBy];
     if (sortOrder === 'asc') {
-      query = query.orderBy(asc(sortColumn));
+      query = query.orderBy(asc(sortColumn)) as any;
     } else {
-      query = query.orderBy(desc(sortColumn));
+      query = query.orderBy(desc(sortColumn)) as any;
     }
     
     // ページネーション
-    query = query.limit(limit).offset(offset);
+    query = query.limit(limit).offset(offset) as any;
     
     return await query;
   }
@@ -217,7 +218,7 @@ export class GLEntryRepository {
    * GLデータ総数を取得
    */
   async count(filter?: GLEntryFilter): Promise<number> {
-    let query = db.select({ count: glEntries.id }).from(glEntries);
+    const query = db.select({ count: glEntries.id }).from(glEntries);
     
     if (filter) {
       const conditions = [];

@@ -1,15 +1,16 @@
-import { useState, useRef } from 'react';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Upload, Download, FileText, FileSpreadsheet, Database, AlertCircle, CheckCircle } from 'lucide-react';
-import { FileFormat, parseFile, exportToCSV, exportToExcel, exportToJSON, generateTemplate, ImportResult } from '@/lib/importExport';
+import { AlertCircle, CheckCircle,Database, Download, FileSpreadsheet, FileText, Upload } from "lucide-react";
+import { useRef,useState } from "react";
+
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { exportToCSV, exportToExcel, exportToJSON, FileFormat, generateTemplate, ImportResult,parseFile } from "@/lib/importExport";
 
 interface ImportExportDialogProps<T = any> {
   data: T[];
@@ -37,7 +38,7 @@ export function ImportExportDialog<T extends Record<string, any>>({
   // ファイルインポート処理
   const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) return;
+    if (!file) {return;}
 
     setIsImporting(true);
     setImportResult(null);
@@ -46,7 +47,7 @@ export function ImportExportDialog<T extends Record<string, any>>({
       const result = await parseFile<T>(file);
       setImportResult(result);
     } catch (error) {
-      console.error('Import error:', error);
+      console.error("Import error:", error);
     } finally {
       setIsImporting(false);
     }
@@ -83,7 +84,7 @@ export function ImportExportDialog<T extends Record<string, any>>({
 
   // テンプレート生成処理
   const handleGenerateTemplate = () => {
-    if (!sampleData || sampleData.length === 0) return;
+    if (!sampleData || sampleData.length === 0) {return;}
 
     const config = {
       filename: exportFilename,

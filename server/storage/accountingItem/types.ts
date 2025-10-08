@@ -1,5 +1,17 @@
 /**
- * 計上科目マスタに関する型定義
+ * 会計項目マスタに関する型定義
  */
 
-// 現時点でフィルター型は不要だが、将来の拡張用にファイルは残す
+export interface AccountingItemFilter {
+  search?: string;
+  code?: string;
+  name?: string;
+}
+
+export interface AccountingItemSearchOptions {
+  filter?: AccountingItemFilter;
+  limit?: number;
+  offset?: number;
+  sortBy?: 'code' | 'name' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+}

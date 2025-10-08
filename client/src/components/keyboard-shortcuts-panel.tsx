@@ -1,5 +1,6 @@
-import { useState } from "react";
 import { Keyboard } from "lucide-react";
+import { useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -69,7 +70,7 @@ export function KeyboardShortcutsPanel() {
                     <div
                       key={index}
                       className="flex items-center justify-between py-2 border-b last:border-0"
-                      data-testid={`shortcut-${shortcut.keys.join('-')}`}
+                      data-testid={`shortcut-${shortcut.keys.join("-")}`}
                     >
                       <span className="text-sm">{shortcut.description}</span>
                       <div className="flex items-center gap-1">

@@ -1,5 +1,5 @@
-import type { Request, Response, NextFunction } from 'express';
 import crypto from 'crypto';
+import type { NextFunction,Request, Response } from 'express';
 
 /**
  * CSRF保護ミドルウェア
@@ -86,10 +86,11 @@ export class CSRFProtection {
       const token = req.headers['x-csrf-token'] as string;
       
       if (!this.verifyToken(req, token)) {
-        return res.status(403).json({
+        res.status(403).json({
           success: false,
           message: 'CSRFトークンが無効または期限切れです'
         });
+        return;
       }
       
       next();
@@ -109,7 +110,7 @@ export class CSRFProtection {
           success: true,
           data: { token }
         });
-      } catch (error) {
+      } catch (_error) {
         res.status(500).json({
           success: false,
           message: 'CSRFトークンの生成に失敗しました'

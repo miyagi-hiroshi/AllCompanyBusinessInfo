@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp,varchar } from "drizzle-orm/pg-core";
 
 // 計上科目マスタ (Accounting Item Master)
 export const accountingItems = pgTable("accounting_items", {

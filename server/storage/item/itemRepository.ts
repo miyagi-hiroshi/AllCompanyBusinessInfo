@@ -1,62 +1,180 @@
-import { 
-  type Item, 
-  type InsertItem,
-} from "@shared/schema";
-import { randomUUID } from "crypto";
+import type { Item, NewItem } from '@shared/schema/integrated';
+import { items } from '@shared/schema/item';
+import { and, asc, desc, eq, like, or, sql } from 'drizzle-orm';
+
+import { db } from '../../db';
+import type { ItemFilter, ItemSearchOptions } from './types';
 
 /**
- * 品目マスタリポジトリ
+ * アイテムテーブル（items）を操作するリポジトリ
  * 
- * 操作対象テーブル: items
- * 責務: 品目マスタのCRUD操作
+ * @description アイテムマスタのCRUD操作を提供
+ * @table items - アイテムマスタテーブル
  */
 export class ItemRepository {
-  private items: Map<string, Item>;
-
-  constructor() {
-    this.items = new Map();
-    this.initializeMockData();
+  /**
+   * 全てのアイテムを取得
+   * 
+   * @param options - 検索オプション（フィルタ、ページネーション、ソート）
+   * @returns アイテムの配列
+   */
+  async findAll(options: ItemSearchOptions = {}): Promise<Item[]> {
+    const { filter = {}, limit, offset, sortBy = 'createdAt', sortOrder = 'desc' } = options;
+    
+    let query = db.select().from(items);
+    
+    // フィルタリング
+    const conditions = [];
+    if (filter.search) {
+      conditions.push(
+        or(
+          like(items.code, `%${filter.search}%`),
+          like(items.name, `%${filter.search}%`)
+        )
+      );
+    }
+    if (filter.code) {
+      conditions.push(like(items.code, `%${filter.code}%`));
+    }
+    if (filter.name) {
+      conditions.push(like(items.name, `%${filter.name}%`));
+    }
+    if (filter.category) {
+      conditions.push(like(items.category, `%${filter.category}%`));
+    }
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    // ソート
+    const orderColumn = items[sortBy];
+    query = query.orderBy(sortOrder === 'asc' ? asc(orderColumn) : desc(orderColumn)) as any;
+    
+    // ページネーション
+    if (limit !== undefined) {
+      query = query.limit(limit) as any;
+    }
+    if (offset !== undefined) {
+      query = query.offset(offset) as any;
+    }
+    
+    return await query;
   }
 
   /**
-   * モックデータの初期化
+   * アイテムの総数を取得
+   * 
+   * @param filter - フィルタ条件
+   * @returns アイテムの総数
    */
-  private initializeMockData() {
-    const mockItems: Item[] = [
-      { id: "1", code: "I001", name: "製品A", createdAt: new Date() },
-      { id: "2", code: "I002", name: "製品B", createdAt: new Date() },
-      { id: "3", code: "I003", name: "製品C", createdAt: new Date() },
-      { id: "4", code: "I004", name: "サービスD", createdAt: new Date() },
-      { id: "5", code: "I005", name: "部品E", createdAt: new Date() },
-    ];
-    mockItems.forEach(i => this.items.set(i.id, i));
+  async count(filter: ItemFilter = {}): Promise<number> {
+    const conditions = [];
+    if (filter.search) {
+      conditions.push(
+        or(
+          like(items.code, `%${filter.search}%`),
+          like(items.name, `%${filter.search}%`)
+        )
+      );
+    }
+    if (filter.code) {
+      conditions.push(like(items.code, `%${filter.code}%`));
+    }
+    if (filter.name) {
+      conditions.push(like(items.name, `%${filter.name}%`));
+    }
+    if (filter.category) {
+      conditions.push(like(items.category, `%${filter.category}%`));
+    }
+    
+    let query = db.select({ count: sql<number>`count(*)` }).from(items);
+    
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+    
+    const result = await query;
+    return Number(result[0].count);
   }
 
   /**
-   * 全品目を取得
+   * IDでアイテムを取得
+   * 
+   * @param id - アイテムID
+   * @returns アイテム（存在しない場合はnull）
    */
-  async getItems(): Promise<Item[]> {
-    return Array.from(this.items.values());
+  async findById(id: string): Promise<Item | null> {
+    const result = await db.select().from(items).where(eq(items.id, id));
+    return result[0] || null;
   }
 
   /**
-   * IDで品目を取得
+   * コードでアイテムを取得
+   * 
+   * @param code - アイテムコード
+   * @returns アイテム（存在しない場合はnull）
    */
-  async getItem(id: string): Promise<Item | undefined> {
-    return this.items.get(id);
+  async findByCode(code: string): Promise<Item | null> {
+    const result = await db.select().from(items).where(eq(items.code, code));
+    return result[0] || null;
   }
 
   /**
-   * 品目を作成
+   * アイテムを作成
+   * 
+   * @param data - 作成するアイテムデータ
+   * @returns 作成されたアイテム
    */
-  async createItem(data: InsertItem): Promise<Item> {
-    const id = randomUUID();
-    const item: Item = {
-      ...data,
-      id,
-      createdAt: new Date(),
-    };
-    this.items.set(id, item);
-    return item;
+  async create(data: NewItem): Promise<Item> {
+    const result = await db.insert(items).values(data).returning();
+    return result[0];
+  }
+
+  /**
+   * アイテムを更新
+   * 
+   * @param id - アイテムID
+   * @param data - 更新データ
+   * @returns 更新されたアイテム（存在しない場合はnull）
+   */
+  async update(id: string, data: Partial<NewItem>): Promise<Item | null> {
+    const result = await db.update(items)
+      .set(data)
+      .where(eq(items.id, id))
+      .returning();
+    return result[0] || null;
+  }
+
+  /**
+   * アイテムを削除
+   * 
+   * @param id - アイテムID
+   * @returns 削除成功の可否
+   */
+  async delete(id: string): Promise<boolean> {
+    const result = await db.delete(items).where(eq(items.id, id));
+    return (result.rowCount ?? 0) > 0;
+  }
+
+  /**
+   * コードの重複チェック
+   * 
+   * @param code - チェックするコード
+   * @param excludeId - 除外するアイテムID（更新時）
+   * @returns コードが存在するかどうか
+   */
+  async isCodeExists(code: string, excludeId?: string): Promise<boolean> {
+    const conditions = [eq(items.code, code)];
+    
+    if (excludeId) {
+      conditions.push(sql`${items.id} != ${excludeId}`);
+    }
+    
+    const result = await db.select({ id: items.id })
+      .from(items)
+      .where(and(...conditions));
+    
+    return result.length > 0;
   }
 }

@@ -1,4 +1,4 @@
-import { pgTable, varchar, timestamp, serial, boolean } from 'drizzle-orm/pg-core';
+import { boolean,pgTable, serial, timestamp, varchar } from "drizzle-orm/pg-core";
 
 // User storage table
 export const users = pgTable("users", {
@@ -30,7 +30,7 @@ export const userOperationPermissions = pgTable("user_operation_permissions", {
   userId: varchar("user_id").references(() => users.id),
   resourceType: varchar("resource_type").notNull(), // 'employee', 'qualification', 'skill', 'career_history'
   operation: varchar("operation").notNull(), // 'view', 'edit', 'delete', 'create', 'link_user'
-  scope: varchar("scope").notNull().default('own'), // 'own', 'all', 'view', 'none'
+  scope: varchar("scope").notNull().default("own"), // 'own', 'all', 'view', 'none'
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

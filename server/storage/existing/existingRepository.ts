@@ -7,9 +7,10 @@
  * - 外部キー制約なしでの参照
  */
 
+import { departments, employees, sessions,users } from '@shared/schema/existing';
+import { eq } from 'drizzle-orm';
+
 import { db } from '../../db';
-import { users, employees, departments, sessions } from '@shared/schema/existing';
-import { eq, and } from 'drizzle-orm';
 
 // 既存システムのユーザー情報を取得
 export async function getExistingUser(userId: string) {

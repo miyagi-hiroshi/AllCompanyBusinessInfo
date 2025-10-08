@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp } from "drizzle-orm/pg-core";
+import { integer, pgTable, text, timestamp,varchar } from "drizzle-orm/pg-core";
 
 // 突合ログ (Reconciliation Log)
 export const reconciliationLogs = pgTable("reconciliation_logs", {

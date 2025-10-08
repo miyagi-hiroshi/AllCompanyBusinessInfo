@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, date, decimal, timestamp } from "drizzle-orm/pg-core";
+import { date, decimal, pgTable, text, timestamp,varchar } from "drizzle-orm/pg-core";
 
 // GLデータ (General Ledger Data)
 export const glEntries = pgTable("gl_entries", {

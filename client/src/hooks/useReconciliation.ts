@@ -1,4 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
+
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface ReconciliationRequest {
@@ -28,10 +29,10 @@ export function useReconciliation() {
     },
     onSuccess: (_, variables) => {
       // Invalidate both order forecasts and GL entries for the specific period
-      queryClient.invalidateQueries({ 
+      void queryClient.invalidateQueries({ 
         queryKey: ["/api/order-forecasts", variables.period] 
       });
-      queryClient.invalidateQueries({ 
+      void queryClient.invalidateQueries({ 
         queryKey: ["/api/gl-entries", variables.period] 
       });
     },

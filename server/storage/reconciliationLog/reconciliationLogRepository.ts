@@ -7,10 +7,11 @@
  * - 突合結果の統計情報管理
  */
 
-import { db } from '../../db';
+import type { NewReconciliationLog,ReconciliationLog } from '@shared/schema/integrated';
 import { reconciliationLogs } from '@shared/schema/reconciliationLog';
-import { eq, desc, asc, and, gte, lte } from 'drizzle-orm';
-import type { ReconciliationLog, NewReconciliationLog } from '@shared/schema/integrated';
+import { and, asc, count,desc, eq, gte, lte } from 'drizzle-orm';
+
+import { db } from '../../db';
 
 export interface ReconciliationLogFilter {
   period?: string;
@@ -52,20 +53,20 @@ export class ReconciliationLogRepository {
       }
       
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        query = query.where(and(...conditions)) as any;
       }
     }
     
     // ソート
     const sortColumn = reconciliationLogs[sortBy];
     if (sortOrder === 'asc') {
-      query = query.orderBy(asc(sortColumn));
+      query = query.orderBy(asc(sortColumn)) as any;
     } else {
-      query = query.orderBy(desc(sortColumn));
+      query = query.orderBy(desc(sortColumn)) as any;
     }
     
     // ページネーション
-    query = query.limit(limit).offset(offset);
+    query = query.limit(limit).offset(offset) as any;
     
     return await query;
   }
@@ -138,15 +139,13 @@ export class ReconciliationLogRepository {
    */
   async delete(id: string): Promise<boolean> {
     const result = await db.delete(reconciliationLogs).where(eq(reconciliationLogs.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
   
   /**
    * 突合ログ総数を取得
    */
   async count(filter?: ReconciliationLogFilter): Promise<number> {
-    let query = db.select({ count: reconciliationLogs.id }).from(reconciliationLogs);
-    
     if (filter) {
       const conditions = [];
       
@@ -163,12 +162,13 @@ export class ReconciliationLogRepository {
       }
       
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        const result = await db.select({ count: count() }).from(reconciliationLogs).where(and(...conditions));
+        return result[0]?.count ?? 0;
       }
     }
     
-    const result = await query;
-    return result.length;
+    const result = await db.select({ count: count() }).from(reconciliationLogs);
+    return result[0]?.count ?? 0;
   }
   
   /**

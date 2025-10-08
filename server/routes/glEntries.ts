@@ -1,10 +1,11 @@
+import { insertGLEntrySchema } from '@shared/schema/integrated';
 import express, { type Request, Response } from 'express';
 import { z } from 'zod';
+
+import { requireAuth } from '../middleware/auth';
 import { GLEntryService } from '../services/glEntryService';
 import { GLEntryRepository } from '../storage/glEntry';
 import { OrderForecastRepository } from '../storage/orderForecast';
-import { requireAuthIntegrated } from '../middleware/authIntegrated';
-import { insertGLEntrySchema } from '@shared/schema/integrated';
 
 const router = express.Router();
 const glEntryRepository = new GLEntryRepository();
@@ -28,8 +29,8 @@ const searchGLEntrySchema = z.object({
   debitCredit: z.enum(['debit', 'credit']).optional(),
   period: z.string().optional(),
   reconciliationStatus: z.enum(['matched', 'fuzzy', 'unmatched']).optional(),
-  page: z.string().transform(Number).optional().default(1),
-  limit: z.string().transform(Number).optional().default(20),
+  page: z.string().transform(Number).optional().default('1'),
+  limit: z.string().transform(Number).optional().default('20'),
   sortBy: z.enum(['voucherNo', 'transactionDate', 'accountCode', 'amount', 'createdAt']).optional().default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
 });
@@ -38,7 +39,7 @@ const searchGLEntrySchema = z.object({
  * GLデータ一覧取得API
  * GET /api/gl-entries
  */
-router.get('/', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.get('/', requireAuth, async (req: Request, res: Response) => {
   try {
     const query = searchGLEntrySchema.parse(req.query);
     const offset = (query.page - 1) * query.limit;
@@ -105,7 +106,7 @@ router.get('/', requireAuthIntegrated, async (req: Request, res: Response) => {
  * GLデータ詳細取得API
  * GET /api/gl-entries/:id
  */
-router.get('/:id', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.get('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     
@@ -135,7 +136,7 @@ router.get('/:id', requireAuthIntegrated, async (req: Request, res: Response) =>
  * 伝票番号別GLデータ取得API
  * GET /api/gl-entries/voucher/:voucherNo
  */
-router.get('/voucher/:voucherNo', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.get('/voucher/:voucherNo', requireAuth, async (req: Request, res: Response) => {
   try {
     const { voucherNo } = req.params;
     
@@ -158,7 +159,7 @@ router.get('/voucher/:voucherNo', requireAuthIntegrated, async (req: Request, re
  * 期間別GLデータ取得API
  * GET /api/gl-entries/period/:period
  */
-router.get('/period/:period', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.get('/period/:period', requireAuth, async (req: Request, res: Response) => {
   try {
     const { period } = req.params;
     
@@ -181,7 +182,7 @@ router.get('/period/:period', requireAuthIntegrated, async (req: Request, res: R
  * 突合されていないGLデータ取得API
  * GET /api/gl-entries/unmatched
  */
-router.get('/unmatched', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.get('/unmatched', requireAuth, async (req: Request, res: Response) => {
   try {
     const { period } = req.query;
     
@@ -204,7 +205,7 @@ router.get('/unmatched', requireAuthIntegrated, async (req: Request, res: Respon
  * 突合済みGLデータ取得API
  * GET /api/gl-entries/matched
  */
-router.get('/matched', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.get('/matched', requireAuth, async (req: Request, res: Response) => {
   try {
     const { period } = req.query;
     
@@ -227,7 +228,7 @@ router.get('/matched', requireAuthIntegrated, async (req: Request, res: Response
  * GLデータ作成API
  * POST /api/gl-entries
  */
-router.post('/', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.post('/', requireAuth, async (req: Request, res: Response) => {
   try {
     const data = createGLEntrySchema.parse(req.body);
 
@@ -259,35 +260,19 @@ router.post('/', requireAuthIntegrated, async (req: Request, res: Response) => {
  * GLデータ更新API
  * PUT /api/gl-entries/:id
  */
-router.put('/:id', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.put('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const data = updateGLEntrySchema.parse(req.body);
     
-    // GLデータの存在チェック
-    const existingGlEntry = await glEntryRepository.findById(id);
-    if (!existingGlEntry) {
-      return res.status(404).json({
-        success: false,
-        message: 'GLデータが見つかりません',
-      });
-    }
-
-    const glEntry = await glEntryRepository.update(id, data);
-    
-    if (!glEntry) {
-      return res.status(500).json({
-        success: false,
-        message: 'GLデータの更新に失敗しました',
-      });
-    }
+    const glEntry = await glEntryService.updateGLEntry(id, data);
 
     res.json({
       success: true,
       data: glEntry,
       message: 'GLデータが正常に更新されました',
     });
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
@@ -296,10 +281,9 @@ router.put('/:id', requireAuthIntegrated, async (req: Request, res: Response) =>
       });
     }
 
-    console.error('GLデータ更新エラー:', error);
-    res.status(500).json({
+    res.status(error.statusCode || 500).json({
       success: false,
-      message: 'GLデータの更新中にエラーが発生しました',
+      message: error.message || 'GLデータの更新中にエラーが発生しました',
     });
   }
 });
@@ -308,37 +292,20 @@ router.put('/:id', requireAuthIntegrated, async (req: Request, res: Response) =>
  * GLデータ削除API
  * DELETE /api/gl-entries/:id
  */
-router.delete('/:id', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     
-    // GLデータの存在チェック
-    const existingGlEntry = await glEntryRepository.findById(id);
-    if (!existingGlEntry) {
-      return res.status(404).json({
-        success: false,
-        message: 'GLデータが見つかりません',
-      });
-    }
-
-    const deleted = await glEntryRepository.delete(id);
-    
-    if (!deleted) {
-      return res.status(500).json({
-        success: false,
-        message: 'GLデータの削除に失敗しました',
-      });
-    }
+    await glEntryService.deleteGLEntry(id);
 
     res.json({
       success: true,
       message: 'GLデータが正常に削除されました',
     });
-  } catch (error) {
-    console.error('GLデータ削除エラー:', error);
-    res.status(500).json({
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({
       success: false,
-      message: 'GLデータの削除中にエラーが発生しました',
+      message: error.message || 'GLデータの削除中にエラーが発生しました',
     });
   }
 });
@@ -347,7 +314,7 @@ router.delete('/:id', requireAuthIntegrated, async (req: Request, res: Response)
  * 突合ステータス更新API
  * PUT /api/gl-entries/:id/reconciliation-status
  */
-router.put('/:id/reconciliation-status', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.put('/:id/reconciliation-status', requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status, orderMatchId } = req.body;

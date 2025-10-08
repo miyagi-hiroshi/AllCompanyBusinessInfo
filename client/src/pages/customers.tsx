@@ -1,24 +1,8 @@
+import type { Customer, NewCustomer } from "@shared/schema";
+import { useMutation,useQuery } from "@tanstack/react-query";
+import { Download,Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Upload, Pencil, Trash2, Download } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,12 +13,29 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/useToast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import type { Customer, InsertCustomer } from "@shared/schema";
-import { Textarea } from "@/components/ui/textarea";
 
 export default function CustomersPage() {
   const { toast } = useToast();
@@ -43,7 +44,7 @@ export default function CustomersPage() {
   const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
-  const [formData, setFormData] = useState<InsertCustomer>({ code: "", name: "" });
+  const [formData, setFormData] = useState<NewCustomer>({ code: "", name: "" });
   const [csvText, setCsvText] = useState("");
 
   const { data: customers = [], isLoading } = useQuery<Customer[]>({
@@ -51,12 +52,12 @@ export default function CustomersPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: async (data: InsertCustomer) => {
+    mutationFn: async (data: NewCustomer) => {
       const res = await apiRequest("POST", "/api/customers", data);
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       toast({
         title: "成功",
         description: "取引先を作成しました",
@@ -74,12 +75,12 @@ export default function CustomersPage() {
   });
 
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<InsertCustomer> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Partial<NewCustomer> }) => {
       const res = await apiRequest("PUT", `/api/customers/${id}`, data);
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       toast({
         title: "成功",
         description: "取引先を更新しました",
@@ -102,7 +103,7 @@ export default function CustomersPage() {
       await apiRequest("DELETE", `/api/customers/${id}`);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       toast({
         title: "成功",
         description: "取引先を削除しました",
@@ -120,12 +121,12 @@ export default function CustomersPage() {
   });
 
   const importMutation = useMutation({
-    mutationFn: async (data: InsertCustomer[]) => {
+    mutationFn: async (data: NewCustomer[]) => {
       const res = await apiRequest("POST", "/api/customers/import", { data });
       return res.json() as Promise<{ success: boolean; count: number; customers: Customer[] }>;
     },
     onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
       toast({
         title: "成功",
         description: `${response.count}件の取引先をインポートしました`,
@@ -147,7 +148,7 @@ export default function CustomersPage() {
   };
 
   const handleEdit = () => {
-    if (!selectedCustomer) return;
+    if (!selectedCustomer) {return;}
     updateMutation.mutate({
       id: selectedCustomer.id,
       data: formData,
@@ -155,18 +156,18 @@ export default function CustomersPage() {
   };
 
   const handleDelete = () => {
-    if (!selectedCustomer) return;
+    if (!selectedCustomer) {return;}
     deleteMutation.mutate(selectedCustomer.id);
   };
 
   const handleImport = () => {
     try {
       const lines = csvText.trim().split("\n");
-      const data: InsertCustomer[] = [];
+      const data: NewCustomer[] = [];
 
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
-        if (!line) continue;
+        if (!line) {continue;}
 
         const [code, name] = line.split(",").map((s) => s.trim());
         if (code && name) {
@@ -184,7 +185,7 @@ export default function CustomersPage() {
       }
 
       importMutation.mutate(data);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: "エラー",
         description: "CSVの解析に失敗しました",

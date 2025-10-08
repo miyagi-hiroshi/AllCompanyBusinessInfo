@@ -1,11 +1,12 @@
+import { insertProjectSchema } from '@shared/schema/integrated';
 import express, { type Request, Response } from 'express';
 import { z } from 'zod';
+
+import { requireAuth } from '../middleware/auth';
 import { ProjectService } from '../services/projectService';
-import { ProjectRepository } from '../storage/project';
 import { CustomerRepository } from '../storage/customer';
 import { OrderForecastRepository } from '../storage/orderForecast';
-import { requireAuthIntegrated } from '../middleware/authIntegrated';
-import { insertProjectSchema } from '@shared/schema/integrated';
+import { ProjectRepository } from '../storage/project';
 
 const router = express.Router();
 const projectRepository = new ProjectRepository();
@@ -30,8 +31,8 @@ const searchProjectSchema = z.object({
   salesPerson: z.string().optional(),
   serviceType: z.string().optional(),
   analysisType: z.string().optional(),
-  page: z.string().transform(Number).optional().default(1),
-  limit: z.string().transform(Number).optional().default(20),
+  page: z.string().transform(Number).optional().default('1'),
+  limit: z.string().transform(Number).optional().default('20'),
   sortBy: z.enum(['code', 'name', 'fiscalYear', 'createdAt']).optional().default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
 });
@@ -40,7 +41,7 @@ const searchProjectSchema = z.object({
  * プロジェクト一覧取得API
  * GET /api/projects
  */
-router.get('/', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.get('/', requireAuth, async (req: Request, res: Response) => {
   try {
     const query = searchProjectSchema.parse(req.query);
     const offset = (query.page - 1) * query.limit;
@@ -107,7 +108,7 @@ router.get('/', requireAuthIntegrated, async (req: Request, res: Response) => {
  * プロジェクト詳細取得API
  * GET /api/projects/:id
  */
-router.get('/:id', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.get('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     
@@ -137,7 +138,7 @@ router.get('/:id', requireAuthIntegrated, async (req: Request, res: Response) =>
  * 年度別プロジェクト取得API
  * GET /api/projects/fiscal-year/:fiscalYear
  */
-router.get('/fiscal-year/:fiscalYear', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.get('/fiscal-year/:fiscalYear', requireAuth, async (req: Request, res: Response) => {
   try {
     const { fiscalYear } = req.params;
     const fiscalYearNum = parseInt(fiscalYear);
@@ -168,7 +169,7 @@ router.get('/fiscal-year/:fiscalYear', requireAuthIntegrated, async (req: Reques
  * 顧客別プロジェクト取得API
  * GET /api/projects/customer/:customerId
  */
-router.get('/customer/:customerId', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.get('/customer/:customerId', requireAuth, async (req: Request, res: Response) => {
   try {
     const { customerId } = req.params;
     
@@ -191,10 +192,10 @@ router.get('/customer/:customerId', requireAuthIntegrated, async (req: Request, 
  * プロジェクト作成API
  * POST /api/projects
  */
-router.post('/', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.post('/', requireAuth, async (req: Request, res: Response) => {
   try {
     const data = createProjectSchema.parse(req.body);
-    const user = (req as any).user;
+    const _user = (req as any).user;
     
     // プロジェクトコードの重複チェック
     const existingProject = await projectRepository.findByCode(data.code);
@@ -233,46 +234,19 @@ router.post('/', requireAuthIntegrated, async (req: Request, res: Response) => {
  * プロジェクト更新API
  * PUT /api/projects/:id
  */
-router.put('/:id', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.put('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const data = updateProjectSchema.parse(req.body);
     
-    // プロジェクトの存在チェック
-    const existingProject = await projectRepository.findById(id);
-    if (!existingProject) {
-      return res.status(404).json({
-        success: false,
-        message: 'プロジェクトが見つかりません',
-      });
-    }
-
-    // プロジェクトコードの重複チェック（更新時）
-    if (data.code && data.code !== existingProject.code) {
-      const duplicateProject = await projectRepository.findByCode(data.code);
-      if (duplicateProject) {
-        return res.status(409).json({
-          success: false,
-          message: 'プロジェクトコードが既に存在します',
-        });
-      }
-    }
-
-    const project = await projectRepository.update(id, data);
-    
-    if (!project) {
-      return res.status(500).json({
-        success: false,
-        message: 'プロジェクトの更新に失敗しました',
-      });
-    }
+    const project = await projectService.updateProject(id, data);
 
     res.json({
       success: true,
       data: project,
       message: 'プロジェクトが正常に更新されました',
     });
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
@@ -281,10 +255,9 @@ router.put('/:id', requireAuthIntegrated, async (req: Request, res: Response) =>
       });
     }
 
-    console.error('プロジェクト更新エラー:', error);
-    res.status(500).json({
+    res.status(error.statusCode || 500).json({
       success: false,
-      message: 'プロジェクトの更新中にエラーが発生しました',
+      message: error.message || 'プロジェクトの更新中にエラーが発生しました',
     });
   }
 });
@@ -293,37 +266,20 @@ router.put('/:id', requireAuthIntegrated, async (req: Request, res: Response) =>
  * プロジェクト削除API
  * DELETE /api/projects/:id
  */
-router.delete('/:id', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     
-    // プロジェクトの存在チェック
-    const existingProject = await projectRepository.findById(id);
-    if (!existingProject) {
-      return res.status(404).json({
-        success: false,
-        message: 'プロジェクトが見つかりません',
-      });
-    }
-
-    const deleted = await projectRepository.delete(id);
-    
-    if (!deleted) {
-      return res.status(500).json({
-        success: false,
-        message: 'プロジェクトの削除に失敗しました',
-      });
-    }
+    await projectService.deleteProject(id);
 
     res.json({
       success: true,
       message: 'プロジェクトが正常に削除されました',
     });
-  } catch (error) {
-    console.error('プロジェクト削除エラー:', error);
-    res.status(500).json({
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({
       success: false,
-      message: 'プロジェクトの削除中にエラーが発生しました',
+      message: error.message || 'プロジェクトの削除中にエラーが発生しました',
     });
   }
 });
@@ -332,12 +288,12 @@ router.delete('/:id', requireAuthIntegrated, async (req: Request, res: Response)
  * プロジェクトコード重複チェックAPI
  * GET /api/projects/check-code/:code
  */
-router.get('/check-code/:code', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.get('/check-code/:code', requireAuth, async (req: Request, res: Response) => {
   try {
     const { code } = req.params;
     const { excludeId } = req.query;
     
-    const exists = await projectRepository.isCodeExists(code, excludeId as string);
+    const exists = await projectService.checkCodeExists(code, excludeId as string);
     
     res.json({
       success: true,
@@ -346,11 +302,10 @@ router.get('/check-code/:code', requireAuthIntegrated, async (req: Request, res:
         exists,
       },
     });
-  } catch (error) {
-    console.error('プロジェクトコード重複チェックエラー:', error);
-    res.status(500).json({
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({
       success: false,
-      message: 'プロジェクトコードの重複チェック中にエラーが発生しました',
+      message: error.message || 'プロジェクトコードの重複チェック中にエラーが発生しました',
     });
   }
 });

@@ -1,9 +1,10 @@
-import { ReconciliationLogRepository } from '../storage/reconciliationLog';
-import { OrderForecastRepository } from '../storage/orderForecast';
-import { GLEntryRepository } from '../storage/glEntry';
-import { AppError } from '../middleware/errorHandler';
-import { ReconciliationLog, OrderForecast, GLEntry } from '@shared/schema/integrated';
+import { GLEntry,OrderForecast, ReconciliationLog } from '@shared/schema/integrated';
+
 import { db } from '../db';
+import { AppError } from '../middleware/errorHandler';
+import { GLEntryRepository } from '../storage/glEntry';
+import { OrderForecastRepository } from '../storage/orderForecast';
+import { ReconciliationLogRepository } from '../storage/reconciliationLog';
 
 /**
  * 突合処理管理サービスクラス
@@ -58,7 +59,7 @@ export class ReconciliationService {
       );
 
       // トランザクション内で突合結果を保存
-      const reconciliationLog = await db.transaction(async (tx) => {
+      const reconciliationLog = await db.transaction(async (_tx) => {
         // 突合ログの作成
         const log = await this.reconciliationLogRepository.create({
           period,
@@ -195,14 +196,17 @@ export class ReconciliationService {
   }> {
     try {
       const statistics = await this.reconciliationLogRepository.getStatistics();
+      
+      // 最新の実行日時を取得
+      const latestLog = await this.getLatestReconciliationLog();
 
       return {
-        totalExecutions: statistics.totalExecutions,
+        totalExecutions: statistics.totalLogs,
         totalMatched: statistics.totalMatched,
         totalFuzzyMatched: statistics.totalFuzzyMatched,
         totalUnmatched: statistics.totalUnmatched,
         averageMatchRate: statistics.averageMatchRate,
-        lastExecutionDate: statistics.lastExecutionDate,
+        lastExecutionDate: latestLog ? latestLog.executedAt : null,
       };
     } catch (error) {
       console.error('突合統計情報取得エラー:', error);
@@ -270,15 +274,15 @@ export class ReconciliationService {
       // マッチが見つかった場合
       if (bestMatch && bestScore >= fuzzyThreshold) {
         // トランザクション内で突合ステータスを更新
-        await db.transaction(async (tx) => {
+        await db.transaction(async (_tx) => {
           await Promise.all([
             this.orderForecastRepository.updateReconciliationStatus(
               order.id,
               matchType === 'exact' ? 'matched' : 'fuzzy',
-              bestMatch!.id
+              bestMatch.id
             ),
             this.glEntryRepository.updateReconciliationStatus(
-              bestMatch!.id,
+              bestMatch.id,
               matchType === 'exact' ? 'matched' : 'fuzzy',
               order.id
             ),
@@ -293,7 +297,7 @@ export class ReconciliationService {
         }
 
         // マッチしたGLデータを未突合リストから削除
-        const index = unmatchedGl.findIndex(gl => gl.id === bestMatch!.id);
+        const index = unmatchedGl.findIndex(gl => gl.id === bestMatch.id);
         if (index !== -1) {
           unmatchedGl.splice(index, 1);
         }

@@ -1,11 +1,12 @@
-import { relations } from 'drizzle-orm';
-import { customers } from '../customer/tables';
-import { items } from '../item/tables';
-import { projects } from '../project/tables';
-import { accountingItems } from '../accountingItem/tables';
-import { orderForecasts } from '../orderForecast/tables';
-import { glEntries } from '../glEntry/tables';
-import { reconciliationLogs } from '../reconciliationLog/tables';
+import { relations } from "drizzle-orm";
+
+import { accountingItems } from "../accountingItem/tables";
+import { customers } from "../customer/tables";
+import { glEntries } from "../glEntry/tables";
+import { items } from "../item/tables";
+import { orderForecasts } from "../orderForecast/tables";
+import { projects } from "../project/tables";
+import { reconciliationLogs } from "../reconciliationLog/tables";
 
 // 業務データのリレーション定義
 export const customersRelations = relations(customers, ({ many }) => ({
@@ -13,7 +14,7 @@ export const customersRelations = relations(customers, ({ many }) => ({
   orderForecasts: many(orderForecasts),
 }));
 
-export const itemsRelations = relations(items, ({ many }) => ({
+export const itemsRelations = relations(items, ({ many: _many }) => ({
   // 品目マスタのリレーション（必要に応じて追加）
 }));
 
@@ -60,6 +61,6 @@ export const glEntriesRelations = relations(glEntries, ({ one }) => ({
   }),
 }));
 
-export const reconciliationLogsRelations = relations(reconciliationLogs, ({ many }) => ({
+export const reconciliationLogsRelations = relations(reconciliationLogs, ({ many: _many }) => ({
   // 突合ログのリレーション（必要に応じて追加）
 }));

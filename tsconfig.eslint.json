@@ -1,0 +1,31 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    // ESLint用の最適化設定
+    "noEmit": true,
+    "allowJs": true,
+    "checkJs": false,
+    "jsx": "preserve",
+
+    // プロジェクト全体の型を広くカバー
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+
+    // type-aware ESLint用の最適化
+    "skipLibCheck": true,
+    "isolatedModules": true
+  },
+  "include": [
+    "client/src/**/*",
+    "server/**/*",
+    "shared/**/*",
+    "*.config.{ts,js}",
+    "*.config.js",
+    "eslint.config.js",
+    "drizzle.config.ts",
+    "postcss.config.js",
+    "tailwind.config.ts",
+    "vite.config.ts"
+  ],
+  "exclude": ["node_modules", "build", "dist", "**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}"]
+}

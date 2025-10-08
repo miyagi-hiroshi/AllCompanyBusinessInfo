@@ -10,18 +10,18 @@ async function throwIfResNotOk(res: Response) {
 export async function apiRequest(
   method: string,
   url: string,
-  data?: unknown | undefined,
+  data?: unknown  ,
 ): Promise<Response> {
   // セッションIDを取得
-  const sessionId = localStorage.getItem('sessionId');
+  const sessionId = localStorage.getItem("sessionId");
   
   // ヘッダーを構築
   const headers: Record<string, string> = {};
   if (data) {
-    headers['Content-Type'] = 'application/json';
+    headers["Content-Type"] = "application/json";
   }
   if (sessionId) {
-    headers['Authorization'] = `Bearer ${sessionId}`;
+    headers["Authorization"] = `Bearer ${sessionId}`;
   }
 
   const res = await fetch(url, {
@@ -42,15 +42,15 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     // セッションIDを取得
-    const sessionId = localStorage.getItem('sessionId');
+    const sessionId = localStorage.getItem("sessionId");
     
     // ヘッダーを構築
     const headers: Record<string, string> = {};
     if (sessionId) {
-      headers['Authorization'] = `Bearer ${sessionId}`;
+      headers["Authorization"] = `Bearer ${sessionId}`;
     }
 
-    const res = await fetch(queryKey.join("/") as string, {
+    const res = await fetch(queryKey.join("/"), {
       headers,
       credentials: "include",
     });

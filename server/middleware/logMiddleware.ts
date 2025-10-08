@@ -1,4 +1,5 @@
-import type { Request, Response, NextFunction } from 'express';
+import type { NextFunction,Request, Response } from 'express';
+
 import { sanitizeLogData } from './security';
 
 /**
@@ -160,7 +161,7 @@ export function logLoginAttempt(req: Request, success: boolean, userId?: string)
  * @param ipAddress - IPアドレス
  * @param userId - ユーザーID
  */
-export function detectLoginFailures(ipAddress: string, userId?: number): void {
+export function detectLoginFailures(_ipAddress: string, _userId?: number): void {
   // TODO: 実装予定 - ログイン失敗検知
 }
 
@@ -171,7 +172,7 @@ export function detectLoginFailures(ipAddress: string, userId?: number): void {
  * @param userId - ユーザーID
  * @param ipAddress - IPアドレス
  */
-export function detectAbnormalIP(userId: number, ipAddress: string): void {
+export function detectAbnormalIP(_userId: number, _ipAddress: string): void {
   // TODO: 実装予定 - 異常IP検知
 }
 
@@ -182,7 +183,7 @@ export function detectAbnormalIP(userId: number, ipAddress: string): void {
  * @param userId - ユーザーID
  * @param recordCount - エクスポート件数
  */
-export function detectMassExport(userId: number, recordCount: number): void {
+export function detectMassExport(_userId: number, _recordCount: number): void {
   // TODO: 実装予定 - 大量エクスポート検知
 }
 
@@ -192,7 +193,7 @@ export function detectMassExport(userId: number, recordCount: number): void {
  * @param event - イベント名
  * @param data - 送信データ
  */
-export function sendWebSocketNotification(event: string, data: any): void {
+export function sendWebSocketNotification(_event: string, _data: any): void {
   // TODO: 実装予定 - WebSocket通知送信
 }
 
@@ -202,6 +203,6 @@ export function sendWebSocketNotification(event: string, data: any): void {
  * @param alertType - アラート種別
  * @param details - 詳細情報
  */
-export function sendSecurityAlert(alertType: string, details: any): void {
+export function sendSecurityAlert(_alertType: string, _details: any): void {
   // TODO: 実装予定 - セキュリティアラート発報
 }

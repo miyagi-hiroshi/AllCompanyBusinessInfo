@@ -1,0 +1,23 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    // サーバー専用設定
+    "target": "ES2022",
+    "lib": ["ES2022"],
+    "types": ["node"],
+
+    // サーバー用のパス設定
+    "baseUrl": ".",
+    "paths": {
+      "@shared/*": ["../shared/*"]
+    },
+
+    // サーバー用の最適化
+    "moduleResolution": "node",
+    "allowImportingTsExtensions": false,
+    "noEmit": false,
+    "outDir": "../dist/server"
+  },
+  "include": ["**/*", "../shared/**/*"],
+  "exclude": ["node_modules", "**/*.test.ts", "**/*.spec.ts"]
+}

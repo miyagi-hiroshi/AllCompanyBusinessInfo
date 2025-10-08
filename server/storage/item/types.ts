@@ -1,5 +1,18 @@
 /**
- * 品目マスタに関する型定義
+ * アイテムマスタに関する型定義
  */
 
-// 現時点でフィルター型は不要だが、将来の拡張用にファイルは残す
+export interface ItemFilter {
+  search?: string;
+  code?: string;
+  name?: string;
+  category?: string;
+}
+
+export interface ItemSearchOptions {
+  filter?: ItemFilter;
+  limit?: number;
+  offset?: number;
+  sortBy?: 'code' | 'name' | 'category' | 'createdAt';
+  sortOrder?: 'asc' | 'desc';
+}

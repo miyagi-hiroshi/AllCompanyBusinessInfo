@@ -1,6 +1,9 @@
+import type { GLEntry,OrderForecast } from "@shared/schema";
+import { AlertCircle, CheckCircle2, GitMerge, Sparkles } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -10,9 +13,8 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, CheckCircle2, GitMerge, Sparkles, TrendingUp } from "lucide-react";
+
 import { ReconciliationStatusBadge } from "./reconciliation-status-badge";
-import type { OrderForecast, GLEntry } from "@shared/schema";
 
 interface GLReconciliationPanelProps {
   period: string;
@@ -27,7 +29,7 @@ export function GLReconciliationPanel({
   orderForecasts,
   glEntries,
   onReconcile,
-  onManualMatch,
+  onManualMatch: _onManualMatch,
 }: GLReconciliationPanelProps) {
   const [open, setOpen] = useState(false);
 

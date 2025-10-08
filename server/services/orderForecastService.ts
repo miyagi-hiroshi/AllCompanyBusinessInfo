@@ -1,9 +1,10 @@
+import { CreateOrderForecastData, OrderForecast, OrderForecastFilter,UpdateOrderForecastData } from '@shared/schema/integrated';
+
+// import { db } from '../db'; // 未使用のためコメントアウト
+import { AppError } from '../middleware/errorHandler';
+import { GLEntryRepository } from '../storage/glEntry';
 import { OrderForecastRepository } from '../storage/orderForecast';
 import { ProjectRepository } from '../storage/project';
-import { GLEntryRepository } from '../storage/glEntry';
-import { AppError } from '../middleware/errorHandler';
-import { CreateOrderForecastData, UpdateOrderForecastData, OrderForecast, OrderForecastFilter } from '@shared/schema/integrated';
-import { db } from '../db';
 
 /**
  * 受発注データ管理サービスクラス

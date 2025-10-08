@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, timestamp } from "drizzle-orm/pg-core";
+import { integer, pgTable, text, timestamp,varchar } from "drizzle-orm/pg-core";
 
 // プロジェクトマスタ (Project Master)
 export const projects = pgTable("projects", {

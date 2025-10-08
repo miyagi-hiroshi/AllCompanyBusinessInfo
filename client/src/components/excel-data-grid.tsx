@@ -1,11 +1,13 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { Copy, Plus, Save, Search,Trash2 } from "lucide-react";
+import { useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
-import { cn } from "@/lib/utils";
-import { Input } from "@/components/ui/input";
+
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Copy, Save, Search } from "lucide-react";
-import { AutocompleteSelect, type AutocompleteOption } from "./autocomplete-select";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/useToast";
+import { cn } from "@/lib/utils";
+
+import { type AutocompleteOption,AutocompleteSelect } from "./autocomplete-select";
 
 export interface GridColumn {
   key: string;
@@ -179,7 +181,7 @@ export function ExcelDataGrid({
     rowIndex: number,
     colKey: string
   ) => {
-    if (!activeCell) return;
+    if (!activeCell) {return;}
 
     const colIndex = columns.findIndex((col) => col.key === colKey);
 
@@ -356,7 +358,7 @@ export function ExcelDataGrid({
         {isEditing ? (
           <Input
             type={column.type === "number" ? "number" : column.type === "date" ? "date" : "text"}
-            value={typeof value === 'boolean' ? String(value) : (value || "")}
+            value={typeof value === "boolean" ? String(value) : (value || "")}
             onChange={(e) => handleCellChange(rowIndex, column.key, e.target.value)}
             onBlur={() => setEditingCell(null)}
             autoFocus

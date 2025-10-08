@@ -1,6 +1,7 @@
-import { z } from 'zod';
-import { createInsertSchema, createSelectSchema } from 'drizzle-zod';
-import { employees } from './tables';
+import { createInsertSchema, createSelectSchema } from "drizzle-zod";
+import { z } from "zod";
+
+import { employees } from "./tables";
 
 // Employees
 export const selectEmployeeSchema = createSelectSchema(employees);

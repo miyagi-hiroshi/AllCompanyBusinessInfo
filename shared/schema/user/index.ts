@@ -1,3 +1,3 @@
-export * from './tables';
-export * from './relations';
-export * from './types';
+export * from "./relations";
+export * from "./tables";
+export * from "./types";

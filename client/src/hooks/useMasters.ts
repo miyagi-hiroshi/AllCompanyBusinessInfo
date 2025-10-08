@@ -1,5 +1,5 @@
+import type { AccountingItem,Customer, Item, Project } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
-import type { Customer, Item, Project, AccountingItem } from "@shared/schema";
 
 export function useCustomers() {
   return useQuery<Customer[]>({

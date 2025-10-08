@@ -1,10 +1,11 @@
 import express, { type Request, Response } from 'express';
 import { z } from 'zod';
+
+import { requireAuth } from '../middleware/auth';
 import { ReconciliationService } from '../services/reconciliationService';
-import { ReconciliationLogRepository } from '../storage/reconciliationLog';
-import { OrderForecastRepository } from '../storage/orderForecast';
 import { GLEntryRepository } from '../storage/glEntry';
-import { requireAuthIntegrated } from '../middleware/authIntegrated';
+import { OrderForecastRepository } from '../storage/orderForecast';
+import { ReconciliationLogRepository } from '../storage/reconciliationLog';
 
 const router = express.Router();
 const reconciliationLogRepository = new ReconciliationLogRepository();
@@ -39,10 +40,10 @@ const searchReconciliationLogSchema = z.object({
  * 突合実行API
  * POST /api/reconciliation/execute
  */
-router.post('/execute', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.post('/execute', requireAuth, async (req: Request, res: Response) => {
   try {
     const { period, fuzzyThreshold, dateTolerance, amountTolerance } = executeReconciliationSchema.parse(req.body);
-    const user = (req as any).user;
+    const _user = (req as any).user;
 
     // 突合処理の実行（サービス層を使用）
     const result = await reconciliationService.executeReconciliation(
@@ -78,7 +79,7 @@ router.post('/execute', requireAuthIntegrated, async (req: Request, res: Respons
  * 突合ログ一覧取得API
  * GET /api/reconciliation/logs
  */
-router.get('/logs', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.get('/logs', requireAuth, async (req: Request, res: Response) => {
   try {
     const query = searchReconciliationLogSchema.parse(req.query);
     const offset = (query.page - 1) * query.limit;
@@ -126,7 +127,7 @@ router.get('/logs', requireAuthIntegrated, async (req: Request, res: Response) =
  * 突合ログ詳細取得API
  * GET /api/reconciliation/logs/:id
  */
-router.get('/logs/:id', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.get('/logs/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     
@@ -149,7 +150,7 @@ router.get('/logs/:id', requireAuthIntegrated, async (req: Request, res: Respons
  * 最新突合ログ取得API
  * GET /api/reconciliation/logs/latest
  */
-router.get('/logs/latest', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.get('/logs/latest', requireAuth, async (req: Request, res: Response) => {
   try {
     const { period } = req.query;
     
@@ -172,7 +173,7 @@ router.get('/logs/latest', requireAuthIntegrated, async (req: Request, res: Resp
  * 突合統計情報取得API
  * GET /api/reconciliation/statistics
  */
-router.get('/statistics', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.get('/statistics', requireAuth, async (req: Request, res: Response) => {
   try {
     const statistics = await reconciliationService.getReconciliationStatistics();
 

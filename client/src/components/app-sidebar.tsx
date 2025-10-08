@@ -1,18 +1,19 @@
-import { Home, BarChart3, FileText, Users, Calendar, Building2, DollarSign, TrendingUp, FolderKanban, GitMerge, LogOut, User } from "lucide-react";
+import { BarChart3, Building2, DollarSign, FileText, FolderKanban, GitMerge, Home, LogOut, TrendingUp, User,Users } from "lucide-react";
 import { useLocation } from "wouter";
-import { useAuth } from "@/hooks/useAuth";
+
 import { Button } from "@/components/ui/button";
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarFooter,
 } from "@/components/ui/sidebar";
+import { useAuth } from "@/hooks/useAuth";
 
 const menuItems = {
   analysis: [
@@ -85,7 +86,7 @@ export function AppSidebar() {
                   <SidebarMenuButton 
                     asChild
                     isActive={location === item.url}
-                    data-testid={`menu-${item.url.replace('/', '') || 'dashboard'}`}
+                    data-testid={`menu-${item.url.replace("/", "") || "dashboard"}`}
                   >
                     <a href={item.url} onClick={(e) => {
                       e.preventDefault();
@@ -111,7 +112,7 @@ export function AppSidebar() {
                   <SidebarMenuButton 
                     asChild
                     isActive={location === item.url}
-                    data-testid={`menu-${item.url.replace('/', '')}`}
+                    data-testid={`menu-${item.url.replace("/", "")}`}
                   >
                     <a href={item.url} onClick={(e) => {
                       e.preventDefault();
@@ -137,7 +138,7 @@ export function AppSidebar() {
                   <SidebarMenuButton 
                     asChild
                     isActive={location === item.url}
-                    data-testid={`menu-${item.url.replace('/', '')}`}
+                    data-testid={`menu-${item.url.replace("/", "")}`}
                   >
                     <a href={item.url} onClick={(e) => {
                       e.preventDefault();
@@ -161,7 +162,7 @@ export function AppSidebar() {
                 <SidebarMenuItem>
                   <div className="flex items-center gap-2 px-2 py-1 text-sm text-muted-foreground">
                     <User className="h-4 w-4" />
-                    <span className="truncate">{user?.name}</span>
+                    <span className="truncate">{user ? `${user.firstName} ${user.lastName}`.trim() : "User"}</span>
                   </div>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
@@ -173,7 +174,7 @@ export function AppSidebar() {
                     disabled={isLoggingOut}
                   >
                     <LogOut className="h-4 w-4" />
-                    <span>{isLoggingOut ? 'ログアウト中...' : 'ログアウト'}</span>
+                    <span>{isLoggingOut ? "ログアウト中..." : "ログアウト"}</span>
                   </Button>
                 </SidebarMenuItem>
               </SidebarMenu>

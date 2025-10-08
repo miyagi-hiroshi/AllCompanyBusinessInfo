@@ -1,49 +1,27 @@
 import express, { type Request, Response } from 'express';
 import { z } from 'zod';
 
+import { isAuthenticated } from '../middleware/auth';
+import { getExistingEmployeeByUserId,getExistingUserByEmail } from '../storage/existing';
+
 const router = express.Router();
-
-// ダミーユーザーデータ（メモリ実装）
-const users = [
-  {
-    id: '1',
-    employeeId: 'EMP001',
-    name: '管理者',
-    email: 'admin@example.com',
-    password: 'password123', // 実際の実装ではハッシュ化が必要
-    role: 'admin',
-    permissions: ['read', 'write', 'delete', 'admin']
-  },
-  {
-    id: '2',
-    employeeId: 'EMP002',
-    name: '一般ユーザー',
-    email: 'user@example.com',
-    password: 'password123',
-    role: 'user',
-    permissions: ['read', 'write']
-  }
-];
-
-// セッション管理（メモリ実装）
-const sessions = new Map<string, { userId: string; expiresAt: Date }>();
 
 // ログインスキーマ
 const loginSchema = z.object({
-  email: z.string().email('有効なメールアドレスを入力してください'),
-  password: z.string().min(1, 'パスワードを入力してください')
+  email: z.string().email(),
+  password: z.string().min(1),
 });
 
 /**
  * ログインAPI
  * POST /api/auth/login
  */
-router.post('/login', (req: Request, res: Response) => {
+router.post('/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = loginSchema.parse(req.body);
     
-    // ユーザー検索
-    const user = users.find(u => u.email === email && u.password === password);
+    // 既存システムからユーザー情報を取得
+    const user = await getExistingUserByEmail(email);
     
     if (!user) {
       return res.status(401).json({
@@ -51,41 +29,56 @@ router.post('/login', (req: Request, res: Response) => {
         message: 'メールアドレスまたはパスワードが正しくありません'
       });
     }
+
+    // 簡易的なパスワードチェック（実際の実装では既存システムの認証方式を使用）
+    // ここでは既存システムの認証APIを呼び出すか、直接データベースをチェック
+    if (password !== 'password') { // 実際の実装では適切な認証処理
+      return res.status(401).json({
+        success: false,
+        message: 'メールアドレスまたはパスワードが正しくありません'
+      });
+    }
+
+    // 既存システムから従業員情報を取得
+    const employee = await getExistingEmployeeByUserId(user.id);
     
-    // セッション作成
-    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2時間
-    
-    sessions.set(sessionId, { userId: user.id, expiresAt });
-    
-    // レスポンス
+    // セッションIDとしてユーザーIDを使用（実際の実装では適切なセッション管理）
+    const sessionId = user.id;
+
     res.json({
       success: true,
       data: {
         user: {
           id: user.id,
-          employeeId: user.employeeId,
-          name: user.name,
           email: user.email,
-          role: user.role,
-          permissions: user.permissions
+          firstName: user.firstName,
+          lastName: user.lastName,
+          isFirstLogin: user.isFirstLogin,
         },
-        sessionId
-      }
+        employee: employee ? {
+          id: employee.id,
+          employeeId: employee.employeeId,
+          firstName: employee.firstName,
+          lastName: employee.lastName,
+          departmentId: employee.departmentId,
+          status: employee.status,
+        } : null,
+        sessionId,
+      },
     });
-    
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
         message: '入力値が正しくありません',
-        errors: error.errors
+        errors: error.errors,
       });
     }
-    
+
+    console.error('ログインエラー:', error);
     res.status(500).json({
       success: false,
-      message: 'サーバーエラーが発生しました'
+      message: 'ログイン処理中にエラーが発生しました',
     });
   }
 });
@@ -94,82 +87,48 @@ router.post('/login', (req: Request, res: Response) => {
  * ログアウトAPI
  * POST /api/auth/logout
  */
-router.post('/logout', (req: Request, res: Response) => {
+router.post('/logout', isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const sessionId = req.headers.authorization?.replace('Bearer ', '');
-    
-    if (sessionId && sessions.has(sessionId)) {
-      sessions.delete(sessionId);
-    }
-    
+    // セッションの削除処理（実際の実装では既存システムのセッション管理を使用）
     res.json({
       success: true,
-      message: 'ログアウトしました'
+      message: 'ログアウトしました',
     });
-    
   } catch (error) {
+    console.error('ログアウトエラー:', error);
     res.status(500).json({
       success: false,
-      message: 'サーバーエラーが発生しました'
+      message: 'ログアウト処理中にエラーが発生しました',
     });
   }
 });
 
 /**
- * 認証状態確認API
+ * ユーザー情報取得API
  * GET /api/auth/me
  */
-router.get('/me', (req: Request, res: Response) => {
+router.get('/me', isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const sessionId = req.headers.authorization?.replace('Bearer ', '');
-    
-    if (!sessionId || !sessions.has(sessionId)) {
-      return res.status(401).json({
-        success: false,
-        message: '認証されていません'
-      });
-    }
-    
-    const session = sessions.get(sessionId)!;
-    
-    // セッション期限チェック
-    if (session.expiresAt < new Date()) {
-      sessions.delete(sessionId);
-      return res.status(401).json({
-        success: false,
-        message: 'セッションの有効期限が切れています'
-      });
-    }
-    
-    // ユーザー情報取得
-    const user = users.find(u => u.id === session.userId);
-    
-    if (!user) {
-      sessions.delete(sessionId);
-      return res.status(401).json({
-        success: false,
-        message: 'ユーザーが見つかりません'
-      });
-    }
+    const user = (req as any).user;
     
     res.json({
       success: true,
       data: {
         user: {
           id: user.id,
-          employeeId: user.employeeId,
-          name: user.name,
           email: user.email,
-          role: user.role,
-          permissions: user.permissions
-        }
-      }
+          firstName: user.firstName,
+          lastName: user.lastName,
+          isFirstLogin: user.isFirstLogin,
+        },
+        employee: user.employee,
+      },
     });
-    
   } catch (error) {
+    console.error('ユーザー情報取得エラー:', error);
     res.status(500).json({
       success: false,
-      message: 'サーバーエラーが発生しました'
+      message: 'ユーザー情報の取得中にエラーが発生しました',
     });
   }
 });
@@ -178,21 +137,25 @@ router.get('/me', (req: Request, res: Response) => {
  * CSRFトークン取得API
  * GET /api/auth/csrf-token
  */
-router.get('/csrf-token', (req: Request, res: Response) => {
+router.get('/csrf-token', async (req: Request, res: Response) => {
   try {
-    const token = `csrf_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    // 簡易的なCSRFトークン生成（実際の実装では適切なCSRF保護を使用）
+    const csrfToken = Math.random().toString(36).substring(2, 15);
     
     res.json({
       success: true,
-      data: { token }
+      data: {
+        csrfToken,
+      },
     });
-    
   } catch (error) {
+    console.error('CSRFトークン生成エラー:', error);
     res.status(500).json({
       success: false,
-      message: 'サーバーエラーが発生しました'
+      message: 'CSRFトークンの生成中にエラーが発生しました',
     });
   }
 });
 
 export default router;
+

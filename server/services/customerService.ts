@@ -1,8 +1,9 @@
+import { CreateCustomerData, Customer, CustomerFilter,UpdateCustomerData } from '@shared/schema/integrated';
+
+// import { db } from '../db'; // 未使用のためコメントアウト
+import { AppError } from '../middleware/errorHandler';
 import { CustomerRepository } from '../storage/customer';
 import { ProjectRepository } from '../storage/project';
-import { AppError } from '../middleware/errorHandler';
-import { CreateCustomerData, UpdateCustomerData, Customer, CustomerFilter } from '@shared/schema/integrated';
-import { db } from '../db';
 
 /**
  * 顧客管理サービスクラス

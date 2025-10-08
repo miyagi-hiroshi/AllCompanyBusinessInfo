@@ -1,7 +1,8 @@
-import { pgTable, serial, varchar, date, text, integer, timestamp } from 'drizzle-orm/pg-core';
-import { users } from '../user/tables';
-import { departments } from '../department/tables';
-import { jobPositions, jobTypes } from '../job/tables';
+import { date, integer, pgTable, serial, text, timestamp,varchar } from "drizzle-orm/pg-core";
+
+import { departments } from "../department/tables";
+import { jobPositions, jobTypes } from "../job/tables";
+import { users } from "../user/tables";
 
 export const employees = pgTable("employees", {
   id: serial("id").primaryKey(),

@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp } from "drizzle-orm/pg-core";
+import { decimal, integer, pgTable, text, timestamp,varchar } from "drizzle-orm/pg-core";
 
 // 受発注データ (Order/Sales Forecast Data)
 export const orderForecasts = pgTable("order_forecasts", {

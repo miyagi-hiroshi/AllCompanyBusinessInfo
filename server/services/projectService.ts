@@ -1,9 +1,10 @@
-import { ProjectRepository } from '../storage/project';
+import { CreateProjectData, Project, ProjectFilter,UpdateProjectData } from '@shared/schema/integrated';
+
+// import { db } from '../db'; // 未使用のためコメントアウト
+import { AppError } from '../middleware/errorHandler';
 import { CustomerRepository } from '../storage/customer';
 import { OrderForecastRepository } from '../storage/orderForecast';
-import { AppError } from '../middleware/errorHandler';
-import { CreateProjectData, UpdateProjectData, Project, ProjectFilter } from '@shared/schema/integrated';
-import { db } from '../db';
+import { ProjectRepository } from '../storage/project';
 
 /**
  * プロジェクト管理サービスクラス
@@ -272,8 +273,8 @@ export class ProjectService {
       const statistics = projects.reduce(
         (acc, project: any) => {
           acc.totalProjects++;
-          if (project.status === 'active') acc.activeProjects++;
-          if (project.status === 'completed') acc.completedProjects++;
+          if (project.status === 'active') {acc.activeProjects++;}
+          if (project.status === 'completed') {acc.completedProjects++;}
           acc.totalBudget += parseFloat(project.budget || '0');
           acc.totalActualCost += parseFloat(project.actualCost || '0');
           return acc;

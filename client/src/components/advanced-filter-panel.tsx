@@ -1,4 +1,6 @@
-import { Calendar, FolderKanban, CalendarDays } from "lucide-react";
+import type { Project } from "@shared/schema";
+import { Calendar, CalendarDays,FolderKanban } from "lucide-react";
+
 import {
   Select,
   SelectContent,
@@ -6,7 +8,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import type { Project } from "@shared/schema";
 
 export interface FilterState {
   fiscalYear: number;

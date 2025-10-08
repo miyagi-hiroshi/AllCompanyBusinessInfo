@@ -18,3 +18,12 @@ export { GLEntryService } from './glEntryService';
 
 // 突合処理管理サービス
 export { ReconciliationService } from './reconciliationService';
+
+// 会計項目管理サービス
+export { AccountingItemService } from './accountingItemService';
+
+// アイテム管理サービス
+export { ItemService } from './itemService';
+
+// 監査ログ管理サービス
+export { AuditLogService } from './auditLogService';

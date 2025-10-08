@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
-import { useRegisterSW } from 'virtual:pwa-register/react';
-import { showInfoToast, showSuccessToast } from '@/lib/errorHandler';
+import { useEffect, useState } from "react";
+
+// import { useRegisterSW } from "virtual:pwa-register/react";
+import { showInfoToast, showSuccessToast } from "@/lib/errorHandler";
 
 /**
  * PWA関連の状態
@@ -27,18 +28,24 @@ export function usePWA() {
     installPrompt: null,
   });
 
-  // Service Worker登録と更新管理
-  const {
-    needRefresh: [needRefresh, setNeedRefresh],
-    updateServiceWorker,
-  } = useRegisterSW({
-    onRegistered(r) {
-      console.log('SW Registered: ' + r);
-    },
-    onRegisterError(error) {
-      console.log('SW registration error', error);
-    },
-  });
+  // Service Worker登録と更新管理（一時的に無効化）
+  // const {
+  //   needRefresh: [needRefresh, setNeedRefresh],
+  //   updateServiceWorker,
+  // } = useRegisterSW({
+  //   onRegistered(r: any) {
+  //     console.log("SW Registered: " + r);
+  //   },
+  //   onRegisterError(error: any) {
+  //     console.log("SW registration error", error);
+  //   },
+  // });
+  
+  // 一時的な代替実装
+  const [needRefresh, _setNeedRefresh] = useState(false);
+  const updateServiceWorker = () => {
+    // Service Worker update not available (PWA機能は一時的に無効化)
+  };
 
   // オンライン/オフライン状態の監視
   useEffect(() => {
@@ -48,7 +55,7 @@ export function usePWA() {
         isOnline: true,
         isOffline: false,
       }));
-      showInfoToast('オンライン', 'ネットワーク接続が復旧しました');
+      showInfoToast("オンライン", "ネットワーク接続が復旧しました");
     };
 
     const handleOffline = () => {
@@ -57,15 +64,15 @@ export function usePWA() {
         isOnline: false,
         isOffline: true,
       }));
-      showInfoToast('オフライン', 'ネットワーク接続が切断されました。オフライン機能をご利用ください');
+      showInfoToast("オフライン", "ネットワーク接続が切断されました。オフライン機能をご利用ください");
     };
 
-    window.addEventListener('online', handleOnline);
-    window.addEventListener('offline', handleOffline);
+    window.addEventListener("online", handleOnline);
+    window.addEventListener("offline", handleOffline);
 
     return () => {
-      window.removeEventListener('online', handleOnline);
-      window.removeEventListener('offline', handleOffline);
+      window.removeEventListener("online", handleOnline);
+      window.removeEventListener("offline", handleOffline);
     };
   }, []);
 
@@ -87,14 +94,14 @@ export function usePWA() {
         isInstalled: true,
         installPrompt: null,
       }));
-      showSuccessToast('インストール完了', 'アプリが正常にインストールされました');
+      showSuccessToast("インストール完了", "アプリが正常にインストールされました");
     };
 
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    window.addEventListener('appinstalled', handleAppInstalled);
+    window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+    window.addEventListener("appinstalled", handleAppInstalled);
 
     // 既にインストール済みかチェック
-    if (window.matchMedia('(display-mode: standalone)').matches || 
+    if (window.matchMedia("(display-mode: standalone)").matches || 
         (window.navigator as any).standalone === true) {
       setPwaState(prev => ({
         ...prev,
@@ -103,8 +110,8 @@ export function usePWA() {
     }
 
     return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-      window.removeEventListener('appinstalled', handleAppInstalled);
+      window.removeEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
+      window.removeEventListener("appinstalled", handleAppInstalled);
     };
   }, []);
 
@@ -120,7 +127,7 @@ export function usePWA() {
   // PWAインストール
   const installPWA = async () => {
     if (!pwaState.installPrompt) {
-      showInfoToast('インストール不可', 'このブラウザではインストールできません');
+      showInfoToast("インストール不可", "このブラウザではインストールできません");
       return;
     }
 
@@ -128,41 +135,41 @@ export function usePWA() {
       // インストールプロンプトを表示
       const result = await pwaState.installPrompt.prompt();
       
-      if (result.outcome === 'accepted') {
-        console.log('PWAインストールが承認されました');
+      if (result.outcome === "accepted") {
+        // PWAインストールが承認されました
       } else {
-        console.log('PWAインストールが拒否されました');
+        // PWAインストールが拒否されました
       }
     } catch (error) {
-      console.error('PWAインストールエラー:', error);
-      showInfoToast('インストールエラー', 'インストール中にエラーが発生しました');
+      console.error("PWAインストールエラー:", error);
+      showInfoToast("インストールエラー", "インストール中にエラーが発生しました");
     }
   };
 
   // アプリ更新
   const updateApp = async () => {
     try {
-      await updateServiceWorker(true);
-      showSuccessToast('更新完了', 'アプリが最新バージョンに更新されました');
+      await updateServiceWorker();
+      showSuccessToast("更新完了", "アプリが最新バージョンに更新されました");
     } catch (error) {
-      console.error('アプリ更新エラー:', error);
-      showInfoToast('更新エラー', '更新中にエラーが発生しました');
+      console.error("アプリ更新エラー:", error);
+      showInfoToast("更新エラー", "更新中にエラーが発生しました");
     }
   };
 
   // キャッシュクリア
   const clearCache = async () => {
     try {
-      if ('caches' in window) {
+      if ("caches" in window) {
         const cacheNames = await caches.keys();
         await Promise.all(
           cacheNames.map(cacheName => caches.delete(cacheName))
         );
-        showSuccessToast('キャッシュクリア完了', 'すべてのキャッシュが削除されました');
+        showSuccessToast("キャッシュクリア完了", "すべてのキャッシュが削除されました");
       }
     } catch (error) {
-      console.error('キャッシュクリアエラー:', error);
-      showInfoToast('キャッシュクリアエラー', 'キャッシュの削除中にエラーが発生しました');
+      console.error("キャッシュクリアエラー:", error);
+      showInfoToast("キャッシュクリアエラー", "キャッシュの削除中にエラーが発生しました");
     }
   };
 

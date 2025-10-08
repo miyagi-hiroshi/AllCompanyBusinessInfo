@@ -1,31 +1,8 @@
+import type { Customer,NewProject, Project } from "@shared/schema";
+import { useMutation,useQuery } from "@tanstack/react-query";
+import { Copy, Edit, Loader2,Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { Plus, Edit, Trash2, Copy, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,12 +13,36 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useToast } from "@/hooks/useToast";
-import { queryClient, apiRequest } from "@/lib/queryClient";
-import type { Project, InsertProject, Customer } from "@shared/schema";
+import { apiRequest,queryClient } from "@/lib/queryClient";
 
 // 営業担当者リスト（別システムのデータを想定）
 const SALES_PERSONS = [
@@ -79,7 +80,7 @@ export default function ProjectsPage() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   // Form states
-  const [formData, setFormData] = useState<Partial<InsertProject>>({
+  const [formData, setFormData] = useState<Partial<NewProject>>({
     code: "",
     name: "",
     fiscalYear: selectedYear,
@@ -106,12 +107,12 @@ export default function ProjectsPage() {
 
   // Create mutation
   const createMutation = useMutation({
-    mutationFn: async (data: InsertProject) => {
+    mutationFn: async (data: NewProject) => {
       const res = await apiRequest("POST", "/api/projects", data);
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       toast({
         title: "プロジェクト作成完了",
         description: "新しいプロジェクトが作成されました",
@@ -130,12 +131,12 @@ export default function ProjectsPage() {
 
   // Update mutation
   const updateMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: Partial<InsertProject> }) => {
+    mutationFn: async ({ id, data }: { id: string; data: Partial<NewProject> }) => {
       const res = await apiRequest("PUT", `/api/projects/${id}`, data);
       return res.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       toast({
         title: "更新完了",
         description: "プロジェクトが更新されました",
@@ -160,7 +161,7 @@ export default function ProjectsPage() {
       return res.ok;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       toast({
         title: "削除完了",
         description: "プロジェクトが削除されました",
@@ -184,7 +185,7 @@ export default function ProjectsPage() {
       return res.json() as Promise<{ success: boolean; count: number; projects: Project[] }>;
     },
     onSuccess: (result) => {
-      queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
       toast({
         title: "コピー完了",
         description: `${result.count}件のプロジェクトをコピーしました`,
@@ -230,11 +231,11 @@ export default function ProjectsPage() {
       });
       return;
     }
-    createMutation.mutate(formData as InsertProject);
+    createMutation.mutate(formData as NewProject);
   };
 
   const handleEdit = () => {
-    if (!selectedProject) return;
+    if (!selectedProject) {return;}
     if (
       !formData.code ||
       !formData.name ||
@@ -253,7 +254,7 @@ export default function ProjectsPage() {
     }
     updateMutation.mutate({
       id: selectedProject.id,
-      data: formData as Partial<InsertProject>,
+      data: formData,
     });
   };
 
@@ -348,7 +349,7 @@ export default function ProjectsPage() {
             <Button
               onClick={() => {
                 resetForm();
-                setFormData((prev) => ({ ...prev, fiscalYear: selectedYear }));
+                setFormData((prev: Partial<NewProject>) => ({ ...prev, fiscalYear: selectedYear }));
               }}
               data-testid="button-create-project"
             >

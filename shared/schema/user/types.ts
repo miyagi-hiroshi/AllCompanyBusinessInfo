@@ -1,19 +1,20 @@
-import { InferModel } from 'drizzle-orm';
-import { users, userMenuPermissions, userOperationPermissions } from './tables';
+import { InferModel } from "drizzle-orm";
+
+import { userMenuPermissions, userOperationPermissions,users } from "./tables";
 
 export type User = InferModel<typeof users>;
-export type NewUser = InferModel<typeof users, 'insert'>;
+export type NewUser = InferModel<typeof users, "insert">;
 
 export type UserMenuPermission = InferModel<typeof userMenuPermissions>;
-export type NewUserMenuPermission = InferModel<typeof userMenuPermissions, 'insert'>;
+export type NewUserMenuPermission = InferModel<typeof userMenuPermissions, "insert">;
 
 export type UserOperationPermission = InferModel<typeof userOperationPermissions>;
-export type NewUserOperationPermission = InferModel<typeof userOperationPermissions, 'insert'>;
+export type NewUserOperationPermission = InferModel<typeof userOperationPermissions, "insert">;
 
 // 権限の型定義
-export type ResourceType = 'employee' | 'qualification' | 'skill' | 'career_history' | 'settlement_attachment' | 'bulletin_article' | 'settlement_confirmation';
-export type Operation = 'view' | 'edit' | 'delete' | 'create' | 'link_user';
-export type Scope = 'own' | 'all' | 'view' | 'none';
+export type ResourceType = "employee" | "qualification" | "skill" | "career_history" | "settlement_attachment" | "bulletin_article" | "settlement_confirmation";
+export type Operation = "view" | "edit" | "delete" | "create" | "link_user";
+export type Scope = "own" | "all" | "view" | "none";
 
 export interface OperationPermission {
   resourceType: ResourceType;

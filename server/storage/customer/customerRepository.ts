@@ -7,10 +7,11 @@
  * - 顧客データのバリデーション
  */
 
-import { db } from '../../db';
 import { customers } from '@shared/schema/customer';
-import { eq, like, desc, asc, and, or } from 'drizzle-orm';
 import type { Customer, NewCustomer } from '@shared/schema/integrated';
+import { and, asc, count,desc, eq, like, ne, or } from 'drizzle-orm';
+
+import { db } from '../../db';
 
 export interface CustomerFilter {
   search?: string;
@@ -57,22 +58,22 @@ export class CustomerRepository {
       }
       
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        query = query.where(and(...conditions)) as any;
       }
     }
     
     // ソート
     const sortColumn = customers[sortBy];
     if (sortOrder === 'asc') {
-      query = query.orderBy(asc(sortColumn));
+      query = query.orderBy(asc(sortColumn)) as any;
     } else {
-      query = query.orderBy(desc(sortColumn));
+      query = query.orderBy(desc(sortColumn)) as any;
     }
     
     // ページネーション
-    query = query.limit(limit).offset(offset);
+    query = query.limit(limit).offset(offset) as any;
     
-    return await query;
+    return query;
   }
   
   /**
@@ -117,7 +118,7 @@ export class CustomerRepository {
    */
   async delete(id: string): Promise<boolean> {
     const result = await db.delete(customers).where(eq(customers.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
   
   /**
@@ -127,7 +128,7 @@ export class CustomerRepository {
     let query = db.select().from(customers).where(eq(customers.code, code));
     
     if (excludeId) {
-      query = query.where(and(eq(customers.code, code), eq(customers.id, excludeId)));
+      query = db.select().from(customers).where(and(eq(customers.code, code), ne(customers.id, excludeId)));
     }
     
     const result = await query;
@@ -138,8 +139,6 @@ export class CustomerRepository {
    * 顧客総数を取得
    */
   async count(filter?: CustomerFilter): Promise<number> {
-    let query = db.select({ count: customers.id }).from(customers);
-    
     if (filter) {
       const conditions = [];
       
@@ -161,11 +160,12 @@ export class CustomerRepository {
       }
       
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        const result = await db.select({ count: count() }).from(customers).where(and(...conditions));
+        return result[0]?.count ?? 0;
       }
     }
     
-    const result = await query;
-    return result.length;
+    const result = await db.select({ count: count() }).from(customers);
+    return result[0]?.count ?? 0;
   }
 }

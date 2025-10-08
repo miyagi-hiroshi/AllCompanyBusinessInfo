@@ -1,103 +1,121 @@
-import { useState, useEffect, useCallback } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useToast } from './useToast';
-import { handleError, showSuccessToast, showErrorToast, parseErrorResponse, ErrorType } from '@/lib/errorHandler';
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect,useState } from "react";
 
-// 認証関連の型定義
-export interface User {
+import { useToast } from "@/hooks/useToast";
+import { handleError,showErrorToast, showSuccessToast } from "@/lib/errorHandler";
+// import { apiRequest } from "@/lib/queryClient"; // 未使用のためコメントアウト
+
+// ユーザー情報の型定義
+interface User {
   id: string;
-  employeeId: string;
-  name: string;
   email: string;
-  role: string;
-  permissions: string[];
+  firstName: string;
+  lastName: string;
+  isFirstLogin: boolean;
 }
 
-export interface AuthState {
+interface Employee {
+  id: number;
+  employeeId: string;
+  firstName: string;
+  lastName: string;
+  departmentId: number;
+  status: string;
+}
+
+interface AuthState {
   user: User | null;
+  employee: Employee | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
 }
 
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-// 認証関連のAPI呼び出し関数
+// 認証API
 const authApi = {
   // ログイン
-  async login(credentials: LoginCredentials) {
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
+  async login(email: string, password: string): Promise<{
+    sessionId: string;
+  }> {
+    const response = await fetch("/api/auth/login", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify(credentials),
+      body: JSON.stringify({ email, password }),
     });
 
     if (!response.ok) {
-      throw await parseErrorResponse(response);
+      throw handleError(response, false);
     }
 
-    const data = await response.json();
+    const data = await response.json() as {
+      success: boolean;
+      data?: { sessionId: string };
+      message?: string;
+    };
 
-    if (data.success) {
+    if (data.success && data.data) {
       // セッションIDをローカルストレージに保存
-      localStorage.setItem('sessionId', data.data.sessionId);
+      localStorage.setItem("sessionId", data.data.sessionId);
       return data.data;
     } else {
-      throw new Error(data.message || 'ログインに失敗しました');
+      throw new Error(data.message || "ログインに失敗しました");
     }
   },
 
   // ログアウト
-  async logout() {
-    const sessionId = localStorage.getItem('sessionId');
+  async logout(): Promise<void> {
+    const sessionId = localStorage.getItem("sessionId");
     
     if (sessionId) {
-      try {
-        await fetch('/api/auth/logout', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${sessionId}`,
-            'Content-Type': 'application/json',
-          },
-        });
-      } catch (error) {
-        console.error('Logout API call failed:', error);
+      const response = await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${sessionId}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw handleError(response, false);
       }
     }
 
     // ローカルストレージからセッションIDを削除
-    localStorage.removeItem('sessionId');
+    localStorage.removeItem("sessionId");
   },
 
   // 認証状態確認
-  async getCurrentUser(): Promise<User> {
-    const sessionId = localStorage.getItem('sessionId');
+  async getCurrentUser(): Promise<{
+    user: User;
+    employee: Employee | null;
+  }> {
+    const sessionId = localStorage.getItem("sessionId");
     
     if (!sessionId) {
-      throw new Error('セッションが見つかりません');
+      throw new Error("セッションが見つかりません");
     }
 
-    const response = await fetch('/api/auth/me', {
+    const response = await fetch("/api/auth/me", {
       headers: {
-        'Authorization': `Bearer ${sessionId}`,
+        "Authorization": `Bearer ${sessionId}`,
       },
     });
 
     if (!response.ok) {
-      throw await parseErrorResponse(response);
+      throw handleError(response, false);
     }
 
-    const data = await response.json();
+    const data = await response.json() as {
+      success: boolean;
+      data?: { user: User; employee: Employee | null };
+      message?: string;
+    };
 
-    if (data.success) {
-      return data.data.user;
+    if (data.success && data.data) {
+      return data.data;
     } else {
-      throw new Error(data.message || '認証状態の確認に失敗しました');
+      throw new Error(data.message || "認証状態の確認に失敗しました");
     }
   },
 };
@@ -106,137 +124,100 @@ const authApi = {
 export function useAuth() {
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
+    employee: null,
     isAuthenticated: false,
     isLoading: true,
     error: null,
   });
 
-  const { toast } = useToast();
+  const { toast: _toast } = useToast(); // 未使用のためプレフィックス追加
   const queryClient = useQueryClient();
 
   // 認証状態確認クエリ
-  const { data: user, isLoading, error } = useQuery({
-    queryKey: ['auth', 'me'],
+  const { data: currentUser, isLoading: isCheckingAuth } = useQuery({
+    queryKey: ["/api/auth/me"],
     queryFn: authApi.getCurrentUser,
     retry: false,
-    staleTime: 5 * 60 * 1000, // 5分
-    enabled: !!localStorage.getItem('sessionId'),
+    enabled: !!localStorage.getItem("sessionId"),
   });
 
-  // ログインミューテーション
+  // ログインMutation
   const loginMutation = useMutation({
-    mutationFn: authApi.login,
-    onSuccess: (data) => {
-      setAuthState({
-        user: data.user,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null,
-      });
-      
-      // 認証状態クエリを無効化して再取得
-      queryClient.invalidateQueries({ queryKey: ['auth', 'me'] });
-      
-      showSuccessToast("ログイン成功", `${data.user.name}としてログインしました`);
+    mutationFn: ({ email, password }: { email: string; password: string }) =>
+      authApi.login(email, password),
+    onSuccess: () => {
+      // ログイン成功後、認証状態を再取得
+      void queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] });
+      showSuccessToast("ログイン成功", "認証が完了しました");
     },
-    onError: (error: unknown) => {
+    onError: (error) => {
       const appError = handleError(error, false);
-      
       setAuthState({
         user: null,
+        employee: null,
         isAuthenticated: false,
         isLoading: false,
         error: appError.message,
       });
-      
       showErrorToast(appError);
     },
   });
 
-  // ログアウトミューテーション
+  // ログアウトMutation
   const logoutMutation = useMutation({
     mutationFn: authApi.logout,
     onSuccess: () => {
       setAuthState({
         user: null,
+        employee: null,
         isAuthenticated: false,
         isLoading: false,
         error: null,
       });
-      
-      // 全てのクエリを無効化
-      queryClient.clear();
-      
       showSuccessToast("ログアウト完了", "正常にログアウトしました");
+      void queryClient.clear();
     },
-    onError: (error: unknown) => {
+    onError: (error) => {
       const appError = handleError(error, false);
-      console.error('Logout error:', appError);
-      
-      // エラーが発生してもローカル状態はクリア
-      setAuthState({
-        user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: null,
-      });
-      
-      queryClient.clear();
+      showErrorToast(appError);
     },
   });
 
   // 認証状態の更新
   useEffect(() => {
-    if (user) {
+    if (currentUser) {
       setAuthState({
-        user,
+        user: currentUser.user,
+        employee: currentUser.employee,
         isAuthenticated: true,
         isLoading: false,
         error: null,
       });
-    } else if (error) {
+    } else if (!isCheckingAuth) {
       setAuthState({
         user: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: error.message,
-      });
-    } else if (!isLoading) {
-      setAuthState({
-        user: null,
+        employee: null,
         isAuthenticated: false,
         isLoading: false,
         error: null,
       });
     }
-  }, [user, error, isLoading]);
+  }, [currentUser, isCheckingAuth]);
 
-  // ログイン関数
-  const login = useCallback((credentials: LoginCredentials) => {
-    loginMutation.mutate(credentials);
-  }, [loginMutation]);
+  // ログイン
+  const login = (email: string, password: string) => {
+    loginMutation.mutate({ email, password });
+  };
 
-  // ログアウト関数
-  const logout = useCallback(() => {
+  // ログアウト
+  const logout = () => {
     logoutMutation.mutate();
-  }, [logoutMutation]);
-
-  // 権限チェック関数
-  const hasPermission = useCallback((permission: string): boolean => {
-    return authState.user?.permissions.includes(permission) ?? false;
-  }, [authState.user]);
-
-  // ロールチェック関数
-  const hasRole = useCallback((role: string): boolean => {
-    return authState.user?.role === role;
-  }, [authState.user]);
+  };
 
   return {
     ...authState,
     login,
     logout,
-    hasPermission,
-    hasRole,
     isLoggingIn: loginMutation.isPending,
     isLoggingOut: logoutMutation.isPending,
   };

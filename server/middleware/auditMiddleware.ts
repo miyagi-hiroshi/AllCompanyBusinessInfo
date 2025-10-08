@@ -1,4 +1,5 @@
-import type { Request, Response, NextFunction } from 'express';
+import type { NextFunction,Request, Response } from 'express';
+
 import { auditLogRepository } from '../storage/auditLog';
 
 /**
@@ -23,7 +24,7 @@ export function auditDataChanges(req: Request, res: Response, next: NextFunction
 
     // データ変更操作をログ記録
     if (shouldLogOperation(req.method, req.path) && req.user) {
-      logDataOperation(req, res, body, duration);
+      void logDataOperation(req, res, body, duration);
     }
 
     return originalJson.call(this, body);
@@ -37,13 +38,13 @@ export function auditDataChanges(req: Request, res: Response, next: NextFunction
  */
 function shouldLogOperation(method: string, path: string): boolean {
   // GETリクエストは除外
-  if (method === 'GET') return false;
+  if (method === 'GET') {return false;}
   
   // APIエンドポイントのみ対象
-  if (!path.startsWith('/api/')) return false;
+  if (!path.startsWith('/api/')) {return false;}
   
   // 認証関連のエンドポイントは除外
-  if (path.startsWith('/api/auth/')) return false;
+  if (path.startsWith('/api/auth/')) {return false;}
   
   return true;
 }
@@ -62,14 +63,14 @@ async function logDataOperation(req: Request, res: Response, responseBody: any, 
     if (res.statusCode >= 200 && res.statusCode < 300) {
       await auditLogRepository.create({
         userId: user.id,
-        employeeId: user.employeeId,
+        employeeId: String(user.employeeId),
         action,
         resource,
         resourceId,
         oldValues: getOldValues(req),
         newValues: getNewValues(req, responseBody),
-        ipAddress: req.ip,
-        userAgent: req.get('User-Agent'),
+        ipAddress: req.ip ?? 'unknown',
+        userAgent: req.get('User-Agent') ?? 'unknown',
         sessionId: req.headers.authorization?.replace('Bearer ', ''),
         details: {
           method: req.method,
@@ -177,8 +178,8 @@ export async function logLoginAttempt(
         userId,
         employeeId,
         success,
-        req.ip,
-        req.get('User-Agent'),
+        req.ip ?? 'unknown',
+        req.get('User-Agent') ?? 'unknown',
         req.headers.authorization?.replace('Bearer ', '')
       );
     }
@@ -195,8 +196,8 @@ export async function logLogout(req: Request, userId: string, employeeId: string
     await auditLogRepository.logLogout(
       userId,
       employeeId,
-      req.ip,
-      req.get('User-Agent'),
+      req.ip ?? 'unknown',
+      req.get('User-Agent') ?? 'unknown',
       req.headers.authorization?.replace('Bearer ', '')
     );
   } catch (error) {
@@ -216,11 +217,11 @@ export async function logFileUpload(
     if (req.user) {
       await auditLogRepository.logFileUpload(
         req.user.id,
-        req.user.employeeId,
+        String(req.user.employeeId),
         filename,
         fileSize,
-        req.ip,
-        req.get('User-Agent'),
+        req.ip ?? 'unknown',
+        req.get('User-Agent') ?? 'unknown',
         req.headers.authorization?.replace('Bearer ', '')
       );
     }
@@ -242,12 +243,12 @@ export async function logDataExport(
     if (req.user) {
       await auditLogRepository.logDataExport(
         req.user.id,
-        req.user.employeeId,
+        String(req.user.employeeId),
         resource,
         recordCount,
         exportFormat,
-        req.ip,
-        req.get('User-Agent'),
+        req.ip ?? 'unknown',
+        req.get('User-Agent') ?? 'unknown',
         req.headers.authorization?.replace('Bearer ', '')
       );
     }

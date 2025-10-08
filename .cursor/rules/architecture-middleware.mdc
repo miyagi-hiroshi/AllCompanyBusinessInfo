@@ -42,6 +42,19 @@ alwaysApply: true
   - セキュリティ監視（ログイン失敗検知、異常IP検知、大量エクスポート検知）
   - WebSocketリアルタイム通知
 
+- **auditMiddleware.ts**: 監査ログミドルウェア
+  - `auditDataChanges`: データ変更の自動記録
+  - データベース永続化（監査証跡用）
+  - 操作履歴の追跡（CREATE、UPDATE、DELETE）
+  - セキュリティイベントの記録
+
+- **errorHandler.ts**: エラーハンドリングミドルウェア
+  - `AppError`: カスタムエラークラス
+  - `errorHandler`: 統一エラーハンドリング
+  - `notFoundHandler`: 404エラーハンドリング
+  - `asyncHandler`: 非同期エラーラッパー
+  - Zodバリデーションエラー対応
+
 ### 責務分離の原則
 
 #### 認証・認可
@@ -58,6 +71,13 @@ alwaysApply: true
 - **操作ログ**: データ変更操作の記録
 - **ログインログ**: 認証試行の記録
 - **セキュリティ監視**: 異常パターンの検知・通知
+- **監査ログ**: データベース永続化による操作履歴の追跡
+
+#### エラーハンドリング
+- **統一エラー処理**: 全APIで一貫したエラーレスポンス
+- **カスタムエラー**: AppErrorクラスによる詳細なエラー管理
+- **バリデーションエラー**: Zodスキーマエラーの統一処理
+- **非同期エラー**: asyncHandlerによる非同期エラーのキャッチ
 
 ### 実装ガイドライン
 
@@ -122,7 +142,10 @@ logger.warn('Suspicious activity detected', {
 ```
 
 #### 既存ミドルウェア使用時
-- 認証: `requireAuth`を使用
-- 権限チェック: `requireOperationPermission`を使用
-- ファイルアップロード: 用途別の`createSecureUpload`を使用
-- ログ記録: `logMiddleware`が自動適用
+- **認証**: `requireAuth`を使用
+- **権限チェック**: `requireOperationPermission`を使用
+- **ファイルアップロード**: 用途別の`createSecureUpload`を使用
+- **ログ記録**: `logMiddleware`が自動適用
+- **監査ログ**: `auditDataChanges`が自動適用
+- **エラーハンドリング**: `AppError`をthrowして統一処理
+- **非同期エラー**: `asyncHandler`でラップして安全に処理

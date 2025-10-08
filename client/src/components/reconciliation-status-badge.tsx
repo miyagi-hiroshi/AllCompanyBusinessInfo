@@ -1,5 +1,6 @@
+import { AlertTriangle, Check, X } from "lucide-react";
+
 import { Badge } from "@/components/ui/badge";
-import { Check, AlertTriangle, X } from "lucide-react";
 
 type ReconciliationStatus = "matched" | "fuzzy" | "unmatched";
 

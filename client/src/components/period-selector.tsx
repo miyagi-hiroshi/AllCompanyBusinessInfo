@@ -1,5 +1,6 @@
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "lucide-react";
+
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface PeriodSelectorProps {
   value: string;
@@ -14,7 +15,7 @@ function generatePeriods(): string[] {
   
   for (let i = 0; i < 12; i++) {
     const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+    const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     periods.push(period);
   }
   
@@ -22,7 +23,7 @@ function generatePeriods(): string[] {
 }
 
 function formatPeriod(period: string): string {
-  const [year, month] = period.split('-');
+  const [year, month] = period.split("-");
   return `${year}年${month}月`;
 }
 

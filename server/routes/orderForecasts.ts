@@ -1,11 +1,12 @@
+import { insertOrderForecastSchema } from '@shared/schema/integrated';
 import express, { type Request, Response } from 'express';
 import { z } from 'zod';
+
+import { requireAuth } from '../middleware/auth';
 import { OrderForecastService } from '../services/orderForecastService';
+import { GLEntryRepository } from '../storage/glEntry';
 import { OrderForecastRepository } from '../storage/orderForecast';
 import { ProjectRepository } from '../storage/project';
-import { GLEntryRepository } from '../storage/glEntry';
-import { requireAuthIntegrated } from '../middleware/authIntegrated';
-import { insertOrderForecastSchema } from '@shared/schema/integrated';
 
 const router = express.Router();
 const orderForecastRepository = new OrderForecastRepository();
@@ -32,8 +33,8 @@ const searchOrderForecastSchema = z.object({
   reconciliationStatus: z.enum(['matched', 'fuzzy', 'unmatched']).optional(),
   createdByUserId: z.string().optional(),
   createdByEmployeeId: z.string().optional(),
-  page: z.string().transform(Number).optional().default(1),
-  limit: z.string().transform(Number).optional().default(20),
+  page: z.string().transform(Number).optional().default('1'),
+  limit: z.string().transform(Number).optional().default('20'),
   sortBy: z.enum(['projectCode', 'customerName', 'accountingPeriod', 'amount', 'createdAt']).optional().default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
 });
@@ -42,7 +43,7 @@ const searchOrderForecastSchema = z.object({
  * 受発注データ一覧取得API
  * GET /api/order-forecasts
  */
-router.get('/', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.get('/', requireAuth, async (req: Request, res: Response) => {
   try {
     const query = searchOrderForecastSchema.parse(req.query);
     const offset = (query.page - 1) * query.limit;
@@ -113,7 +114,7 @@ router.get('/', requireAuthIntegrated, async (req: Request, res: Response) => {
  * 受発注データ詳細取得API
  * GET /api/order-forecasts/:id
  */
-router.get('/:id', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.get('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     
@@ -143,7 +144,7 @@ router.get('/:id', requireAuthIntegrated, async (req: Request, res: Response) =>
  * 期間別受発注データ取得API
  * GET /api/order-forecasts/period/:period
  */
-router.get('/period/:period', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.get('/period/:period', requireAuth, async (req: Request, res: Response) => {
   try {
     const { period } = req.params;
     
@@ -166,7 +167,7 @@ router.get('/period/:period', requireAuthIntegrated, async (req: Request, res: R
  * 突合されていない受発注データ取得API
  * GET /api/order-forecasts/unmatched
  */
-router.get('/unmatched', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.get('/unmatched', requireAuth, async (req: Request, res: Response) => {
   try {
     const { period } = req.query;
     
@@ -189,7 +190,7 @@ router.get('/unmatched', requireAuthIntegrated, async (req: Request, res: Respon
  * 突合済み受発注データ取得API
  * GET /api/order-forecasts/matched
  */
-router.get('/matched', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.get('/matched', requireAuth, async (req: Request, res: Response) => {
   try {
     const { period } = req.query;
     
@@ -212,7 +213,7 @@ router.get('/matched', requireAuthIntegrated, async (req: Request, res: Response
  * 受発注データ作成API
  * POST /api/order-forecasts
  */
-router.post('/', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.post('/', requireAuth, async (req: Request, res: Response) => {
   try {
     const data = createOrderForecastSchema.parse(req.body);
     const user = (req as any).user;
@@ -249,35 +250,19 @@ router.post('/', requireAuthIntegrated, async (req: Request, res: Response) => {
  * 受発注データ更新API
  * PUT /api/order-forecasts/:id
  */
-router.put('/:id', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.put('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const data = updateOrderForecastSchema.parse(req.body);
     
-    // 受発注データの存在チェック
-    const existingOrderForecast = await orderForecastRepository.findById(id);
-    if (!existingOrderForecast) {
-      return res.status(404).json({
-        success: false,
-        message: '受発注データが見つかりません',
-      });
-    }
-
-    const orderForecast = await orderForecastRepository.update(id, data);
-    
-    if (!orderForecast) {
-      return res.status(500).json({
-        success: false,
-        message: '受発注データの更新に失敗しました',
-      });
-    }
+    const orderForecast = await orderForecastService.updateOrderForecast(id, data);
 
     res.json({
       success: true,
       data: orderForecast,
       message: '受発注データが正常に更新されました',
     });
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
@@ -286,10 +271,9 @@ router.put('/:id', requireAuthIntegrated, async (req: Request, res: Response) =>
       });
     }
 
-    console.error('受発注データ更新エラー:', error);
-    res.status(500).json({
+    res.status(error.statusCode || 500).json({
       success: false,
-      message: '受発注データの更新中にエラーが発生しました',
+      message: error.message || '受発注データの更新中にエラーが発生しました',
     });
   }
 });
@@ -298,37 +282,20 @@ router.put('/:id', requireAuthIntegrated, async (req: Request, res: Response) =>
  * 受発注データ削除API
  * DELETE /api/order-forecasts/:id
  */
-router.delete('/:id', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     
-    // 受発注データの存在チェック
-    const existingOrderForecast = await orderForecastRepository.findById(id);
-    if (!existingOrderForecast) {
-      return res.status(404).json({
-        success: false,
-        message: '受発注データが見つかりません',
-      });
-    }
-
-    const deleted = await orderForecastRepository.delete(id);
-    
-    if (!deleted) {
-      return res.status(500).json({
-        success: false,
-        message: '受発注データの削除に失敗しました',
-      });
-    }
+    await orderForecastService.deleteOrderForecast(id);
 
     res.json({
       success: true,
       message: '受発注データが正常に削除されました',
     });
-  } catch (error) {
-    console.error('受発注データ削除エラー:', error);
-    res.status(500).json({
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({
       success: false,
-      message: '受発注データの削除中にエラーが発生しました',
+      message: error.message || '受発注データの削除中にエラーが発生しました',
     });
   }
 });
@@ -337,7 +304,7 @@ router.delete('/:id', requireAuthIntegrated, async (req: Request, res: Response)
  * 突合ステータス更新API
  * PUT /api/order-forecasts/:id/reconciliation-status
  */
-router.put('/:id/reconciliation-status', requireAuthIntegrated, async (req: Request, res: Response) => {
+router.put('/:id/reconciliation-status', requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status, glMatchId } = req.body;

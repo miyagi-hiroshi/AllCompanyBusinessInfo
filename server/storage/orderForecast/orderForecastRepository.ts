@@ -7,10 +7,11 @@
  * - 突合処理のためのデータ操作
  */
 
-import { db } from '../../db';
+import type { NewOrderForecast,OrderForecast } from '@shared/schema/integrated';
 import { orderForecasts } from '@shared/schema/orderForecast';
-import { eq, like, desc, asc, and, or, isNull, isNotNull } from 'drizzle-orm';
-import type { OrderForecast, NewOrderForecast } from '@shared/schema/integrated';
+import { and, asc, count,desc, eq, like, or, sql } from 'drizzle-orm';
+
+import { db } from '../../db';
 
 export interface OrderForecastFilter {
   search?: string;
@@ -111,20 +112,20 @@ export class OrderForecastRepository {
       }
       
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        query = query.where(and(...conditions)) as any;
       }
     }
     
     // ソート
     const sortColumn = orderForecasts[sortBy];
     if (sortOrder === 'asc') {
-      query = query.orderBy(asc(sortColumn));
+      query = query.orderBy(asc(sortColumn)) as any;
     } else {
-      query = query.orderBy(desc(sortColumn));
+      query = query.orderBy(desc(sortColumn)) as any;
     }
     
     // ページネーション
-    query = query.limit(limit).offset(offset);
+    query = query.limit(limit).offset(offset) as any;
     
     return await query;
   }
@@ -155,32 +156,28 @@ export class OrderForecastRepository {
    * 突合されていない受発注データを取得
    */
   async findUnmatched(period?: string): Promise<OrderForecast[]> {
-    let query = db.select().from(orderForecasts).where(eq(orderForecasts.reconciliationStatus, 'unmatched'));
-    
     if (period) {
-      query = query.where(and(
+      return await db.select().from(orderForecasts).where(and(
         eq(orderForecasts.reconciliationStatus, 'unmatched'),
         eq(orderForecasts.period, period)
       ));
     }
     
-    return await query;
+    return await db.select().from(orderForecasts).where(eq(orderForecasts.reconciliationStatus, 'unmatched'));
   }
   
   /**
    * 突合済み受発注データを取得
    */
   async findMatched(period?: string): Promise<OrderForecast[]> {
-    let query = db.select().from(orderForecasts).where(eq(orderForecasts.reconciliationStatus, 'matched'));
-    
     if (period) {
-      query = query.where(and(
+      return await db.select().from(orderForecasts).where(and(
         eq(orderForecasts.reconciliationStatus, 'matched'),
         eq(orderForecasts.period, period)
       ));
     }
     
-    return await query;
+    return await db.select().from(orderForecasts).where(eq(orderForecasts.reconciliationStatus, 'matched'));
   }
   
   /**
@@ -200,7 +197,7 @@ export class OrderForecastRepository {
       .set({ 
         ...data,
         updatedAt: new Date(),
-        version: db.raw('version + 1') // 楽観ロック
+        version: sql`version + 1` // 楽観ロック
       })
       .where(eq(orderForecasts.id, id))
       .returning();
@@ -213,7 +210,7 @@ export class OrderForecastRepository {
    */
   async delete(id: string): Promise<boolean> {
     const result = await db.delete(orderForecasts).where(eq(orderForecasts.id, id));
-    return result.rowCount > 0;
+    return (result.rowCount ?? 0) > 0;
   }
   
   /**
@@ -227,7 +224,7 @@ export class OrderForecastRepository {
     const updateData: any = {
       reconciliationStatus: status,
       updatedAt: new Date(),
-      version: db.raw('version + 1')
+      version: sql`version + 1`
     };
     
     if (glMatchId) {
@@ -249,8 +246,6 @@ export class OrderForecastRepository {
    * 受発注データ総数を取得
    */
   async count(filter?: OrderForecastFilter): Promise<number> {
-    let query = db.select({ count: orderForecasts.id }).from(orderForecasts);
-    
     if (filter) {
       const conditions = [];
       
@@ -292,11 +287,12 @@ export class OrderForecastRepository {
       }
       
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        const result = await db.select({ count: count() }).from(orderForecasts).where(and(...conditions));
+        return result[0]?.count ?? 0;
       }
     }
     
-    const result = await query;
-    return result.length;
+    const result = await db.select({ count: count() }).from(orderForecasts);
+    return result[0]?.count ?? 0;
   }
 }
