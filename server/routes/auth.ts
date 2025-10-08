@@ -1,8 +1,35 @@
 import express, { type Request, Response } from 'express';
 import { z } from 'zod';
+import crypto from 'crypto';
+import { promisify } from 'util';
 
 import { isAuthenticated } from '../middleware/auth';
 import { getExistingEmployeeByUserId,getExistingUserByEmail } from '../storage/existing';
+
+// scryptの非同期版
+const scryptAsync = promisify(crypto.scrypt);
+
+// 既存システムと同じパスワードハッシュ化関数
+async function hashPassword(password: string) {
+  const salt = crypto.randomBytes(16).toString("hex");
+  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${buf.toString("hex")}.${salt}`;
+}
+
+// 既存システムと同じパスワード検証関数
+async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+  try {
+    const [hash, salt] = hashedPassword.split('.');
+    if (!hash || !salt) return false;
+    
+    const buf = (await scryptAsync(password, salt, 64)) as Buffer;
+    const computedHash = buf.toString("hex");
+    
+    return computedHash === hash;
+  } catch (error) {
+    return false;
+  }
+}
 
 const router = express.Router();
 
@@ -30,19 +57,35 @@ router.post('/login', async (req: Request, res: Response) => {
       });
     }
 
-    // 簡易的なパスワードチェック（実際の実装では既存システムの認証方式を使用）
-    // ここでは既存システムの認証APIを呼び出すか、直接データベースをチェック
-    if (password !== 'password') { // 実際の実装では適切な認証処理
+    // 既存システムのパスワード検証
+    console.log('🔐 パスワード検証開始:');
+    console.log(`  - 入力パスワード: ${password}`);
+    console.log(`  - データベースハッシュ: ${user.password}`);
+    
+    if (!user.password) {
       return res.status(401).json({
         success: false,
         message: 'メールアドレスまたはパスワードが正しくありません'
       });
     }
+    
+    const isPasswordValid = await verifyPassword(password, user.password);
+    console.log(`  - 検証結果: ${isPasswordValid}`);
+    
+    if (!isPasswordValid) {
+      console.log('❌ パスワード検証失敗');
+      return res.status(401).json({
+        success: false,
+        message: 'メールアドレスまたはパスワードが正しくありません'
+      });
+    }
+    
+    console.log('✅ パスワード検証成功');
 
     // 既存システムから従業員情報を取得
     const employee = await getExistingEmployeeByUserId(user.id);
     
-    // セッションIDとしてユーザーIDを使用（実際の実装では適切なセッション管理）
+    // セッションIDとしてユーザーIDを使用
     const sessionId = user.id;
 
     res.json({

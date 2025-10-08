@@ -1,8 +1,10 @@
 import { sql } from "drizzle-orm";
-import { decimal, integer, pgTable, text, timestamp,varchar } from "drizzle-orm/pg-core";
+import { decimal, integer, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+
+import { appSchema } from "../app-schema";
 
 // 受発注データ (Order/Sales Forecast Data)
-export const orderForecasts = pgTable("order_forecasts", {
+export const orderForecasts = appSchema.table("order_forecasts", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   projectId: varchar("project_id").notNull(),
   projectCode: text("project_code").notNull(),

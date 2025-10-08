@@ -1,8 +1,10 @@
 import { sql } from "drizzle-orm";
-import { integer, pgTable, text, timestamp,varchar } from "drizzle-orm/pg-core";
+import { integer, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+
+import { appSchema } from "../app-schema";
 
 // 突合ログ (Reconciliation Log)
-export const reconciliationLogs = pgTable("reconciliation_logs", {
+export const reconciliationLogs = appSchema.table("reconciliation_logs", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   period: text("period").notNull(),
   executedAt: timestamp("executed_at").defaultNow().notNull(),

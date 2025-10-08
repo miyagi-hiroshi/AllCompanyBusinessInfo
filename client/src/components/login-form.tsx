@@ -49,6 +49,7 @@ export function LoginForm() {
                 placeholder="user@example.com"
                 required
                 disabled={isLoggingIn}
+                autoComplete="email"
               />
             </div>
             <div className="space-y-2">
@@ -61,6 +62,7 @@ export function LoginForm() {
                 placeholder="パスワードを入力"
                 required
                 disabled={isLoggingIn}
+                autoComplete="current-password"
               />
             </div>
             <Button 

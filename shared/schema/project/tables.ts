@@ -1,8 +1,10 @@
 import { sql } from "drizzle-orm";
-import { integer, pgTable, text, timestamp,varchar } from "drizzle-orm/pg-core";
+import { integer, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+
+import { appSchema } from "../app-schema";
 
 // プロジェクトマスタ (Project Master)
-export const projects = pgTable("projects", {
+export const projects = appSchema.table("projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   code: text("code").notNull().unique(),
   name: text("name").notNull(),

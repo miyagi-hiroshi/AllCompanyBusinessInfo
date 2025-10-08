@@ -1,8 +1,10 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, timestamp,varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+
+import { appSchema } from "../app-schema";
 
 // 計上科目マスタ (Accounting Item Master)
-export const accountingItems = pgTable("accounting_items", {
+export const accountingItems = appSchema.table("accounting_items", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   code: text("code").notNull().unique(),
   name: text("name").notNull(),

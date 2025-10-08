@@ -8,9 +8,6 @@ import { log,serveStatic, setupVite } from "./vite";
 
 const app = express();
 
-// セキュリティミドルウェアの設定
-setupSecurityMiddleware(app);
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
@@ -54,11 +51,8 @@ app.use((req, res, next) => {
 void (async () => {
   const server = registerRoutes(app);
 
-  // 404エラーハンドリング
-  app.use(notFoundHandler);
-
-  // 統一エラーハンドリング
-  app.use(errorHandler);
+  // セキュリティミドルウェアの設定
+  setupSecurityMiddleware(app);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route
@@ -68,6 +62,12 @@ void (async () => {
   } else {
     serveStatic(app);
   }
+
+  // 404エラーハンドリング
+  app.use(notFoundHandler);
+
+  // 統一エラーハンドリング
+  app.use(errorHandler);
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.

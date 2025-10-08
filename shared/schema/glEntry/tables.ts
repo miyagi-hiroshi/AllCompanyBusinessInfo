@@ -1,8 +1,10 @@
 import { sql } from "drizzle-orm";
-import { date, decimal, pgTable, text, timestamp,varchar } from "drizzle-orm/pg-core";
+import { date, decimal, pgTable, text, timestamp, varchar } from "drizzle-orm/pg-core";
+
+import { appSchema } from "../app-schema";
 
 // GLデータ (General Ledger Data)
-export const glEntries = pgTable("gl_entries", {
+export const glEntries = appSchema.table("gl_entries", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   voucherNo: text("voucher_no").notNull(), // 伝票番号
   transactionDate: date("transaction_date").notNull(), // 取引日

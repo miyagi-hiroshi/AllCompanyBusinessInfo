@@ -138,7 +138,7 @@ export function useAuth() {
     queryKey: ["/api/auth/me"],
     queryFn: authApi.getCurrentUser,
     retry: false,
-    enabled: !!localStorage.getItem("sessionId"),
+    enabled: false, // 初回は認証チェックを実行しない
   });
 
   // ログインMutation
@@ -182,6 +182,17 @@ export function useAuth() {
       showErrorToast(appError);
     },
   });
+
+  // 初回アクセス時の処理
+  useEffect(() => {
+    // セッションIDが存在しない場合は即座にログイン画面を表示
+    if (!localStorage.getItem("sessionId")) {
+      setAuthState(prev => ({
+        ...prev,
+        isLoading: false,
+      }));
+    }
+  }, []);
 
   // 認証状態の更新
   useEffect(() => {

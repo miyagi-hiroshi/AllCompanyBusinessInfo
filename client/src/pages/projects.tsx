@@ -96,13 +96,21 @@ export default function ProjectsPage() {
     queryKey: ["/api/projects", selectedYear],
     queryFn: async () => {
       const response = await apiRequest("GET", `/api/projects?fiscalYear=${selectedYear}`, undefined);
-      return response.json();
+      const result = await response.json();
+      // APIレスポンス: { success: true, data: { items: [...], total, page, limit } }
+      return result.data?.items || [];
     },
   });
 
   // Fetch customers for dropdown
   const { data: customers = [] } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/customers", undefined);
+      const result = await response.json();
+      // APIレスポンス: { success: true, data: { items: [...], total, page, limit } }
+      return result.data?.items || [];
+    },
   });
 
   // Create mutation

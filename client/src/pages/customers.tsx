@@ -49,6 +49,12 @@ export default function CustomersPage() {
 
   const { data: customers = [], isLoading } = useQuery<Customer[]>({
     queryKey: ["/api/customers"],
+    queryFn: async () => {
+      const response = await apiRequest("GET", "/api/customers", undefined);
+      const result = await response.json();
+      // APIレスポンス: { success: true, data: { items: [...], total, page, limit } }
+      return result.data?.items || [];
+    },
   });
 
   const createMutation = useMutation({
