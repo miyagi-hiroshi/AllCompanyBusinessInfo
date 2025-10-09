@@ -349,7 +349,7 @@ export default function StaffingPage() {
                       </div>
                     </TableCell>
                     <TableCell>{staff.employeeName}</TableCell>
-                    <TableCell className="text-right font-mono">{Number(staff.workHours).toFixed(1)}人月</TableCell>
+                    <TableCell className="text-right font-mono">{Number(staff.workHours).toFixed(2)}人月</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{staff.remarks || "-"}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -383,7 +383,7 @@ export default function StaffingPage() {
                       <div className="flex gap-4">
                         {Object.entries(employeeTotals).map(([name, hours]) => (
                           <span key={name} className="text-sm">
-                            {name}: {hours.toFixed(1)}人月
+                            {name}: {hours.toFixed(2)}人月
                           </span>
                         ))}
                       </div>
@@ -471,12 +471,12 @@ export default function StaffingPage() {
               <Input
                 id="staffing-work-hours"
                 type="number"
-                step="0.1"
+                step="0.01"
                 min="0"
-                max="99.9"
+                max="99.99"
                 value={formData.workHours}
                 onChange={(e) => setFormData({ ...formData, workHours: e.target.value })}
-                placeholder="1.0"
+                placeholder="1.00"
                 data-testid="input-work-hours"
               />
             </div>
