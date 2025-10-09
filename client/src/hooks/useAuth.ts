@@ -35,7 +35,8 @@ interface AuthState {
 const authApi = {
   // ログイン
   async login(email: string, password: string): Promise<{
-    sessionId: string;
+    user: User;
+    employee: Employee | null;
   }> {
     const response = await fetch("/api/auth/login", {
       method: "POST",
@@ -43,6 +44,7 @@ const authApi = {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ email, password }),
+      credentials: "include", // Cookieを受信
     });
 
     if (!response.ok) {
@@ -51,7 +53,7 @@ const authApi = {
 
     const data = await response.json() as {
       success: boolean;
-      data?: { sessionId: string };
+      data?: { user: User; employee: Employee | null };
       message?: string;
     };
 
@@ -124,23 +126,16 @@ export function useAuth() {
   const loginMutation = useMutation({
     mutationFn: ({ email, password }: { email: string; password: string }) =>
       authApi.login(email, password),
-    onSuccess: async () => {
-      // ログイン成功後、認証状態を再取得
-      try {
-        const userData = await authApi.getCurrentUser();
-        setAuthState({
-          user: userData.user,
-          employee: userData.employee,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null,
-        });
-        showSuccessToast("ログイン成功", "認証が完了しました");
-      } catch (error) {
-        console.error("認証状態の取得に失敗:", error);
-        const appError = handleError(error, false);
-        showErrorToast(appError);
-      }
+    onSuccess: (data) => {
+      // ログイン成功、レスポンスから直接ユーザー情報を取得
+      setAuthState({
+        user: data.user,
+        employee: data.employee,
+        isAuthenticated: true,
+        isLoading: false,
+        error: null,
+      });
+      showSuccessToast("ログイン成功", "認証が完了しました");
     },
     onError: (error) => {
       const appError = handleError(error, false);
@@ -180,16 +175,35 @@ export function useAuth() {
     // Cookieベースの認証: サーバーに認証状態を確認
     const checkAuth = async () => {
       try {
-        const userData = await authApi.getCurrentUser();
-        setAuthState({
-          user: userData.user,
-          employee: userData.employee,
-          isAuthenticated: true,
-          isLoading: false,
-          error: null,
+        const response = await fetch("/api/auth/me", {
+          credentials: "include", // Cookieを送信
         });
+        
+        if (response.ok) {
+          const result = await response.json() as {
+            success: boolean;
+            data?: { user: User; employee: Employee | null };
+          };
+          
+          if (result.success && result.data) {
+            setAuthState({
+              user: result.data.user,
+              employee: result.data.employee,
+              isAuthenticated: true,
+              isLoading: false,
+              error: null,
+            });
+            return;
+          }
+        }
+        
+        // 認証エラーまたはCookieなしの場合はログイン画面を表示
+        setAuthState(prev => ({
+          ...prev,
+          isLoading: false,
+        }));
       } catch {
-        // 認証エラーの場合はログイン画面を表示
+        // エラー時はログイン画面を表示
         setAuthState(prev => ({
           ...prev,
           isLoading: false,
