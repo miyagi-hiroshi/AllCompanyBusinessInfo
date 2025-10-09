@@ -20,6 +20,12 @@ const router = Router();
 router.get('/', requireAuth, async (req: Request, res: Response) => {
   try {
     const employees = await getActiveExistingEmployees();
+    
+    // デバッグ用ログ
+    console.log('📋 従業員一覧取得:', {
+      count: employees.length,
+      employees: employees,
+    });
 
     res.json({
       success: true,
@@ -29,7 +35,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('従業員一覧取得エラー:', error);
+    console.error('❌ 従業員一覧取得エラー:', error);
     res.status(500).json({
       success: false,
       message: '従業員一覧の取得中にエラーが発生しました',

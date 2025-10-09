@@ -64,6 +64,8 @@ export function useEmployees() {
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/employees", undefined);
       const result = await res.json();
+      console.log('🔍 useEmployees - APIレスポンス:', result);
+      console.log('🔍 useEmployees - items:', result.data?.items);
       return result.data?.items || [];
     },
   });
