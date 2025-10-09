@@ -103,14 +103,7 @@ export default function ProjectsPage() {
   });
 
   // Fetch employees for dropdown
-  const { data: employees = [], isLoading: isLoadingEmployees } = useEmployees();
-  
-  // デバッグログ
-  console.log('👥 従業員データ:', {
-    count: employees.length,
-    isLoading: isLoadingEmployees,
-    employees: employees
-  });
+  const { data: employees = [] } = useEmployees();
 
   // Create mutation
   const createMutation = useMutation({
