@@ -97,7 +97,7 @@ export const insertBudgetExpenseSchema = createInsertSchema(budgetsExpense.budge
 export const selectBudgetExpenseSchema = createSelectSchema(budgetsExpense.budgetsExpense);
 
 export const insertStaffingSchema = createInsertSchema(staffing.staffing).extend({
-  workHours: z.union([z.number(), z.string().transform(Number)]),
+  workHours: z.union([z.string(), z.number().transform(String)]),
   employeeId: z.union([z.string(), z.number().transform(String)]).optional().nullable(),
 });
 export const selectStaffingSchema = createSelectSchema(staffing.staffing);

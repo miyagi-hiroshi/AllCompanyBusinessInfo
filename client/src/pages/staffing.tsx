@@ -121,7 +121,7 @@ export default function StaffingPage() {
       month: staffing.month,
       employeeId: staffing.employeeId ? String(staffing.employeeId) : "",
       employeeName: staffing.employeeName,
-      workHours: staffing.workHours,
+      workHours: String(staffing.workHours),
       remarks: staffing.remarks || "",
     });
     setDialogOpen(true);
@@ -146,7 +146,6 @@ export default function StaffingPage() {
     // 数値変換と空文字列のクリーンアップ
     const dataToSubmit = {
       ...formData,
-      workHours: parseFloat(formData.workHours),
       employeeId: formData.employeeId || undefined, // 空文字列をundefinedに変換
       remarks: formData.remarks || undefined, // 空文字列をundefinedに変換
     };
