@@ -1,5 +1,5 @@
 import { Copy, Plus, Save, Search,Trash2 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 
 import { Button } from "@/components/ui/button";
@@ -49,7 +49,19 @@ export function ExcelDataGrid({
   const [editingCell, setEditingCell] = useState<{ rowIndex: number; colKey: string } | null>(null);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const gridRef = useRef<HTMLDivElement>(null);
+  const cellRefs = useRef<Map<string, HTMLTableCellElement>>(new Map());
   const { toast } = useToast();
+
+  // Focus on active cell when it changes
+  useEffect(() => {
+    if (activeCell && !editingCell) {
+      const cellKey = `${activeCell.rowIndex}-${activeCell.colKey}`;
+      const cellElement = cellRefs.current.get(cellKey);
+      if (cellElement) {
+        cellElement.focus();
+      }
+    }
+  }, [activeCell, editingCell]);
 
   // Ctrl+Enter: Save
   useHotkeys(
@@ -280,7 +292,17 @@ export function ExcelDataGrid({
         <td
           key={column.key}
           className={cn(cellClassName, "bg-muted/50 text-muted-foreground")}
+          ref={(el) => {
+            const cellKey = `${rowIndex}-${column.key}`;
+            if (el) {
+              cellRefs.current.set(cellKey, el);
+            } else {
+              cellRefs.current.delete(cellKey);
+            }
+          }}
           onClick={() => setActiveCell({ rowIndex, colKey: column.key })}
+          onKeyDown={(e) => handleKeyDown(e, rowIndex, column.key)}
+          tabIndex={0}
           data-testid={`cell-${rowIndex}-${column.key}`}
         >
           {value}
@@ -293,6 +315,14 @@ export function ExcelDataGrid({
         <td
           key={column.key}
           className={cellClassName}
+          ref={(el) => {
+            const cellKey = `${rowIndex}-${column.key}`;
+            if (el) {
+              cellRefs.current.set(cellKey, el);
+            } else {
+              cellRefs.current.delete(cellKey);
+            }
+          }}
           onClick={() => {
             setActiveCell({ rowIndex, colKey: column.key });
           }}
@@ -349,6 +379,14 @@ export function ExcelDataGrid({
       <td
         key={column.key}
         className={cellClassName}
+        ref={(el) => {
+          const cellKey = `${rowIndex}-${column.key}`;
+          if (el) {
+            cellRefs.current.set(cellKey, el);
+          } else {
+            cellRefs.current.delete(cellKey);
+          }
+        }}
         onClick={() => setActiveCell({ rowIndex, colKey: column.key })}
         onDoubleClick={() => setEditingCell({ rowIndex, colKey: column.key })}
         onKeyDown={(e) => handleKeyDown(e, rowIndex, column.key)}

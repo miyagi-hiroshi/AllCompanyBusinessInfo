@@ -26,7 +26,6 @@ const shortcuts: Shortcut[] = [
   
   { keys: ["Ctrl", "Enter"], description: "一括保存", category: "データ操作" },
   { keys: ["Ctrl", "Shift", "↓"], description: "行追加", category: "データ操作" },
-  { keys: ["Ctrl", "Shift", "Del"], description: "選択行削除", category: "データ操作" },
   { keys: ["Ctrl", "Shift", "D"], description: "行複製", category: "データ操作" },
   { keys: ["Ctrl", "F"], description: "検索", category: "データ操作" },
   
