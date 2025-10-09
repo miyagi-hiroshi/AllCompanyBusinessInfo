@@ -10,10 +10,17 @@ export interface OrderForecastFilter {
 }
 
 export function useOrderForecasts(filter: OrderForecastFilter) {
-  const params = new URLSearchParams({
-    fiscalYear: filter.fiscalYear.toString(),
-  });
-  if (filter.month) {params.append("month", filter.month.toString());}
+  const params = new URLSearchParams();
+  
+  // 会計年度と月から計上年月を生成してフィルタリング
+  if (filter.month) {
+    // 月が指定されている場合は、その月の計上年月で絞り込み
+    // 会計年度: 4月～翌年3月
+    const year = filter.month >= 4 ? filter.fiscalYear : filter.fiscalYear + 1;
+    const accountingPeriod = `${year}-${String(filter.month).padStart(2, "0")}`;
+    params.append("accountingPeriod", accountingPeriod);
+  }
+  
   if (filter.projectId) {params.append("projectId", filter.projectId);}
   
   return useQuery<OrderForecast[]>({

@@ -96,12 +96,19 @@ export default function OrderForecastPage() {
       required: true,
       autocompleteOptions: (() => {
         const periods: string[] = [];
-        const now = new Date();
-        for (let i = 0; i < 12; i++) {
-          const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-          const periodValue = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        const fiscalYear = filter.fiscalYear;
+        
+        // 会計年度: 4月～翌年3月
+        // 4月～12月は同じ年、1月～3月は翌年
+        for (let month = 4; month <= 12; month++) {
+          const periodValue = `${fiscalYear}-${String(month).padStart(2, "0")}`;
           periods.push(periodValue);
         }
+        for (let month = 1; month <= 3; month++) {
+          const periodValue = `${fiscalYear + 1}-${String(month).padStart(2, "0")}`;
+          periods.push(periodValue);
+        }
+        
         return periods.map(p => ({
           value: p,
           label: `${p.split("-")[0]}年${p.split("-")[1]}月`,
