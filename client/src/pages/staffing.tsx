@@ -40,6 +40,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { useEmployees } from "@/hooks/useEmployees";
 import { useProjects } from "@/hooks/useMasters";
 import {
   useCreateStaffing,
@@ -77,11 +78,15 @@ export default function StaffingPage() {
 
   // Fetch data
   const { data: projects = [] } = useProjects();
+  const { data: employees = [] } = useEmployees();
   const { data: staffingData = [], isLoading } = useStaffing({
     projectId: selectedProjectId || undefined,
     fiscalYear: selectedYear,
     month: selectedMonth,
   });
+  
+  // 生産性プロジェクトのみをフィルタリング
+  const productivityProjects = projects.filter(p => p.analysisType === "生産性");
 
   // Mutations
   const createMutation = useCreateStaffing();
@@ -204,12 +209,22 @@ export default function StaffingPage() {
   };
 
   const handleProjectChange = (projectId: string) => {
-    const project = projects.find((p) => p.id === projectId);
+    const project = productivityProjects.find((p) => p.id === projectId);
     setFormData({
       ...formData,
       projectId,
       projectCode: project?.code || "",
       projectName: project?.name || "",
+    });
+  };
+  
+  const handleEmployeeChange = (employeeId: string) => {
+    const employee = employees.find((e) => e.id === employeeId);
+    const fullName = employee ? `${employee.lastName} ${employee.firstName}` : "";
+    setFormData({
+      ...formData,
+      employeeId,
+      employeeName: fullName,
     });
   };
 
@@ -278,7 +293,7 @@ export default function StaffingPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全て</SelectItem>
-                {projects
+                {productivityProjects
                   .filter((p) => p.fiscalYear === selectedYear)
                   .map((project) => (
                     <SelectItem key={project.id} value={project.id}>
@@ -319,7 +334,7 @@ export default function StaffingPage() {
                 <TableRow>
                   <TableHead>プロジェクト</TableHead>
                   <TableHead>従業員名</TableHead>
-                  <TableHead className="text-right">工数（時間）</TableHead>
+                  <TableHead className="text-right">工数（人月）</TableHead>
                   <TableHead>備考</TableHead>
                   <TableHead className="w-[100px]">操作</TableHead>
                 </TableRow>
@@ -334,7 +349,7 @@ export default function StaffingPage() {
                       </div>
                     </TableCell>
                     <TableCell>{staff.employeeName}</TableCell>
-                    <TableCell className="text-right font-mono">{Number(staff.workHours).toFixed(1)}h</TableCell>
+                    <TableCell className="text-right font-mono">{Number(staff.workHours).toFixed(1)}人月</TableCell>
                     <TableCell className="text-sm text-muted-foreground">{staff.remarks || "-"}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -368,7 +383,7 @@ export default function StaffingPage() {
                       <div className="flex gap-4">
                         {Object.entries(employeeTotals).map(([name, hours]) => (
                           <span key={name} className="text-sm">
-                            {name}: {hours.toFixed(1)}h
+                            {name}: {hours.toFixed(1)}人月
                           </span>
                         ))}
                       </div>
@@ -426,7 +441,7 @@ export default function StaffingPage() {
                   <SelectValue placeholder="プロジェクトを選択" />
                 </SelectTrigger>
                 <SelectContent>
-                  {projects
+                  {productivityProjects
                     .filter((p) => p.fiscalYear === (formData.fiscalYear || selectedYear))
                     .map((project) => (
                       <SelectItem key={project.id} value={project.id}>
@@ -437,24 +452,31 @@ export default function StaffingPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="staffing-employee-name">従業員名</Label>
-              <Input
-                id="staffing-employee-name"
-                value={formData.employeeName}
-                onChange={(e) => setFormData({ ...formData, employeeName: e.target.value })}
-                placeholder="山田太郎"
-                data-testid="input-employee-name"
-              />
+              <Label htmlFor="staffing-employee">従業員</Label>
+              <Select value={formData.employeeId || ""} onValueChange={handleEmployeeChange}>
+                <SelectTrigger id="staffing-employee" data-testid="select-employee">
+                  <SelectValue placeholder="従業員を選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees.map((employee) => (
+                    <SelectItem key={employee.id} value={employee.id}>
+                      {employee.lastName} {employee.firstName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="staffing-work-hours">工数（時間）</Label>
+              <Label htmlFor="staffing-work-hours">工数（人月）</Label>
               <Input
                 id="staffing-work-hours"
                 type="number"
-                step="0.5"
+                step="0.1"
+                min="0"
+                max="99.9"
                 value={formData.workHours}
                 onChange={(e) => setFormData({ ...formData, workHours: e.target.value })}
-                placeholder="160"
+                placeholder="1.0"
                 data-testid="input-work-hours"
               />
             </div>
