@@ -24,6 +24,7 @@ export interface GridRow {
   id: string;
   _modified?: boolean;
   _error?: string;
+  _readonly?: boolean;
 }
 
 export type GridRowData = GridRow & Record<string, string | number | boolean | undefined>;
@@ -149,14 +150,26 @@ export function ExcelDataGrid({
   };
 
   const handleDeleteRows = () => {
-    const newRows = rows.filter((_, index) => !selectedRows.has(index));
+    // 削除可能な行のみをフィルタリング（読み取り専用の行は削除しない）
+    const deletableRows = Array.from(selectedRows).filter(index => !rows[index]._readonly);
+    
+    if (deletableRows.length === 0) {
+      toast({
+        title: "削除できません",
+        description: "選択された行は突合済みのため削除できません",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    const newRows = rows.filter((_, index) => !deletableRows.includes(index));
     onRowsChange(newRows);
     setSelectedRows(new Set());
     setActiveCell(null);
     
     toast({
       title: "行を削除しました",
-      description: `${selectedRows.size}行を削除しました`,
+      description: `${deletableRows.length}行を削除しました`,
     });
   };
 
@@ -227,8 +240,11 @@ export function ExcelDataGrid({
             setActiveCell({ rowIndex: rowIndex + 1, colKey });
           }
         } else {
-          // Start editing
-          setEditingCell({ rowIndex, colKey });
+          // Start editing only if row is not readonly
+          const isRowReadonly = rows[rowIndex]._readonly || false;
+          if (!isRowReadonly) {
+            setEditingCell({ rowIndex, colKey });
+          }
         }
         break;
 
@@ -275,6 +291,7 @@ export function ExcelDataGrid({
     const isActive = activeCell?.rowIndex === rowIndex && activeCell?.colKey === column.key;
     const isEditing = editingCell?.rowIndex === rowIndex && editingCell?.colKey === column.key;
     const value = row[column.key];
+    const isRowReadonly = row._readonly || false;
 
     const cellClassName = cn(
       "border-r border-border p-2 text-sm",
@@ -287,7 +304,25 @@ export function ExcelDataGrid({
       }
     );
 
-    if (column.readonly) {
+    if (column.readonly || isRowReadonly) {
+      // 読み取り専用セルの表示値を決定
+      let displayValue = value;
+      
+      // autocompleteの場合は、関連する名前フィールドから表示値を取得
+      if (column.type === "autocomplete") {
+        if (column.key.includes("customer") && row.customerName) {
+          displayValue = row.customerName;
+        } else if (column.key.includes("project") && row.projectName) {
+          displayValue = row.projectName;
+        } else if (column.key.includes("item") && row.itemName) {
+          displayValue = row.itemName;
+        } else if (column.autocompleteOptions) {
+          // フォールバック: optionsから検索
+          const option = column.autocompleteOptions.find((opt) => opt.value === value);
+          displayValue = option?.label || value;
+        }
+      }
+      
       return (
         <td
           key={column.key}
@@ -305,7 +340,7 @@ export function ExcelDataGrid({
           tabIndex={0}
           data-testid={`cell-${rowIndex}-${column.key}`}
         >
-          {value}
+          {displayValue}
         </td>
       );
     }
@@ -326,7 +361,11 @@ export function ExcelDataGrid({
           onClick={() => {
             setActiveCell({ rowIndex, colKey: column.key });
           }}
-          onDoubleClick={() => setEditingCell({ rowIndex, colKey: column.key })}
+          onDoubleClick={() => {
+            if (!isRowReadonly) {
+              setEditingCell({ rowIndex, colKey: column.key });
+            }
+          }}
           onKeyDown={(e) => handleKeyDown(e, rowIndex, column.key)}
           tabIndex={0}
           data-testid={`cell-${rowIndex}-${column.key}`}
@@ -388,7 +427,11 @@ export function ExcelDataGrid({
           }
         }}
         onClick={() => setActiveCell({ rowIndex, colKey: column.key })}
-        onDoubleClick={() => setEditingCell({ rowIndex, colKey: column.key })}
+        onDoubleClick={() => {
+          if (!isRowReadonly) {
+            setEditingCell({ rowIndex, colKey: column.key });
+          }
+        }}
         onKeyDown={(e) => handleKeyDown(e, rowIndex, column.key)}
         tabIndex={0}
         data-testid={`cell-${rowIndex}-${column.key}`}

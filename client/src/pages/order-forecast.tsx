@@ -173,6 +173,7 @@ export default function OrderForecastPage() {
     remarks: order.remarks || "",
     reconciliationStatus: order.reconciliationStatus,
     _modified: false,
+    _readonly: order.reconciliationStatus === "matched",
   }));
 
   const [localRows, setLocalRows] = useState<GridRowData[]>([]);
@@ -207,6 +208,7 @@ export default function OrderForecastPage() {
         remarks: order.remarks || "",
         reconciliationStatus: order.reconciliationStatus,
         _modified: false,
+        _readonly: order.reconciliationStatus === "matched",
       }));
       setLocalRows(freshGridRows);
       lastSyncedDataRef.current = orderForecasts;
@@ -321,6 +323,7 @@ export default function OrderForecastPage() {
           remarks: order.remarks || "",
           reconciliationStatus: order.reconciliationStatus,
           _modified: false,
+          _readonly: order.reconciliationStatus === "matched",
         }));
         setLocalRows(freshRows);
       }
@@ -373,6 +376,7 @@ export default function OrderForecastPage() {
           remarks: order.remarks || "",
           reconciliationStatus: order.reconciliationStatus,
           _modified: false,
+          _readonly: order.reconciliationStatus === "matched",
         }));
         setLocalRows(freshRows);
       }
