@@ -44,8 +44,16 @@ router.post('/login', async (req: Request, res: Response) => {
   try {
     const { email, password } = loginSchema.parse(req.body);
     
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔑 ログイン試行:', { email });
+    }
+    
     // 既存システムからユーザー情報を取得
     const user = await getExistingUserByEmail(email);
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('👤 ユーザー取得結果:', user ? '成功' : '失敗');
+    }
     
     if (!user) {
       return res.status(401).json({
@@ -78,13 +86,26 @@ router.post('/login', async (req: Request, res: Response) => {
     const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2時間後
     const session = await sessionRepository.create(user.id, expiresAt);
     
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🎫 セッション作成:', {
+        sessionId: session.id.substring(0, 8) + '...',
+        userId: user.id,
+        expiresAt: expiresAt.toISOString()
+      });
+    }
+    
     // HTTPOnly Cookieでセッション保存
     res.cookie('sessionId', session.id, {
       httpOnly: true, // XSS攻撃対策
       secure: process.env.NODE_ENV === 'production', // HTTPS通信時のみ送信（本番環境）
-      sameSite: 'strict', // CSRF攻撃対策
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // CSRF攻撃対策（開発環境ではlax）
       maxAge: 2 * 60 * 60 * 1000, // 2時間
+      path: '/', // すべてのパスでCookieを送信
     });
+    
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🍪 Cookie設定完了');
+    }
 
     res.json({
       success: true,
@@ -141,7 +162,8 @@ router.post('/logout', isAuthenticated, async (req: Request, res: Response) => {
     res.clearCookie('sessionId', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      path: '/',
     });
     
     res.json({

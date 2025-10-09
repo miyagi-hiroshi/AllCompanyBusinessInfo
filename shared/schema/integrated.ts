@@ -2,6 +2,9 @@ import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
 import * as accountingItems from "./accountingItem";
+import * as angleBForecasts from "./angleBForecast";
+import * as budgetsExpense from "./budgetExpense";
+import * as budgetsRevenue from "./budgetRevenue";
 // import * as businessRelations from "./business/relations"; // 未使用のためコメントアウト
 // 新規業務データスキーマ
 import * as customers from "./customer";
@@ -14,6 +17,7 @@ import * as items from "./item";
 import * as orderForecasts from "./orderForecast";
 import * as projects from "./project";
 import * as reconciliationLogs from "./reconciliationLog";
+import * as staffing from "./staffing";
 
 // 統合スキーマ
 export const schema = {
@@ -28,6 +32,10 @@ export const schema = {
   ...orderForecasts,
   ...glEntries,
   ...reconciliationLogs,
+  ...angleBForecasts,
+  ...budgetsRevenue,
+  ...budgetsExpense,
+  ...staffing,
 };
 
 // 既存システムのテーブル（参照専用）
@@ -35,12 +43,16 @@ export * from "./existing";
 
 // 新規業務データスキーマ
 export * from "./accountingItem";
+export * from "./angleBForecast";
+export * from "./budgetExpense";
+export * from "./budgetRevenue";
 export * from "./customer";
 export * from "./glEntry";
 export * from "./item";
 export * from "./orderForecast";
 export * from "./project";
 export * from "./reconciliationLog";
+export * from "./staffing";
 
 // リレーション定義
 export * from "./business/relations";
@@ -74,6 +86,18 @@ export const selectGLEntrySchema = createSelectSchema(glEntries.glEntries);
 
 export const insertReconciliationLogSchema = createInsertSchema(reconciliationLogs.reconciliationLogs);
 export const selectReconciliationLogSchema = createSelectSchema(reconciliationLogs.reconciliationLogs);
+
+export const insertAngleBForecastSchema = createInsertSchema(angleBForecasts.angleBForecasts);
+export const selectAngleBForecastSchema = createSelectSchema(angleBForecasts.angleBForecasts);
+
+export const insertBudgetRevenueSchema = createInsertSchema(budgetsRevenue.budgetsRevenue);
+export const selectBudgetRevenueSchema = createSelectSchema(budgetsRevenue.budgetsRevenue);
+
+export const insertBudgetExpenseSchema = createInsertSchema(budgetsExpense.budgetsExpense);
+export const selectBudgetExpenseSchema = createSelectSchema(budgetsExpense.budgetsExpense);
+
+export const insertStaffingSchema = createInsertSchema(staffing.staffing);
+export const selectStaffingSchema = createSelectSchema(staffing.staffing);
 
 // #endregion
 
@@ -113,6 +137,26 @@ export type UpdateGLEntryData = Partial<CreateGLEntryData>;
 
 export type ReconciliationLog = z.infer<typeof selectReconciliationLogSchema>;
 export type NewReconciliationLog = z.infer<typeof insertReconciliationLogSchema>;
+
+export type AngleBForecast = z.infer<typeof selectAngleBForecastSchema>;
+export type NewAngleBForecast = z.infer<typeof insertAngleBForecastSchema>;
+export type CreateAngleBForecastData = z.infer<typeof insertAngleBForecastSchema>;
+export type UpdateAngleBForecastData = Partial<CreateAngleBForecastData>;
+
+export type BudgetRevenue = z.infer<typeof selectBudgetRevenueSchema>;
+export type NewBudgetRevenue = z.infer<typeof insertBudgetRevenueSchema>;
+export type CreateBudgetRevenueData = z.infer<typeof insertBudgetRevenueSchema>;
+export type UpdateBudgetRevenueData = Partial<CreateBudgetRevenueData>;
+
+export type BudgetExpense = z.infer<typeof selectBudgetExpenseSchema>;
+export type NewBudgetExpense = z.infer<typeof insertBudgetExpenseSchema>;
+export type CreateBudgetExpenseData = z.infer<typeof insertBudgetExpenseSchema>;
+export type UpdateBudgetExpenseData = Partial<CreateBudgetExpenseData>;
+
+export type Staffing = z.infer<typeof selectStaffingSchema>;
+export type NewStaffing = z.infer<typeof insertStaffingSchema>;
+export type CreateStaffingData = z.infer<typeof insertStaffingSchema>;
+export type UpdateStaffingData = Partial<CreateStaffingData>;
 
 // #endregion
 
@@ -160,6 +204,38 @@ export type GLEntryFilter = {
   debitCredit?: "debit" | "credit";
   period?: string;
   reconciliationStatus?: "matched" | "fuzzy" | "unmatched";
+};
+
+export type AngleBForecastFilter = {
+  search?: string;
+  projectId?: string;
+  projectCode?: string;
+  customerId?: string;
+  customerCode?: string;
+  accountingPeriod?: string;
+  accountingItem?: string;
+  period?: string;
+  probability?: number;
+  createdByUserId?: string;
+  createdByEmployeeId?: string;
+};
+
+export type BudgetRevenueFilter = {
+  fiscalYear?: number;
+  serviceType?: string;
+};
+
+export type BudgetExpenseFilter = {
+  fiscalYear?: number;
+  accountingItem?: string;
+};
+
+export type StaffingFilter = {
+  projectId?: string;
+  fiscalYear?: number;
+  month?: number;
+  employeeId?: string;
+  employeeName?: string;
 };
 
 // #endregion

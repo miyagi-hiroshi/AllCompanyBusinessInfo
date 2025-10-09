@@ -6,7 +6,10 @@
  * 外部キー制約は設定せず、文字列参照のみで関連付けます。
  */
 
-import { boolean, integer, pgTable, serial, timestamp, varchar } from "drizzle-orm/pg-core";
+import { boolean, integer, pgSchema, pgTable, serial, timestamp, varchar } from "drizzle-orm/pg-core";
+
+// appスキーマの定義
+const appSchema = pgSchema("app");
 
 // 既存システムのユーザーテーブル（参照専用）
 export const users = pgTable("users", {
@@ -41,10 +44,10 @@ export const departments = pgTable("departments", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-// 既存システムのセッションテーブル（参照専用）
-export const sessions = pgTable("sessions", {
+// 本システムのセッションテーブル（app.sessions）
+export const sessions = appSchema.table("sessions", {
   id: varchar("id").primaryKey(),
-  userId: varchar("user_id").notNull(), // 外部キー制約なし
+  userId: varchar("user_id").notNull(),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),

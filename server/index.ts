@@ -56,10 +56,10 @@ app.use((req, res, next) => {
 });
 
 void (async () => {
-  const server = registerRoutes(app);
-
-  // セキュリティミドルウェアの設定
+  // セキュリティミドルウェアの設定（ルート登録前に実行）
   setupSecurityMiddleware(app);
+
+  const server = registerRoutes(app);
 
   // importantly only setup vite in development and after
   // setting up all the other routes so the catch-all route

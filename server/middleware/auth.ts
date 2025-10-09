@@ -13,7 +13,21 @@ export async function isAuthenticated(req: Request, res: Response, next: NextFun
     // Cookieまたはauthorizationヘッダーからセッションを取得
     const sessionId = req.cookies?.sessionId || req.headers.authorization?.replace('Bearer ', '');
     
+    // デバッグログ（開発環境のみ）
+    if (process.env.NODE_ENV === 'development') {
+      console.log('🔐 認証チェック:', {
+        path: req.path,
+        hasCookie: !!req.cookies?.sessionId,
+        hasAuth: !!req.headers.authorization,
+        sessionId: sessionId ? `${sessionId.substring(0, 8)}...` : 'なし',
+        cookies: req.cookies
+      });
+    }
+    
     if (!sessionId) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('❌ セッションIDなし');
+      }
       res.status(401).json({ 
         success: false,
         message: "認証が必要です" 
@@ -25,6 +39,9 @@ export async function isAuthenticated(req: Request, res: Response, next: NextFun
     const session = await sessionRepository.findById(sessionId);
     
     if (!session) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('❌ セッションが見つかりません:', sessionId?.substring(0, 8));
+      }
       res.status(401).json({ 
         success: false,
         message: "セッションが無効です" 
@@ -36,6 +53,9 @@ export async function isAuthenticated(req: Request, res: Response, next: NextFun
     if (session.expiresAt < new Date()) {
       // 期限切れセッションを削除
       await sessionRepository.delete(sessionId);
+      if (process.env.NODE_ENV === 'development') {
+        console.log('⏰ セッション期限切れ:', sessionId.substring(0, 8));
+      }
       res.status(401).json({ 
         success: false,
         message: "セッションの有効期限が切れています" 
@@ -47,6 +67,9 @@ export async function isAuthenticated(req: Request, res: Response, next: NextFun
     const user = await getExistingUser(session.userId);
     
     if (!user || user.length === 0) {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('❌ ユーザーが見つかりません:', session.userId);
+      }
       res.status(401).json({ 
         success: false,
         message: "認証情報が無効です" 
@@ -76,6 +99,10 @@ export async function isAuthenticated(req: Request, res: Response, next: NextFun
         status: employee.status,
       } : null,
     };
+
+    if (process.env.NODE_ENV === 'development') {
+      console.log('✅ 認証成功:', userData.email);
+    }
 
     next();
   } catch (error) {
