@@ -3,6 +3,17 @@ import { useQuery } from "@tanstack/react-query";
 
 import { apiRequest } from "@/lib/queryClient";
 
+// 従業員型定義
+export interface Employee {
+  id: number;
+  employeeId: string;
+  userId: string | null;
+  firstName: string;
+  lastName: string;
+  departmentId: number | null;
+  status: string | null;
+}
+
 export function useCustomers() {
   return useQuery<Customer[]>({
     queryKey: ["/api/customers"],
@@ -41,6 +52,17 @@ export function useAccountingItems() {
     queryKey: ["/api/accounting-items"],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/accounting-items", undefined);
+      const result = await res.json();
+      return result.data?.items || [];
+    },
+  });
+}
+
+export function useEmployees() {
+  return useQuery<Employee[]>({
+    queryKey: ["/api/employees"],
+    queryFn: async () => {
+      const res = await apiRequest("GET", "/api/employees", undefined);
       const result = await res.json();
       return result.data?.items || [];
     },

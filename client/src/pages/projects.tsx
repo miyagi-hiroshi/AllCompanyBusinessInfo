@@ -41,20 +41,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useEmployees } from "@/hooks/useMasters";
 import { useToast } from "@/hooks/useToast";
 import { apiRequest,queryClient } from "@/lib/queryClient";
-
-// 営業担当者リスト（別システムのデータを想定）
-const SALES_PERSONS = [
-  "山田太郎",
-  "佐藤花子",
-  "鈴木一郎",
-  "高橋次郎",
-  "田中三郎",
-  "渡辺四郎",
-  "伊藤五郎",
-  "中村六子"
-];
 
 const SERVICE_TYPES = [
   "インテグレーション",
@@ -112,6 +101,9 @@ export default function ProjectsPage() {
       return result.data?.items || [];
     },
   });
+
+  // Fetch employees for dropdown
+  const { data: employees = [] } = useEmployees();
 
   // Create mutation
   const createMutation = useMutation({
@@ -456,9 +448,12 @@ export default function ProjectsPage() {
                     <SelectValue placeholder="営業担当者を選択" />
                   </SelectTrigger>
                   <SelectContent>
-                    {SALES_PERSONS.map((person) => (
-                      <SelectItem key={person} value={person}>
-                        {person}
+                    {employees.map((employee) => (
+                      <SelectItem 
+                        key={employee.id} 
+                        value={`${employee.lastName}${employee.firstName}`}
+                      >
+                        {employee.lastName}{employee.firstName}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -701,9 +696,12 @@ export default function ProjectsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {SALES_PERSONS.map((person) => (
-                    <SelectItem key={person} value={person}>
-                      {person}
+                  {employees.map((employee) => (
+                    <SelectItem 
+                      key={employee.id} 
+                      value={`${employee.lastName}${employee.firstName}`}
+                    >
+                      {employee.lastName}{employee.firstName}
                     </SelectItem>
                   ))}
                 </SelectContent>
