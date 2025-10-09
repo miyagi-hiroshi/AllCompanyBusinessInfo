@@ -119,7 +119,7 @@ export default function StaffingPage() {
       projectName: staffing.projectName,
       fiscalYear: staffing.fiscalYear,
       month: staffing.month,
-      employeeId: staffing.employeeId || "",
+      employeeId: staffing.employeeId ? String(staffing.employeeId) : "",
       employeeName: staffing.employeeName,
       workHours: staffing.workHours,
       remarks: staffing.remarks || "",
@@ -150,8 +150,6 @@ export default function StaffingPage() {
       employeeId: formData.employeeId || undefined, // 空文字列をundefinedに変換
       remarks: formData.remarks || undefined, // 空文字列をundefinedに変換
     };
-    
-    console.log('送信データ:', dataToSubmit); // デバッグログ
 
     if (editMode && selectedStaffing) {
       updateMutation.mutate(
@@ -230,12 +228,12 @@ export default function StaffingPage() {
     });
   };
   
-  const handleEmployeeChange = (employeeId: string) => {
-    const employee = employees.find((e) => e.id === employeeId);
+  const handleEmployeeChange = (employeeIdStr: string) => {
+    const employee = employees.find((e) => String(e.id) === employeeIdStr);
     const fullName = employee ? `${employee.lastName} ${employee.firstName}` : "";
     setFormData({
       ...formData,
-      employeeId,
+      employeeId: employeeIdStr,
       employeeName: fullName,
     });
   };
@@ -465,13 +463,13 @@ export default function StaffingPage() {
             </div>
             <div className="space-y-2">
               <Label htmlFor="staffing-employee">従業員</Label>
-              <Select value={formData.employeeId || ""} onValueChange={handleEmployeeChange}>
+              <Select value={formData.employeeId ? String(formData.employeeId) : ""} onValueChange={handleEmployeeChange}>
                 <SelectTrigger id="staffing-employee" data-testid="select-employee">
                   <SelectValue placeholder="従業員を選択" />
                 </SelectTrigger>
                 <SelectContent>
                   {employees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.id}>
+                    <SelectItem key={employee.id} value={String(employee.id)}>
                       {employee.lastName} {employee.firstName}
                     </SelectItem>
                   ))}
