@@ -1,6 +1,6 @@
 import type { NewStaffing, Staffing, StaffingFilter } from "@shared/schema";
 import { staffing } from "@shared/schema";
-import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 
 import { db } from "../../db";
 
@@ -83,7 +83,12 @@ export class StaffingRepository {
     const conditions = [];
 
     if (filter.projectId) {
-      conditions.push(eq(staffing.projectId, filter.projectId));
+      // 配列の場合はinArray、単一の場合はeq
+      if (Array.isArray(filter.projectId)) {
+        conditions.push(inArray(staffing.projectId, filter.projectId));
+      } else {
+        conditions.push(eq(staffing.projectId, filter.projectId));
+      }
     }
 
     if (filter.fiscalYear !== undefined) {

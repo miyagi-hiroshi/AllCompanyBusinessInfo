@@ -18,7 +18,13 @@ const updateStaffingSchema = insertStaffingSchema.partial();
 
 // 配員計画検索スキーマ
 const searchStaffingSchema = z.object({
-  projectId: z.string().optional(),
+  projectId: z.string().optional().transform((val) => {
+    // カンマ区切りの場合は配列に変換
+    if (val && val.includes(',')) {
+      return val.split(',').filter(Boolean);
+    }
+    return val;
+  }),
   fiscalYear: z.string().transform(Number).optional(),
   month: z.string().transform(Number).optional(),
   employeeId: z.string().optional(),

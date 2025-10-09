@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { MultiSelect } from "@/components/ui/multi-select";
 import {
   Select,
   SelectContent,
@@ -57,7 +58,7 @@ export default function StaffingPage() {
   const { toast } = useToast();
   const [selectedYear, setSelectedYear] = useState<number>(2025);
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
-  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -80,7 +81,7 @@ export default function StaffingPage() {
   const { data: projects = [] } = useProjects();
   const { data: employees = [] } = useEmployees();
   const { data: staffingData = [], isLoading } = useStaffing({
-    projectId: selectedProjectId || undefined,
+    projectId: selectedProjectIds.length > 0 ? selectedProjectIds : undefined,
     fiscalYear: selectedYear,
     month: selectedMonth,
   });
@@ -293,24 +294,18 @@ export default function StaffingPage() {
             </Select>
 
             <Label htmlFor="project-select">プロジェクト:</Label>
-            <Select
-              value={selectedProjectId || "all"}
-              onValueChange={(value) => setSelectedProjectId(value === "all" ? "" : value)}
-            >
-              <SelectTrigger id="project-select" className="w-[200px]" data-testid="select-project">
-                <SelectValue placeholder="全て" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全て</SelectItem>
-                {productivityProjects
-                  .filter((p) => p.fiscalYear === selectedYear)
-                  .map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
+            <MultiSelect
+              options={productivityProjects
+                .filter((p) => p.fiscalYear === selectedYear)
+                .map((project) => ({
+                  label: project.name,
+                  value: project.id,
+                }))}
+              selected={selectedProjectIds}
+              onChange={setSelectedProjectIds}
+              placeholder="全て"
+              className="w-[300px]"
+            />
           </div>
         </div>
         <p className="text-muted-foreground mt-1">プロジェクトごとの要員配置を登録・管理します</p>
@@ -323,7 +318,7 @@ export default function StaffingPage() {
               <CardTitle>配員計画</CardTitle>
               <CardDescription>
                 {selectedYear}年度 {selectedMonth}月
-                {selectedProjectId && ` - ${projects.find((p) => p.id === selectedProjectId)?.name}`}
+                {selectedProjectIds.length > 0 && ` - ${selectedProjectIds.map(id => projects.find(p => p.id === id)?.name).filter(Boolean).join(", ")}`}
               </CardDescription>
             </div>
             <Button onClick={openCreateDialog} data-testid="button-create-staffing">

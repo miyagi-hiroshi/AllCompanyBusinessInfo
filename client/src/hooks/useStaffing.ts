@@ -4,7 +4,7 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export interface StaffingFilter {
-  projectId?: string;
+  projectId?: string | string[];
   fiscalYear?: number;
   month?: number;
 }
@@ -12,7 +12,13 @@ export interface StaffingFilter {
 export function useStaffing(filter?: StaffingFilter) {
   const params = new URLSearchParams();
   if (filter?.projectId) {
-    params.append("projectId", filter.projectId);
+    // 配列の場合はカンマ区切りで結合
+    const projectIds = Array.isArray(filter.projectId) 
+      ? filter.projectId.join(",") 
+      : filter.projectId;
+    if (projectIds) {
+      params.append("projectId", projectIds);
+    }
   }
   if (filter?.fiscalYear) {
     params.append("fiscalYear", filter.fiscalYear.toString());
@@ -23,8 +29,13 @@ export function useStaffing(filter?: StaffingFilter) {
   
   const queryString = params.toString();
   
+  // queryKeyも配列対応
+  const projectIdKey = Array.isArray(filter?.projectId) 
+    ? filter.projectId.sort().join(",") 
+    : filter?.projectId ?? null;
+  
   return useQuery<Staffing[]>({
-    queryKey: ["/api/staffing", filter?.projectId ?? null, filter?.fiscalYear ?? null, filter?.month ?? null],
+    queryKey: ["/api/staffing", projectIdKey, filter?.fiscalYear ?? null, filter?.month ?? null],
     queryFn: async () => {
       const res = await apiRequest("GET", `/api/staffing${queryString ? `?${queryString}` : ""}`, undefined);
       const result = await res.json();

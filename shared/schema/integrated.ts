@@ -234,7 +234,7 @@ export type BudgetExpenseFilter = {
 };
 
 export type StaffingFilter = {
-  projectId?: string;
+  projectId?: string | string[];
   fiscalYear?: number;
   month?: number;
   employeeId?: string;
