@@ -3,7 +3,7 @@ import { useEffect,useState } from "react";
 
 import { useToast } from "@/hooks/useToast";
 import { handleError,showErrorToast, showSuccessToast } from "@/lib/errorHandler";
-// import { apiRequest } from "@/lib/queryClient"; // 未使用のためコメントアウト
+import { apiRequest } from "@/lib/queryClient";
 
 // ユーザー情報の型定義
 interface User {
@@ -56,8 +56,7 @@ const authApi = {
     };
 
     if (data.success && data.data) {
-      // セッションIDをローカルストレージに保存
-      localStorage.setItem("sessionId", data.data.sessionId);
+      // セッションはHTTPOnly Cookieで管理（localStorageは使用しない）
       return data.data;
     } else {
       throw new Error(data.message || "ログインに失敗しました");
@@ -66,23 +65,12 @@ const authApi = {
 
   // ログアウト
   async logout(): Promise<void> {
-    const sessionId = localStorage.getItem("sessionId");
+    const response = await apiRequest("POST", "/api/auth/logout", undefined);
     
-    if (sessionId) {
-      const response = await fetch("/api/auth/logout", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${sessionId}`,
-        },
-      });
-
-      if (!response.ok) {
-        throw handleError(response, false);
-      }
+    if (!response.ok) {
+      throw handleError(response, false);
     }
-
-    // ローカルストレージからセッションIDを削除
-    localStorage.removeItem("sessionId");
+    // Cookieはサーバー側で削除される
   },
 
   // 認証状態確認
@@ -90,17 +78,8 @@ const authApi = {
     user: User;
     employee: Employee | null;
   }> {
-    const sessionId = localStorage.getItem("sessionId");
-    
-    if (!sessionId) {
-      throw new Error("セッションが見つかりません");
-    }
-
-    const response = await fetch("/api/auth/me", {
-      headers: {
-        "Authorization": `Bearer ${sessionId}`,
-      },
-    });
+    // Cookieからセッション情報を取得（HTTPOnly Cookieは自動送信される）
+    const response = await apiRequest("GET", "/api/auth/me", undefined);
 
     if (!response.ok) {
       throw handleError(response, false);
@@ -198,13 +177,27 @@ export function useAuth() {
 
   // 初回アクセス時の処理
   useEffect(() => {
-    // セッションIDが存在しない場合は即座にログイン画面を表示
-    if (!localStorage.getItem("sessionId")) {
-      setAuthState(prev => ({
-        ...prev,
-        isLoading: false,
-      }));
-    }
+    // Cookieベースの認証: サーバーに認証状態を確認
+    const checkAuth = async () => {
+      try {
+        const userData = await authApi.getCurrentUser();
+        setAuthState({
+          user: userData.user,
+          employee: userData.employee,
+          isAuthenticated: true,
+          isLoading: false,
+          error: null,
+        });
+      } catch {
+        // 認証エラーの場合はログイン画面を表示
+        setAuthState(prev => ({
+          ...prev,
+          isLoading: false,
+        }));
+      }
+    };
+    
+    void checkAuth();
   }, []);
 
   // 認証状態の更新

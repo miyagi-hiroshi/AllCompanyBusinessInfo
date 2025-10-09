@@ -28,8 +28,8 @@ export class CSRFProtection {
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1時間有効
     
-    // セッションIDをキーとしてトークンを保存
-    const sessionId = req.headers.authorization?.replace('Bearer ', '');
+    // CookieまたはAuthorizationヘッダーからセッションIDを取得
+    const sessionId = req.cookies?.sessionId || req.headers.authorization?.replace('Bearer ', '');
     if (sessionId) {
       csrfTokens.set(sessionId, { token, expiresAt });
     }
@@ -45,7 +45,7 @@ export class CSRFProtection {
    * @returns 検証結果
    */
   verifyToken(req: Request, token: string): boolean {
-    const sessionId = req.headers.authorization?.replace('Bearer ', '');
+    const sessionId = req.cookies?.sessionId || req.headers.authorization?.replace('Bearer ', '');
     
     if (!sessionId || !token) {
       return false;

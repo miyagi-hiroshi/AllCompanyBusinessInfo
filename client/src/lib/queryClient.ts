@@ -12,23 +12,17 @@ export async function apiRequest(
   url: string,
   data?: unknown  ,
 ): Promise<Response> {
-  // セッションIDを取得
-  const sessionId = localStorage.getItem("sessionId");
-  
-  // ヘッダーを構築
+  // ヘッダーを構築（Cookieは自動送信される）
   const headers: Record<string, string> = {};
   if (data) {
     headers["Content-Type"] = "application/json";
-  }
-  if (sessionId) {
-    headers["Authorization"] = `Bearer ${sessionId}`;
   }
 
   const res = await fetch(url, {
     method,
     headers,
     body: data ? JSON.stringify(data) : undefined,
-    credentials: "include",
+    credentials: "include", // Cookieを送信
   });
 
   await throwIfResNotOk(res);
@@ -41,18 +35,9 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    // セッションIDを取得
-    const sessionId = localStorage.getItem("sessionId");
-    
-    // ヘッダーを構築
-    const headers: Record<string, string> = {};
-    if (sessionId) {
-      headers["Authorization"] = `Bearer ${sessionId}`;
-    }
-
+    // Cookieは自動送信される
     const res = await fetch(queryKey.join("/"), {
-      headers,
-      credentials: "include",
+      credentials: "include", // Cookieを送信
     });
 
     if (unauthorizedBehavior === "returnNull" && res.status === 401) {

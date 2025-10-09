@@ -1,6 +1,7 @@
 import { NextFunction,Request, Response } from 'express';
 
 import { getExistingEmployeeByUserId,getExistingUser } from '../storage/existing';
+import { sessionRepository } from '../storage/session';
 
 /**
  * 認証ミドルウェア
@@ -9,7 +10,8 @@ import { getExistingEmployeeByUserId,getExistingUser } from '../storage/existing
  */
 export async function isAuthenticated(req: Request, res: Response, next: NextFunction): Promise<void> {
   try {
-    const sessionId = req.headers.authorization?.replace('Bearer ', '');
+    // Cookieまたはauthorizationヘッダーからセッションを取得
+    const sessionId = req.cookies?.sessionId || req.headers.authorization?.replace('Bearer ', '');
     
     if (!sessionId) {
       res.status(401).json({ 
@@ -19,8 +21,30 @@ export async function isAuthenticated(req: Request, res: Response, next: NextFun
       return;
     }
 
+    // セッションをDBから取得
+    const session = await sessionRepository.findById(sessionId);
+    
+    if (!session) {
+      res.status(401).json({ 
+        success: false,
+        message: "セッションが無効です" 
+      });
+      return;
+    }
+    
+    // セッションの有効期限をチェック
+    if (session.expiresAt < new Date()) {
+      // 期限切れセッションを削除
+      await sessionRepository.delete(sessionId);
+      res.status(401).json({ 
+        success: false,
+        message: "セッションの有効期限が切れています" 
+      });
+      return;
+    }
+
     // 既存システムからユーザー情報を取得
-    const user = await getExistingUser(sessionId);
+    const user = await getExistingUser(session.userId);
     
     if (!user || user.length === 0) {
       res.status(401).json({ 

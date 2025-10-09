@@ -1,3 +1,4 @@
+import cookieParser from "cookie-parser";
 import express from "express";
 
 import { auditDataChanges } from "./middleware/auditMiddleware";
@@ -8,8 +9,14 @@ import { log,serveStatic, setupVite } from "./vite";
 
 const app = express();
 
+// 本番環境ではリバースプロキシ（Nginx/Cloudflare）を信頼
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1); // 最初のプロキシを信頼
+}
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+app.use(cookieParser());
 
 // 監査ログミドルウェア
 app.use(auditDataChanges);

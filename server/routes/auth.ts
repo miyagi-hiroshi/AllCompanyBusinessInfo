@@ -4,17 +4,14 @@ import { promisify } from 'util';
 import { z } from 'zod';
 
 import { isAuthenticated } from '../middleware/auth';
+import { CSRFProtection } from '../middleware/csrf';
 import { getExistingEmployeeByUserId,getExistingUserByEmail } from '../storage/existing';
+import { sessionRepository } from '../storage/session';
+
+const csrfProtection = new CSRFProtection();
 
 // scryptの非同期版
 const scryptAsync = promisify(crypto.scrypt);
-
-// 既存システムと同じパスワードハッシュ化関数
-async function hashPassword(password: string) {
-  const salt = crypto.randomBytes(16).toString("hex");
-  const buf = (await scryptAsync(password, salt, 64)) as Buffer;
-  return `${buf.toString("hex")}.${salt}`;
-}
 
 // 既存システムと同じパスワード検証関数
 async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
@@ -58,10 +55,6 @@ router.post('/login', async (req: Request, res: Response) => {
     }
 
     // 既存システムのパスワード検証
-    console.log('🔐 パスワード検証開始:');
-    console.log(`  - 入力パスワード: ${password}`);
-    console.log(`  - データベースハッシュ: ${user.password}`);
-    
     if (!user.password) {
       return res.status(401).json({
         success: false,
@@ -70,23 +63,28 @@ router.post('/login', async (req: Request, res: Response) => {
     }
     
     const isPasswordValid = await verifyPassword(password, user.password);
-    console.log(`  - 検証結果: ${isPasswordValid}`);
     
     if (!isPasswordValid) {
-      console.log('❌ パスワード検証失敗');
       return res.status(401).json({
         success: false,
         message: 'メールアドレスまたはパスワードが正しくありません'
       });
     }
-    
-    console.log('✅ パスワード検証成功');
 
     // 既存システムから従業員情報を取得
     const employee = await getExistingEmployeeByUserId(user.id);
     
-    // セッションIDとしてユーザーIDを使用
-    const sessionId = user.id;
+    // セッションをDBに保存（2時間有効）
+    const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2時間後
+    const session = await sessionRepository.create(user.id, expiresAt);
+    
+    // HTTPOnly Cookieでセッション保存
+    res.cookie('sessionId', session.id, {
+      httpOnly: true, // XSS攻撃対策
+      secure: process.env.NODE_ENV === 'production', // HTTPS通信時のみ送信（本番環境）
+      sameSite: 'strict', // CSRF攻撃対策
+      maxAge: 2 * 60 * 60 * 1000, // 2時間
+    });
 
     res.json({
       success: true,
@@ -106,7 +104,6 @@ router.post('/login', async (req: Request, res: Response) => {
           departmentId: employee.departmentId,
           status: employee.status,
         } : null,
-        sessionId,
       },
     });
   } catch (error) {
@@ -132,7 +129,21 @@ router.post('/login', async (req: Request, res: Response) => {
  */
 router.post('/logout', isAuthenticated, async (req: Request, res: Response) => {
   try {
-    // セッションの削除処理（実際の実装では既存システムのセッション管理を使用）
+    // CookieからセッションIDを取得
+    const sessionId = req.cookies?.sessionId;
+    
+    if (sessionId) {
+      // セッションをDBから削除
+      await sessionRepository.delete(sessionId);
+    }
+    
+    // HTTPOnly Cookieを削除
+    res.clearCookie('sessionId', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
+    
     res.json({
       success: true,
       message: 'ログアウトしました',
@@ -180,16 +191,13 @@ router.get('/me', isAuthenticated, async (req: Request, res: Response) => {
  * CSRFトークン取得API
  * GET /api/auth/csrf-token
  */
-router.get('/csrf-token', async (req: Request, res: Response) => {
+router.get('/csrf-token', isAuthenticated, async (req: Request, res: Response) => {
   try {
-    // 簡易的なCSRFトークン生成（実際の実装では適切なCSRF保護を使用）
-    const csrfToken = Math.random().toString(36).substring(2, 15);
+    const token = csrfProtection.generateToken(req);
     
     res.json({
       success: true,
-      data: {
-        csrfToken,
-      },
+      data: { token },
     });
   } catch (error) {
     console.error('CSRFトークン生成エラー:', error);

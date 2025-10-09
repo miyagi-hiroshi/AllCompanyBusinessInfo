@@ -50,12 +50,22 @@ export function setupSecurityMiddleware(app: Express): void {
       },
     },
     crossOriginEmbedderPolicy: false,
+    // 本番環境ではHSTSを有効化
+    hsts: isDevelopment ? false : {
+      maxAge: 31536000, // 1年
+      includeSubDomains: true,
+      preload: true,
+    },
+    // 追加のセキュリティヘッダー
+    xssFilter: true, // X-XSS-Protection（廃止予定だが互換性のため残す）
+    noSniff: true, // X-Content-Type-Options
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   }));
 
-  // レート制限設定（開発環境では緩和）
+  // レート制限設定（環境別）
   const generalLimiter = rateLimit({
     windowMs: 15 * 60 * 1000, // 15分
-    max: 1000, // 最大1000リクエスト（開発環境では緩和）
+    max: isDevelopment ? 1000 : 100, // 開発: 1000、本番: 100リクエスト
     message: {
       success: false,
       message: 'リクエストが多すぎます。しばらく時間をおいてから再試行してください。'

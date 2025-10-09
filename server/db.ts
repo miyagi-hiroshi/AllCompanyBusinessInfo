@@ -34,10 +34,13 @@ if (isReplit) {
   // ローカル開発環境 or 本番環境: 標準の pg driver を使用
   console.log("Running in local/production environment, using pg driver.");
   
-  // SSL設定: 開発環境ではSSL無効、本番環境ではSSL有効
+  // SSL設定: 開発環境ではSSL無効、本番環境ではSSL有効（適切な証明書検証）
   const sslConfig = process.env.NODE_ENV === "production"
-    ? { rejectUnauthorized: false } // 本番環境ではSSLを有効にする
-    : false; // 開発環境ではSSLを完全に無効にする
+    ? {
+        rejectUnauthorized: true, // 証明書検証を有効化
+        ca: process.env.DATABASE_CA_CERT, // CA証明書（環境変数から読み込み）
+      }
+    : false; // 開発環境ではSSLを無効
 
   pool = new PgPool({
     connectionString: process.env.DATABASE_URL,
