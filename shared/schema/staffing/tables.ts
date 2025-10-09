@@ -14,7 +14,7 @@ export const staffing = appSchema.table("staffing", {
   month: integer("month").notNull(), // 月 (1-12)
   employeeId: varchar("employee_id"), // 従業員ID（参照専用）
   employeeName: text("employee_name").notNull(), // 従業員名
-  workHours: decimal("work_hours", { precision: 5, scale: 1 }).notNull(), // 工数（時間）
+  workHours: decimal("work_hours", { precision: 5, scale: 2 }).notNull(), // 工数（人月、小数第2位まで）
   remarks: text("remarks"), // 備考
   
   // 既存システムとの関連（参照専用、外部キー制約なし）

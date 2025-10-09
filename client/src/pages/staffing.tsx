@@ -143,11 +143,21 @@ export default function StaffingPage() {
       return;
     }
 
+    // 数値変換と空文字列のクリーンアップ
+    const dataToSubmit = {
+      ...formData,
+      workHours: parseFloat(formData.workHours),
+      employeeId: formData.employeeId || undefined, // 空文字列をundefinedに変換
+      remarks: formData.remarks || undefined, // 空文字列をundefinedに変換
+    };
+    
+    console.log('送信データ:', dataToSubmit); // デバッグログ
+
     if (editMode && selectedStaffing) {
       updateMutation.mutate(
         {
           id: selectedStaffing.id,
-          data: formData as NewStaffing,
+          data: dataToSubmit as any,
         },
         {
           onSuccess: () => {
@@ -157,7 +167,8 @@ export default function StaffingPage() {
             });
             setDialogOpen(false);
           },
-          onError: () => {
+          onError: (error) => {
+            console.error('更新エラー:', error);
             toast({
               title: "エラー",
               description: "配員計画の更新に失敗しました",
@@ -167,7 +178,7 @@ export default function StaffingPage() {
         }
       );
     } else {
-      createMutation.mutate(formData as NewStaffing, {
+      createMutation.mutate(dataToSubmit as any, {
         onSuccess: () => {
           toast({
             title: "作成完了",
@@ -175,7 +186,8 @@ export default function StaffingPage() {
           });
           setDialogOpen(false);
         },
-        onError: () => {
+        onError: (error) => {
+          console.error('作成エラー:', error);
           toast({
             title: "エラー",
             description: "配員計画の作成に失敗しました",
