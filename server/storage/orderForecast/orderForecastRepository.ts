@@ -9,6 +9,7 @@
 
 import type { NewOrderForecast,OrderForecast } from '@shared/schema/integrated';
 import { orderForecasts } from '@shared/schema/orderForecast';
+import { projects } from '@shared/schema/project';
 import { and, asc, count,desc, eq, like, or, sql } from 'drizzle-orm';
 
 import { db } from '../../db';
@@ -27,6 +28,8 @@ export interface OrderForecastFilter {
   reconciliationStatus?: 'matched' | 'fuzzy' | 'unmatched';
   createdByUserId?: string;
   createdByEmployeeId?: string;
+  salesPerson?: string;
+  searchText?: string;
 }
 
 export interface OrderForecastSearchOptions {
@@ -44,7 +47,36 @@ export class OrderForecastRepository {
   async findAll(options: OrderForecastSearchOptions = {}): Promise<OrderForecast[]> {
     const { filter, limit = 100, offset = 0, sortBy = 'createdAt', sortOrder = 'desc' } = options;
     
-    let query = db.select().from(orderForecasts);
+    // salesPersonフィルタがある場合はJOINが必要
+    const needsJoin = filter?.salesPerson;
+    
+    let query: any;
+    if (needsJoin) {
+      query = db.select({
+        id: orderForecasts.id,
+        projectId: orderForecasts.projectId,
+        projectCode: orderForecasts.projectCode,
+        projectName: orderForecasts.projectName,
+        customerId: orderForecasts.customerId,
+        customerCode: orderForecasts.customerCode,
+        customerName: orderForecasts.customerName,
+        accountingPeriod: orderForecasts.accountingPeriod,
+        accountingItem: orderForecasts.accountingItem,
+        description: orderForecasts.description,
+        amount: orderForecasts.amount,
+        remarks: orderForecasts.remarks,
+        period: orderForecasts.period,
+        reconciliationStatus: orderForecasts.reconciliationStatus,
+        glMatchId: orderForecasts.glMatchId,
+        createdByUserId: orderForecasts.createdByUserId,
+        createdByEmployeeId: orderForecasts.createdByEmployeeId,
+        version: orderForecasts.version,
+        createdAt: orderForecasts.createdAt,
+        updatedAt: orderForecasts.updatedAt,
+      }).from(orderForecasts).leftJoin(projects, eq(orderForecasts.projectId, projects.id));
+    } else {
+      query = db.select().from(orderForecasts);
+    }
     
     // フィルタリング
     if (filter) {
@@ -59,6 +91,16 @@ export class OrderForecastRepository {
             like(orderForecasts.customerName, `%${filter.search}%`),
             like(orderForecasts.accountingItem, `%${filter.search}%`),
             like(orderForecasts.description, `%${filter.search}%`)
+          )
+        );
+      }
+      
+      // searchText: 摘要文・備考のあいまい検索
+      if (filter.searchText) {
+        conditions.push(
+          or(
+            like(orderForecasts.description, `%${filter.searchText}%`),
+            like(orderForecasts.remarks, `%${filter.searchText}%`)
           )
         );
       }
@@ -111,21 +153,26 @@ export class OrderForecastRepository {
         conditions.push(eq(orderForecasts.createdByEmployeeId, filter.createdByEmployeeId));
       }
       
+      // salesPerson: プロジェクトテーブルとJOINして営業担当者でフィルタ
+      if (filter.salesPerson) {
+        conditions.push(eq(projects.salesPerson, filter.salesPerson));
+      }
+      
       if (conditions.length > 0) {
-        query = query.where(and(...conditions)) as any;
+        query = query.where(and(...conditions));
       }
     }
     
     // ソート
     const sortColumn = orderForecasts[sortBy];
     if (sortOrder === 'asc') {
-      query = query.orderBy(asc(sortColumn)) as any;
+      query = query.orderBy(asc(sortColumn));
     } else {
-      query = query.orderBy(desc(sortColumn)) as any;
+      query = query.orderBy(desc(sortColumn));
     }
     
     // ページネーション
-    query = query.limit(limit).offset(offset) as any;
+    query = query.limit(limit).offset(offset);
     
     return await query;
   }
@@ -249,6 +296,9 @@ export class OrderForecastRepository {
     if (filter) {
       const conditions = [];
       
+      // salesPersonフィルタがある場合はJOINが必要
+      const needsJoin = filter.salesPerson;
+      
       if (filter.search) {
         conditions.push(
           or(
@@ -258,6 +308,16 @@ export class OrderForecastRepository {
             like(orderForecasts.customerName, `%${filter.search}%`),
             like(orderForecasts.accountingItem, `%${filter.search}%`),
             like(orderForecasts.description, `%${filter.search}%`)
+          )
+        );
+      }
+      
+      // searchText: 摘要文・備考のあいまい検索
+      if (filter.searchText) {
+        conditions.push(
+          or(
+            like(orderForecasts.description, `%${filter.searchText}%`),
+            like(orderForecasts.remarks, `%${filter.searchText}%`)
           )
         );
       }
@@ -278,6 +338,10 @@ export class OrderForecastRepository {
         conditions.push(eq(orderForecasts.accountingPeriod, filter.accountingPeriod));
       }
       
+      if (filter.accountingItem) {
+        conditions.push(like(orderForecasts.accountingItem, `%${filter.accountingItem}%`));
+      }
+      
       if (filter.period) {
         conditions.push(eq(orderForecasts.period, filter.period));
       }
@@ -286,8 +350,24 @@ export class OrderForecastRepository {
         conditions.push(eq(orderForecasts.reconciliationStatus, filter.reconciliationStatus));
       }
       
+      // salesPerson: プロジェクトテーブルとJOINして営業担当者でフィルタ
+      if (filter.salesPerson) {
+        conditions.push(eq(projects.salesPerson, filter.salesPerson));
+      }
+      
       if (conditions.length > 0) {
-        const result = await db.select({ count: count() }).from(orderForecasts).where(and(...conditions));
+        let query: any;
+        if (needsJoin) {
+          query = db.select({ count: count() })
+            .from(orderForecasts)
+            .leftJoin(projects, eq(orderForecasts.projectId, projects.id))
+            .where(and(...conditions));
+        } else {
+          query = db.select({ count: count() })
+            .from(orderForecasts)
+            .where(and(...conditions));
+        }
+        const result = await query;
         return result[0]?.count ?? 0;
       }
     }

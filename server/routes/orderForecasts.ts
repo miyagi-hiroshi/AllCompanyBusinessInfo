@@ -33,6 +33,8 @@ const searchOrderForecastSchema = z.object({
   reconciliationStatus: z.enum(['matched', 'fuzzy', 'unmatched']).optional(),
   createdByUserId: z.string().optional(),
   createdByEmployeeId: z.string().optional(),
+  salesPerson: z.string().optional(),
+  searchText: z.string().optional(),
   page: z.string().transform(Number).optional().default('1'),
   limit: z.string().transform(Number).optional().default('20'),
   sortBy: z.enum(['projectCode', 'customerName', 'accountingPeriod', 'amount', 'createdAt']).optional().default('createdAt'),
@@ -62,6 +64,8 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
           reconciliationStatus: query.reconciliationStatus,
           createdByUserId: query.createdByUserId,
           createdByEmployeeId: query.createdByEmployeeId,
+          salesPerson: query.salesPerson,
+          searchText: query.searchText,
         },
         limit: query.limit,
         offset,
@@ -80,6 +84,8 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
         reconciliationStatus: query.reconciliationStatus,
         createdByUserId: query.createdByUserId,
         createdByEmployeeId: query.createdByEmployeeId,
+        salesPerson: query.salesPerson,
+        searchText: query.searchText,
       }),
     ]);
 

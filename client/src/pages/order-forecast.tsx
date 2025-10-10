@@ -7,6 +7,7 @@ import { ExcelDataGrid, type GridColumn, type GridRowData } from "@/components/e
 import { GLReconciliationPanel } from "@/components/gl-reconciliation-panel";
 import { KeyboardShortcutsPanel } from "@/components/keyboard-shortcuts-panel";
 import { ReconciliationStatusBadge } from "@/components/reconciliation-status-badge";
+import { type SearchFilter,SearchFilterPanel } from "@/components/search-filter-panel";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGLEntries } from "@/hooks/useGLEntries";
@@ -24,10 +25,18 @@ export default function OrderForecastPage() {
       month: now.getMonth() + 1,
     };
   });
+  
+  // 詳細検索条件
+  const [searchFilter, setSearchFilter] = useState<SearchFilter>({});
+  const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false);
+  
   const { toast } = useToast();
 
-  // Fetch data from backend with new filter
-  const { data: orderForecasts = [], isLoading: ordersLoading, refetch: refetchOrders } = useOrderForecasts(filter);
+  // Fetch data from backend with combined filters
+  const { data: orderForecasts = [], isLoading: ordersLoading, refetch: refetchOrders } = useOrderForecasts({
+    ...filter,
+    ...searchFilter,
+  });
   const { data: glEntries = [], isLoading: glLoading } = useGLEntries({
     fiscalYear: filter.fiscalYear,
     month: filter.month,
@@ -52,14 +61,53 @@ export default function OrderForecastPage() {
   // 現在のフィルタから期間を計算
   const currentPeriod = getPeriodFromFilter(filter);
 
-  // フィルタ変更時にデータを再取得
+  // 基本フィルタ変更時にデータを再取得
   const handleFilterChange = (newFilter: FilterState) => {
     setFilter(newFilter);
-    const filterDesc = `${newFilter.fiscalYear}年度${newFilter.month ? ` ${newFilter.month}月` : ""}${newFilter.projectId ? " (プロジェクト指定)" : ""}`;
+    
+    // フィルタ説明文を生成
+    const filterParts: string[] = [];
+    filterParts.push(`${newFilter.fiscalYear}年度`);
+    if (newFilter.month) filterParts.push(`${newFilter.month}月`);
+    if (newFilter.projectId) filterParts.push("プロジェクト指定");
+    
+    const filterDesc = filterParts.join(", ");
     toast({
       title: "フィルタを変更しました",
       description: `${filterDesc}のデータを読み込みました`,
     });
+  };
+
+  // 詳細検索実行時
+  const handleSearch = (newSearchFilter: SearchFilter) => {
+    setSearchFilter(newSearchFilter);
+    
+    // 検索条件の説明文を生成
+    const searchParts: string[] = [];
+    if (newSearchFilter.salesPerson) searchParts.push(`営業窓口: ${newSearchFilter.salesPerson}`);
+    if (newSearchFilter.accountingItem) searchParts.push(`計上科目: ${newSearchFilter.accountingItem}`);
+    if (newSearchFilter.customerId) {
+      const customer = customers.find(c => c.id === newSearchFilter.customerId);
+      if (customer) searchParts.push(`取引先: ${customer.name}`);
+    }
+    if (newSearchFilter.reconciliationStatus) {
+      const statusLabel = newSearchFilter.reconciliationStatus === 'matched' ? '突合済み' : 
+                          newSearchFilter.reconciliationStatus === 'fuzzy' ? '曖昧一致' : '未突合';
+      searchParts.push(`突合状態: ${statusLabel}`);
+    }
+    if (newSearchFilter.searchText) searchParts.push(`検索: ${newSearchFilter.searchText}`);
+    
+    if (searchParts.length > 0) {
+      toast({
+        title: "検索を実行しました",
+        description: searchParts.join(", "),
+      });
+    } else {
+      toast({
+        title: "検索条件をクリアしました",
+        description: "すべてのデータを表示しています",
+      });
+    }
   };
 
   // グリッド列定義
@@ -403,12 +451,6 @@ export default function OrderForecastPage() {
     });
   };
 
-  const handleSearch = () => {
-    toast({
-      title: "検索機能",
-      description: "検索ダイアログを表示します（モック）",
-    });
-  };
 
   const matchedCount = orderForecasts.filter((o) => o.reconciliationStatus === "matched").length;
   const fuzzyCount = orderForecasts.filter((o) => o.reconciliationStatus === "fuzzy").length;
@@ -442,7 +484,7 @@ export default function OrderForecastPage() {
           <AdvancedFilterPanel 
             filter={filter} 
             onChange={handleFilterChange} 
-            projects={projects} 
+            projects={projects}
           />
         </div>
 
@@ -463,15 +505,24 @@ export default function OrderForecastPage() {
             </div>
           </div>
 
-          <GLReconciliationPanel
-            period={currentPeriod}
-            orderForecasts={orderForecasts}
-            glEntries={glEntries}
-            onReconcile={handleReconcile}
-            onManualMatch={handleManualMatch}
-          />
-          <KeyboardShortcutsPanel />
-          <ThemeToggle />
+              <SearchFilterPanel
+                open={isSearchPanelOpen}
+                onOpenChange={setIsSearchPanelOpen}
+                filter={searchFilter}
+                onSearch={handleSearch}
+                projects={projects}
+                customers={customers}
+                accountingItems={accountingItems}
+              />
+              <GLReconciliationPanel
+                period={currentPeriod}
+                orderForecasts={orderForecasts}
+                glEntries={glEntries}
+                onReconcile={handleReconcile}
+                onManualMatch={handleManualMatch}
+              />
+              <KeyboardShortcutsPanel />
+              <ThemeToggle />
         </div>
       </header>
 
@@ -482,7 +533,6 @@ export default function OrderForecastPage() {
           rows={localRows}
           onRowsChange={handleRowsChange}
           onSave={handleSave}
-          onSearch={handleSearch}
         />
       </main>
     </div>

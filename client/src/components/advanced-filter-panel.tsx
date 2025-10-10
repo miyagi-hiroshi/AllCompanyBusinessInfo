@@ -1,5 +1,5 @@
 import type { Project } from "@shared/schema";
-import { Calendar, CalendarDays,FolderKanban } from "lucide-react";
+import { Calendar, CalendarDays, FolderKanban } from "lucide-react";
 
 import {
   Select,
