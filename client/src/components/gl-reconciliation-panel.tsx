@@ -87,9 +87,19 @@ export function GLReconciliationPanel({
   }, [glEntries, accountCodeFilter, searchText, unmatchedOnly]);
 
   const handleManualMatch = async (glId: string) => {
-    if (!selectedOrderId) return;
+    if (!selectedOrderId || !selectedOrder) return;
 
     try {
+      // 既に突合済みの場合は警告を表示
+      if (selectedOrder.reconciliationStatus === "matched" || selectedOrder.reconciliationStatus === "fuzzy") {
+        toast({
+          variant: "destructive",
+          title: "突合済みの明細です",
+          description: "突合済みの明細は、まず突合を解除してから新しいGLと突合してください",
+        });
+        return;
+      }
+
       await manualReconcile.mutateAsync({
         orderId: selectedOrderId,
         glId,
@@ -112,10 +122,23 @@ export function GLReconciliationPanel({
   };
 
   const handleUnmatch = async () => {
-    if (!selectedOrderId) return;
+    if (!selectedOrderId || !selectedOrder) return;
+
+    // glMatchIdが必要
+    if (!selectedOrder.glMatchId) {
+      toast({
+        variant: "destructive",
+        title: "解除エラー",
+        description: "突合されていない明細です",
+      });
+      return;
+    }
 
     try {
-      await unmatchReconciliation.mutateAsync({ orderId: selectedOrderId });
+      await unmatchReconciliation.mutateAsync({ 
+        orderId: selectedOrderId,
+        glId: selectedOrder.glMatchId,
+      });
 
       toast({
         title: "突合解除成功",

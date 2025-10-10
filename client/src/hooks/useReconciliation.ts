@@ -73,7 +73,7 @@ export function useManualReconcile() {
 
 export function useUnmatchReconciliation() {
   return useMutation({
-    mutationFn: async ({ glId, orderId }: { glId?: string; orderId: string }) => {
+    mutationFn: async ({ glId, orderId }: { glId: string; orderId: string }) => {
       const res = await apiRequest("POST", "/api/reconciliation/unmatch", { glId, orderId });
       return await res.json();
     },
