@@ -94,6 +94,7 @@ export default function OrderForecastPage() {
       type: "autocomplete",
       width: 140,
       required: true,
+      sortable: true,
       autocompleteOptions: (() => {
         const periods: string[] = [];
         const fiscalYear = filter.fiscalYear;

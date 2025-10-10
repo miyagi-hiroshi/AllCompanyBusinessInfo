@@ -1,4 +1,4 @@
-import { Copy, Plus, Save, Search,Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Copy, Plus, Save, Search, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 
@@ -18,6 +18,7 @@ export interface GridColumn {
   autocompleteOptions?: AutocompleteOption[];
   readonly?: boolean;
   className?: string;
+  sortable?: boolean;
 }
 
 export interface GridRow {
@@ -49,6 +50,8 @@ export function ExcelDataGrid({
   const [activeCell, setActiveCell] = useState<{ rowIndex: number; colKey: string } | null>(null);
   const [editingCell, setEditingCell] = useState<{ rowIndex: number; colKey: string } | null>(null);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [sortBy, setSortBy] = useState<string | null>(null);
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
   const cellRefs = useRef<Map<string, HTMLTableCellElement>>(new Map());
   const { toast } = useToast();
@@ -200,6 +203,46 @@ export function ExcelDataGrid({
     };
     onRowsChange(newRows);
   };
+
+  const handleHeaderClick = (columnKey: string) => {
+    if (sortBy === columnKey) {
+      // 同じカラムをクリック: 昇順 → 降順 → ソート解除
+      if (sortOrder === 'asc') {
+        setSortOrder('desc');
+      } else if (sortOrder === 'desc') {
+        setSortBy(null);
+        setSortOrder(null);
+      }
+    } else {
+      // 新しいカラムをクリック: 昇順でソート
+      setSortBy(columnKey);
+      setSortOrder('asc');
+    }
+  };
+
+  // ソート済みの行を取得
+  const sortedRows = [...rows];
+  if (sortBy && sortOrder) {
+    sortedRows.sort((a, b) => {
+      const aValue = a[sortBy];
+      const bValue = b[sortBy];
+      
+      // null/undefined を末尾に
+      if (aValue == null && bValue == null) return 0;
+      if (aValue == null) return 1;
+      if (bValue == null) return -1;
+      
+      // 文字列比較（accountingPeriodは"YYYY-MM"形式なので文字列比較で正しくソート）
+      const aStr = String(aValue);
+      const bStr = String(bValue);
+      
+      if (sortOrder === 'asc') {
+        return aStr.localeCompare(bStr);
+      } else {
+        return bStr.localeCompare(aStr);
+      }
+    });
+  }
 
   const handleKeyDown = (
     e: React.KeyboardEvent,
@@ -555,17 +598,38 @@ export function ExcelDataGrid({
               {columns.map((column) => (
                 <th
                   key={column.key}
-                  className="border-r border-border p-2 text-left text-sm font-medium"
+                  className={cn(
+                    "border-r border-border p-2 text-left text-sm font-medium",
+                    column.sortable && "cursor-pointer hover:bg-muted-foreground/10 select-none"
+                  )}
                   style={{ width: column.width }}
+                  onClick={() => column.sortable && handleHeaderClick(column.key)}
                 >
-                  {column.label}
-                  {column.required && <span className="text-destructive ml-1">*</span>}
+                  <div className="flex items-center gap-1">
+                    <span>
+                      {column.label}
+                      {column.required && <span className="text-destructive ml-1">*</span>}
+                    </span>
+                    {column.sortable && (
+                      <span className="ml-auto">
+                        {sortBy === column.key ? (
+                          sortOrder === 'asc' ? (
+                            <ArrowUp className="h-3 w-3" />
+                          ) : (
+                            <ArrowDown className="h-3 w-3" />
+                          )
+                        ) : (
+                          <ArrowUpDown className="h-3 w-3 opacity-50" />
+                        )}
+                      </span>
+                    )}
+                  </div>
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, rowIndex) => (
+            {sortedRows.map((row, rowIndex) => (
               <tr
                 key={row.id}
                 className={cn(
@@ -600,8 +664,8 @@ export function ExcelDataGrid({
       {/* Status Bar */}
       <div className="flex items-center justify-between px-4 py-2 border-t bg-muted/30 text-xs text-muted-foreground">
         <div className="flex items-center gap-4">
-          <span>総行数: {rows.length}</span>
-          <span>変更済: {rows.filter((r) => r._modified).length}</span>
+          <span>総行数: {sortedRows.length}</span>
+          <span>変更済: {sortedRows.filter((r) => r._modified).length}</span>
           {selectedRows.size > 0 && <span>選択: {selectedRows.size}</span>}
         </div>
         <div className="flex items-center gap-2">
