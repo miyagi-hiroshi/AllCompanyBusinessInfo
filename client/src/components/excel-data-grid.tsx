@@ -359,8 +359,8 @@ export function ExcelDataGrid({
     // Check for special column types that should render even when readonly
     if (column.type === "toggle") {
       const booleanValue = value === "true" || value === true;
-      // Show empty cell if value is false or "false"
-      const showToggle = booleanValue;
+      // Show toggle switch only if reconciliationStatus is not "matched"
+      const showToggle = row.reconciliationStatus !== "matched";
       
       return (
         <td
@@ -397,6 +397,34 @@ export function ExcelDataGrid({
     }
 
     if (column.type === "button" && (column.readonly || isRowReadonly)) {
+      // Check if row is excluded - if so, show "突合不要" label instead of button
+      const isExcluded = row.isExcluded === "true" || row.isExcluded === true;
+      
+      if (isExcluded) {
+        return (
+          <td
+            key={column.key}
+            className={cn(cellClassName, "text-center")}
+            ref={(el) => {
+              const cellKey = `${rowIndex}-${column.key}`;
+              if (el) {
+                cellRefs.current.set(cellKey, el);
+              } else {
+                cellRefs.current.delete(cellKey);
+              }
+            }}
+            onClick={() => setActiveCell({ rowIndex, colKey: column.key })}
+            onKeyDown={(e) => handleKeyDown(e, rowIndex, column.key)}
+            tabIndex={0}
+            data-testid={`cell-${rowIndex}-${column.key}`}
+          >
+            <div className="flex items-center justify-center">
+              <span className="text-xs text-muted-foreground">突合不要</span>
+            </div>
+          </td>
+        );
+      }
+      
       const buttonLabel = column.getButtonLabel ? column.getButtonLabel(value) : String(value || "");
       const rawVariant = column.getButtonVariant ? column.getButtonVariant(value) : "outline";
       
@@ -493,6 +521,34 @@ export function ExcelDataGrid({
     }
 
     if (column.type === "button") {
+      // Check if row is excluded - if so, show "突合不要" label instead of button
+      const isExcluded = row.isExcluded === "true" || row.isExcluded === true;
+      
+      if (isExcluded) {
+        return (
+          <td
+            key={column.key}
+            className={cn(cellClassName, "text-center")}
+            ref={(el) => {
+              const cellKey = `${rowIndex}-${column.key}`;
+              if (el) {
+                cellRefs.current.set(cellKey, el);
+              } else {
+                cellRefs.current.delete(cellKey);
+              }
+            }}
+            onClick={() => setActiveCell({ rowIndex, colKey: column.key })}
+            onKeyDown={(e) => handleKeyDown(e, rowIndex, column.key)}
+            tabIndex={0}
+            data-testid={`cell-${rowIndex}-${column.key}`}
+          >
+            <div className="flex items-center justify-center">
+              <span className="text-xs text-muted-foreground">突合不要</span>
+            </div>
+          </td>
+        );
+      }
+      
       const buttonLabel = column.getButtonLabel ? column.getButtonLabel(value) : String(value || "");
       const rawVariant = column.getButtonVariant ? column.getButtonVariant(value) : "outline";
       
