@@ -190,5 +190,96 @@ router.get('/statistics', requireAuth, async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * 科目別サマリー取得API
+ * GET /api/reconciliation/account-summary
+ */
+router.get('/account-summary', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { period } = req.query;
+
+    if (!period || typeof period !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: '期間パラメータが必要です',
+      });
+    }
+
+    const summary = await reconciliationService.getAccountSummary(period);
+
+    res.json({
+      success: true,
+      data: summary,
+    });
+  } catch (error: any) {
+    console.error('科目別サマリー取得エラー:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || '科目別サマリーの取得中にエラーが発生しました',
+    });
+  }
+});
+
+/**
+ * 手動突合API
+ * POST /api/reconciliation/manual-match
+ */
+router.post('/manual-match', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { glId, orderId } = req.body;
+
+    if (!glId || !orderId) {
+      return res.status(400).json({
+        success: false,
+        message: 'GL IDと受発注見込みIDが必要です',
+      });
+    }
+
+    const result = await reconciliationService.manualReconcile(glId, orderId);
+
+    res.json({
+      success: true,
+      data: result,
+      message: '手動突合が完了しました',
+    });
+  } catch (error: any) {
+    console.error('手動突合エラー:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || '手動突合処理中にエラーが発生しました',
+    });
+  }
+});
+
+/**
+ * 突合解除API
+ * POST /api/reconciliation/unmatch
+ */
+router.post('/unmatch', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { glId, orderId } = req.body;
+
+    if (!glId || !orderId) {
+      return res.status(400).json({
+        success: false,
+        message: 'GL IDと受発注見込みIDが必要です',
+      });
+    }
+
+    const result = await reconciliationService.unmatchReconciliation(glId, orderId);
+
+    res.json({
+      success: true,
+      data: result,
+      message: '突合解除が完了しました',
+    });
+  } catch (error: any) {
+    console.error('突合解除エラー:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || '突合解除処理中にエラーが発生しました',
+    });
+  }
+});
 
 export default router;

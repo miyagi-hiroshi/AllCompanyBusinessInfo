@@ -23,7 +23,7 @@ async function verifyPassword(password: string, hashedPassword: string): Promise
     const computedHash = buf.toString("hex");
     
     return computedHash === hash;
-  } catch (error) {
+  } catch (_error) {
     return false;
   }
 }

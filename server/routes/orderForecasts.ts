@@ -42,6 +42,44 @@ const searchOrderForecastSchema = z.object({
 });
 
 /**
+ * 除外設定API
+ * POST /api/order-forecasts/set-exclusion
+ */
+router.post('/set-exclusion', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { ids, isExcluded, exclusionReason } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: '受発注見込み明細IDリストが正しくありません',
+      });
+    }
+
+    if (typeof isExcluded !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: '除外フラグが正しくありません',
+      });
+    }
+
+    const updatedCount = await orderForecastService.setExclusion(ids, isExcluded, exclusionReason);
+
+    res.json({
+      success: true,
+      data: { updatedCount },
+      message: `${updatedCount}件の受発注見込み明細を${isExcluded ? '除外' : '除外解除'}しました`,
+    });
+  } catch (error: any) {
+    console.error('除外設定エラー:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || '除外設定の更新中にエラーが発生しました',
+    });
+  }
+});
+
+/**
  * 受発注データ一覧取得API
  * GET /api/order-forecasts
  */

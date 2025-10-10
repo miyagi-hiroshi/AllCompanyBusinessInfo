@@ -109,3 +109,15 @@ export function useDeleteOrderForecast() {
     },
   });
 }
+
+export function useSetOrderForecastsExclusion() {
+  return useMutation({
+    mutationFn: async ({ ids, isExcluded, exclusionReason }: { ids: string[]; isExcluded: boolean; exclusionReason?: string }) => {
+      const res = await apiRequest("POST", "/api/order-forecasts/set-exclusion", { ids, isExcluded, exclusionReason });
+      return await res.json();
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["/api/order-forecasts"] });
+    },
+  });
+}

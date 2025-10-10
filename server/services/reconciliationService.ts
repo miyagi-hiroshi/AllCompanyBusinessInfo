@@ -215,6 +215,164 @@ export class ReconciliationService {
   }
 
   /**
+   * 科目別サマリー取得
+   * 
+   * @param period - 期間
+   * @returns 科目別サマリー情報
+   */
+  async getAccountSummary(period: string): Promise<{
+    glSummary: Array<{ accountCode: string; accountName: string; totalAmount: number; count: number }>;
+    orderSummary: Array<{ accountCode: string; accountName: string; totalAmount: number; count: number }>;
+    differences: Array<{ accountCode: string; accountName: string; difference: number; glAmount: number; orderAmount: number }>;
+  }> {
+    try {
+      // GL科目別集計
+      const glEntries = await this.glEntryRepository.findByPeriod(period);
+      const glMap = new Map<string, { accountName: string; totalAmount: number; count: number }>();
+      
+      for (const gl of glEntries) {
+        if (gl.isExcluded === 'true') continue; // 除外データをスキップ
+        
+        const key = gl.accountCode;
+        const amount = parseFloat(gl.amount);
+        
+        if (!glMap.has(key)) {
+          glMap.set(key, { accountName: gl.accountName, totalAmount: 0, count: 0 });
+        }
+        
+        const entry = glMap.get(key)!;
+        entry.totalAmount += amount;
+        entry.count++;
+      }
+      
+      // 受発注見込み科目別集計
+      const orderForecasts = await this.orderForecastRepository.findByPeriod(period);
+      const orderMap = new Map<string, { accountName: string; totalAmount: number; count: number }>();
+      
+      for (const order of orderForecasts) {
+        if (order.isExcluded === 'true') continue; // 除外データをスキップ
+        
+        const key = order.accountingItem;
+        const amount = parseFloat(order.amount);
+        
+        if (!orderMap.has(key)) {
+          orderMap.set(key, { accountName: order.accountingItem, totalAmount: 0, count: 0 });
+        }
+        
+        const entry = orderMap.get(key)!;
+        entry.totalAmount += amount;
+        entry.count++;
+      }
+      
+      // サマリー配列作成
+      const glSummary = Array.from(glMap.entries()).map(([accountCode, data]) => ({
+        accountCode,
+        accountName: data.accountName,
+        totalAmount: data.totalAmount,
+        count: data.count,
+      }));
+      
+      const orderSummary = Array.from(orderMap.entries()).map(([accountCode, data]) => ({
+        accountCode,
+        accountName: data.accountName,
+        totalAmount: data.totalAmount,
+        count: data.count,
+      }));
+      
+      // 差異計算
+      const allAccountCodes = new Set([...glMap.keys(), ...orderMap.keys()]);
+      const differences = Array.from(allAccountCodes).map(accountCode => {
+        const glData = glMap.get(accountCode) || { accountName: '', totalAmount: 0, count: 0 };
+        const orderData = orderMap.get(accountCode) || { accountName: '', totalAmount: 0, count: 0 };
+        const accountName = glData.accountName || orderData.accountName;
+        
+        return {
+          accountCode,
+          accountName,
+          difference: glData.totalAmount - orderData.totalAmount,
+          glAmount: glData.totalAmount,
+          orderAmount: orderData.totalAmount,
+        };
+      });
+      
+      return { glSummary, orderSummary, differences };
+    } catch (error) {
+      console.error('科目別サマリー取得エラー:', error);
+      throw new AppError('科目別サマリーの取得中にエラーが発生しました', 500);
+    }
+  }
+
+  /**
+   * 手動突合
+   * 
+   * @param glId - GL明細ID
+   * @param orderId - 受発注見込み明細ID
+   * @returns 突合結果
+   */
+  async manualReconcile(glId: string, orderId: string): Promise<{ gl: GLEntry; order: OrderForecast }> {
+    try {
+      await db.transaction(async (_tx) => {
+        await Promise.all([
+          this.glEntryRepository.updateReconciliationStatus(glId, 'matched', orderId),
+          this.orderForecastRepository.updateReconciliationStatus(orderId, 'matched', glId),
+        ]);
+      });
+      
+      const [gl, order] = await Promise.all([
+        this.glEntryRepository.findById(glId),
+        this.orderForecastRepository.findById(orderId),
+      ]);
+      
+      if (!gl || !order) {
+        throw new AppError('突合データが見つかりません', 404);
+      }
+      
+      return { gl, order };
+    } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      console.error('手動突合エラー:', error);
+      throw new AppError('手動突合処理中にエラーが発生しました', 500);
+    }
+  }
+
+  /**
+   * 突合解除
+   * 
+   * @param glId - GL明細ID
+   * @param orderId - 受発注見込み明細ID
+   * @returns 解除結果
+   */
+  async unmatchReconciliation(glId: string, orderId: string): Promise<{ gl: GLEntry; order: OrderForecast }> {
+    try {
+      await db.transaction(async (_tx) => {
+        await Promise.all([
+          this.glEntryRepository.updateReconciliationStatus(glId, 'unmatched', undefined),
+          this.orderForecastRepository.updateReconciliationStatus(orderId, 'unmatched', undefined),
+        ]);
+      });
+      
+      const [gl, order] = await Promise.all([
+        this.glEntryRepository.findById(glId),
+        this.orderForecastRepository.findById(orderId),
+      ]);
+      
+      if (!gl || !order) {
+        throw new AppError('突合データが見つかりません', 404);
+      }
+      
+      return { gl, order };
+    } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      console.error('突合解除エラー:', error);
+      throw new AppError('突合解除処理中にエラーが発生しました', 500);
+    }
+  }
+
+  /**
    * 突合処理の実装（プライベートメソッド）
    */
   private async performReconciliation(
@@ -232,10 +390,14 @@ export class ReconciliationService {
     const matched: Array<{ order: OrderForecast; gl: GLEntry; score: number }> = [];
     const fuzzyMatched: Array<{ order: OrderForecast; gl: GLEntry; score: number }> = [];
     const unmatchedOrders: OrderForecast[] = [];
-    const unmatchedGl: GLEntry[] = [...glEntries];
+    const unmatchedGl: GLEntry[] = [...glEntries].filter(gl => gl.isExcluded !== 'true'); // 除外データを除く
 
-    // 受発注データごとに突合処理を実行
+    // 受発注データごとに突合処理を実行（除外データをスキップ）
     for (const order of orderForecasts) {
+      if (order.isExcluded === 'true') {
+        continue; // 除外データはスキップ
+      }
+      
       let bestMatch: GLEntry | null = null;
       let bestScore = 0;
       let matchType: 'exact' | 'fuzzy' = 'exact';

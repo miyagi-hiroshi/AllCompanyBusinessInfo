@@ -61,3 +61,39 @@ export function useDeleteGLEntry() {
     },
   });
 }
+
+export function useImportGLEntriesCSV() {
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      
+      const res = await fetch("/api/gl-entries/import-csv", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      
+      if (!res.ok) {
+        throw new Error("CSV取込に失敗しました");
+      }
+      
+      return await res.json();
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["/api/gl-entries"] });
+    },
+  });
+}
+
+export function useSetGLEntriesExclusion() {
+  return useMutation({
+    mutationFn: async ({ ids, isExcluded, exclusionReason }: { ids: string[]; isExcluded: boolean; exclusionReason?: string }) => {
+      const res = await apiRequest("POST", "/api/gl-entries/set-exclusion", { ids, isExcluded, exclusionReason });
+      return await res.json();
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["/api/gl-entries"] });
+    },
+  });
+}

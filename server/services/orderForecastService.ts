@@ -1,6 +1,6 @@
 import { CreateOrderForecastData, OrderForecast, OrderForecastFilter,UpdateOrderForecastData } from '@shared/schema/integrated';
 
-// import { db } from '../db'; // 未使用のためコメントアウト
+import { db } from '../db';
 import { AppError } from '../middleware/errorHandler';
 import { GLEntryRepository } from '../storage/glEntry';
 import { OrderForecastRepository } from '../storage/orderForecast';
@@ -336,6 +336,37 @@ export class OrderForecastService {
     } catch (error) {
       console.error('受発注データ統計情報取得エラー:', error);
       throw new AppError('受発注データ統計情報の取得中にエラーが発生しました', 500);
+    }
+  }
+
+  /**
+   * 受発注見込み明細の除外設定
+   * 
+   * @param ids - 受発注見込み明細IDリスト
+   * @param isExcluded - 除外フラグ
+   * @param exclusionReason - 除外理由
+   * @returns 更新件数
+   */
+  async setExclusion(ids: string[], isExcluded: boolean, exclusionReason?: string): Promise<number> {
+    try {
+      let updatedCount = 0;
+      
+      await db.transaction(async (_tx) => {
+        for (const id of ids) {
+          const updated = await this.orderForecastRepository.update(id, {
+            isExcluded: isExcluded ? 'true' : 'false',
+            exclusionReason: isExcluded ? exclusionReason : null,
+          });
+          if (updated) {
+            updatedCount++;
+          }
+        }
+      });
+
+      return updatedCount;
+    } catch (error) {
+      console.error('除外設定エラー:', error);
+      throw new AppError('除外設定の更新中にエラーが発生しました', 500);
     }
   }
 }

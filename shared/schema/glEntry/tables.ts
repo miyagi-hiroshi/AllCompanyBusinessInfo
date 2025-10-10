@@ -17,5 +17,7 @@ export const glEntries = appSchema.table("gl_entries", {
   period: text("period").notNull(), // 期間 (YYYY-MM形式)
   reconciliationStatus: text("reconciliation_status").notNull().default("unmatched"), // matched, fuzzy, unmatched
   orderMatchId: varchar("order_match_id"), // 突合された受発注IDへの参照
+  isExcluded: text("is_excluded").notNull().default("false"), // 突合対象外フラグ (true/false)
+  exclusionReason: text("exclusion_reason"), // 除外理由
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });

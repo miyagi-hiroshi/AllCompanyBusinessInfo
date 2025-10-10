@@ -1,6 +1,7 @@
-import { AlertCircle, AlertTriangle,CheckCircle2, Sparkles } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle2, Sparkles } from "lucide-react";
 import { useState } from "react";
 
+import { AccountSummaryCards } from "@/components/account-summary-cards";
 import { ReconciliationStatusBadge } from "@/components/reconciliation-status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGLEntries } from "@/hooks/useGLEntries";
 import { useOrderForecasts } from "@/hooks/useOrderForecasts";
-import { useReconciliation } from "@/hooks/useReconciliation";
+import { useAccountSummary, useReconciliation } from "@/hooks/useReconciliation";
 import { useToast } from "@/hooks/useToast";
 
 export default function GLReconciliationPage() {
@@ -29,8 +30,13 @@ export default function GLReconciliationPage() {
     month,
   });
   const reconcileMutation = useReconciliation();
+  
+  // 科目別サマリー
+  const period = month ? `${fiscalYear}-${String(month).padStart(2, '0')}` : undefined;
+  const { data: accountSummary, isLoading: summaryLoading } = useAccountSummary(period);
 
   const isLoading = ordersLoading || glLoading;
+
 
   // Calculate stats
   const matched = orderForecasts.filter((o) => o.reconciliationStatus === "matched");
@@ -78,6 +84,7 @@ export default function GLReconciliationPage() {
     );
   };
 
+
   // Generate year and month options
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
@@ -102,7 +109,7 @@ export default function GLReconciliationPage() {
             <CardTitle className="text-base">期間選択</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex gap-4">
+            <div className="flex gap-4 items-end">
               <div className="space-y-2">
                 <label className="text-sm font-medium">年度</label>
                 <Select
@@ -144,6 +151,9 @@ export default function GLReconciliationPage() {
             </div>
           </CardContent>
         </Card>
+
+        {/* 科目別サマリー */}
+        <AccountSummaryCards summary={accountSummary} isLoading={summaryLoading} />
 
         {/* Stats Cards */}
         {isLoading ? (
@@ -473,6 +483,7 @@ export default function GLReconciliationPage() {
               </CardContent>
             </Card>
           </TabsContent>
+
         </Tabs>
       </div>
     </div>

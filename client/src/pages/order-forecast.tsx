@@ -12,7 +12,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGLEntries } from "@/hooks/useGLEntries";
 import { useAccountingItems,useCustomers, useProjects } from "@/hooks/useMasters";
-import { useCreateOrderForecast, useDeleteOrderForecast,useOrderForecasts, useUpdateOrderForecast } from "@/hooks/useOrderForecasts";
+import { useCreateOrderForecast, useDeleteOrderForecast,useOrderForecasts, useSetOrderForecastsExclusion, useUpdateOrderForecast } from "@/hooks/useOrderForecasts";
 import { useReconciliation } from "@/hooks/useReconciliation";
 import { useToast } from "@/hooks/useToast";
 
@@ -50,6 +50,7 @@ export default function OrderForecastPage() {
   const updateMutation = useUpdateOrderForecast();
   const deleteMutation = useDeleteOrderForecast();
   const reconcileMutation = useReconciliation();
+  const setOrderExclusion = useSetOrderForecastsExclusion();
 
   // ヘルパー関数: フィルタから期間文字列を生成
   // monthが未定義の場合は現在の月を使用（新規作成時のデフォルト値）
@@ -110,8 +111,41 @@ export default function OrderForecastPage() {
     }
   };
 
+  // 除外トグルのハンドラー
+  const handleToggleExclusion = async (rowId: string, isExcluded: boolean) => {
+    try {
+      await setOrderExclusion.mutateAsync({
+        ids: [rowId],
+        isExcluded,
+        exclusionReason: isExcluded ? "手動除外" : undefined,
+      });
+      
+      toast({
+        title: isExcluded ? "除外しました" : "除外を解除しました",
+        description: `明細を${isExcluded ? "突合対象外" : "突合対象"}に設定しました`,
+      });
+      
+      // データを再取得
+      await refetchOrders();
+    } catch (_error) {
+      toast({
+        title: "エラー",
+        description: "除外設定の更新に失敗しました",
+        variant: "destructive",
+      });
+    }
+  };
+
   // グリッド列定義
   const columns: GridColumn[] = [
+    {
+      key: "isExcluded",
+      label: "除外",
+      type: "toggle",
+      width: 80,
+      readonly: false,
+      onToggleChange: handleToggleExclusion,
+    },
     {
       key: "projectId",
       label: "プロジェクト",
@@ -209,6 +243,7 @@ export default function OrderForecastPage() {
   // GridRow形式に変換
   const _gridRows: GridRowData[] = orderForecasts.map((order) => ({
     id: order.id,
+    isExcluded: order.isExcluded,
     projectId: order.projectId,
     projectCode: order.projectCode,
     projectName: order.projectName,
@@ -226,6 +261,7 @@ export default function OrderForecastPage() {
   }));
 
   const [localRows, setLocalRows] = useState<GridRowData[]>([]);
+  const [selectedOrderIdForGL, setSelectedOrderIdForGL] = useState<string | null>(null);
   const lastSyncedDataRef = useRef<OrderForecast[]>([]);
   const deletedIdsRef = useRef<Set<string>>(new Set());
 
@@ -244,6 +280,7 @@ export default function OrderForecastPage() {
     if (dataChanged) {
       const freshGridRows: GridRowData[] = orderForecasts.map((order) => ({
         id: order.id,
+        isExcluded: order.isExcluded,
         projectId: order.projectId,
         projectCode: order.projectCode,
         projectName: order.projectName,
@@ -359,6 +396,7 @@ export default function OrderForecastPage() {
       if (freshData) {
         const freshRows: GridRowData[] = freshData.map((order) => ({
           id: order.id,
+          isExcluded: order.isExcluded,
           projectId: order.projectId,
           projectCode: order.projectCode,
           projectName: order.projectName,
@@ -412,6 +450,7 @@ export default function OrderForecastPage() {
       if (freshData) {
         const freshRows: GridRowData[] = freshData.map((order) => ({
           id: order.id,
+          isExcluded: order.isExcluded,
           projectId: order.projectId,
           projectCode: order.projectCode,
           projectName: order.projectName,
@@ -520,6 +559,8 @@ export default function OrderForecastPage() {
                 glEntries={glEntries}
                 onReconcile={handleReconcile}
                 onManualMatch={handleManualMatch}
+                selectedOrderId={selectedOrderIdForGL}
+                onSelectOrder={setSelectedOrderIdForGL}
               />
               <KeyboardShortcutsPanel />
               <ThemeToggle />
@@ -533,6 +574,7 @@ export default function OrderForecastPage() {
           rows={localRows}
           onRowsChange={handleRowsChange}
           onSave={handleSave}
+          onRowClick={(rowId) => setSelectedOrderIdForGL(rowId)}
         />
       </main>
     </div>

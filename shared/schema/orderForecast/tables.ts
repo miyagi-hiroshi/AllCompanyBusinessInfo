@@ -21,6 +21,8 @@ export const orderForecasts = appSchema.table("order_forecasts", {
   period: text("period").notNull(), // 期間 (YYYY-MM形式)
   reconciliationStatus: text("reconciliation_status").notNull().default("unmatched"), // matched, fuzzy, unmatched
   glMatchId: varchar("gl_match_id"), // 突合されたGL IDへの参照
+  isExcluded: text("is_excluded").notNull().default("false"), // 突合対象外フラグ (true/false)
+  exclusionReason: text("exclusion_reason"), // 除外理由
   
   // 既存システムとの関連（参照専用、外部キー制約なし）
   createdByUserId: varchar("created_by_user_id"), // 作成者ユーザーID（参照専用）

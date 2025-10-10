@@ -1,5 +1,6 @@
 import { insertGLEntrySchema } from '@shared/schema/integrated';
 import express, { type Request, Response } from 'express';
+import multer from 'multer';
 import { z } from 'zod';
 
 import { requireAuth } from '../middleware/auth';
@@ -11,6 +12,25 @@ const router = express.Router();
 const glEntryRepository = new GLEntryRepository();
 const orderForecastRepository = new OrderForecastRepository();
 const glEntryService = new GLEntryService(glEntryRepository, orderForecastRepository);
+
+// CSVアップロード用のmulter設定
+const csvUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 50 * 1024 * 1024, // 50MB
+  },
+  fileFilter: (_req, file, cb) => {
+    const allowedMimeTypes = ['text/csv', 'application/vnd.ms-excel', 'text/plain'];
+    const allowedExtensions = ['.csv'];
+    const ext = '.' + file.originalname.split('.').pop()?.toLowerCase();
+    
+    if (allowedMimeTypes.includes(file.mimetype) && allowedExtensions.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('CSVファイルのみアップロード可能です'));
+    }
+  },
+});
 
 // GLデータ作成スキーマ
 const createGLEntrySchema = insertGLEntrySchema;
@@ -33,6 +53,73 @@ const searchGLEntrySchema = z.object({
   limit: z.string().transform(Number).optional().default('20'),
   sortBy: z.enum(['voucherNo', 'transactionDate', 'accountCode', 'amount', 'createdAt']).optional().default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+});
+
+/**
+ * CSV取込API
+ * POST /api/gl-entries/import-csv
+ */
+router.post('/import-csv', requireAuth, csvUpload.single('file'), async (req: Request, res: Response) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'CSVファイルがアップロードされていません',
+      });
+    }
+
+    const result = await glEntryService.importFromCSV(req.file.buffer);
+
+    res.json({
+      success: true,
+      data: result,
+      message: `CSV取込が完了しました（取込: ${result.importedRows}件、スキップ: ${result.skippedRows}件）`,
+    });
+  } catch (error: any) {
+    console.error('CSV取込エラー:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'CSV取込中にエラーが発生しました',
+    });
+  }
+});
+
+/**
+ * 除外設定API
+ * POST /api/gl-entries/set-exclusion
+ */
+router.post('/set-exclusion', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { ids, isExcluded, exclusionReason } = req.body;
+
+    if (!ids || !Array.isArray(ids) || ids.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'GL明細IDリストが正しくありません',
+      });
+    }
+
+    if (typeof isExcluded !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        message: '除外フラグが正しくありません',
+      });
+    }
+
+    const updatedCount = await glEntryService.setExclusion(ids, isExcluded, exclusionReason);
+
+    res.json({
+      success: true,
+      data: { updatedCount },
+      message: `${updatedCount}件のGL明細を${isExcluded ? '除外' : '除外解除'}しました`,
+    });
+  } catch (error: any) {
+    console.error('除外設定エラー:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || '除外設定の更新中にエラーが発生しました',
+    });
+  }
 });
 
 /**

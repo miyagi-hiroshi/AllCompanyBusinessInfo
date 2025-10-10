@@ -1,4 +1,4 @@
-import { BarChart3, Building2, DollarSign, FileText, FolderKanban, GitMerge, Home, LogOut, TrendingUp, User,Users } from "lucide-react";
+import { BarChart3, Building2, DollarSign, FileText, FileUp, FolderKanban, GitMerge, Home, LogOut, TrendingUp, User,Users } from "lucide-react";
 import { useLocation } from "wouter";
 
 import { Button } from "@/components/ui/button";
@@ -34,6 +34,11 @@ const menuItems = {
     },
   ],
   input: [
+    {
+      title: "GL取込",
+      url: "/gl-import",
+      icon: FileUp,
+    },
     {
       title: "受発注見込み入力",
       url: "/order-forecast",

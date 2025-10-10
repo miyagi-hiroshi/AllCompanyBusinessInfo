@@ -1,6 +1,9 @@
 import { CreateGLEntryData, GLEntry, GLEntryFilter,UpdateGLEntryData } from '@shared/schema/integrated';
+import csv from 'csv-parser';
+import iconv from 'iconv-lite';
+import { Readable } from 'stream';
 
-// import { db } from '../db'; // 未使用のためコメントアウト
+import { db } from '../db';
 import { AppError } from '../middleware/errorHandler';
 import { GLEntryRepository } from '../storage/glEntry';
 import { OrderForecastRepository } from '../storage/orderForecast';
@@ -349,6 +352,149 @@ export class GLEntryService {
     } catch (error) {
       console.error('勘定科目別GLデータ取得エラー:', error);
       throw new AppError('勘定科目別GLデータの取得中にエラーが発生しました', 500);
+    }
+  }
+
+  /**
+   * CSV取込処理
+   * 
+   * @param fileBuffer - CSVファイルのバッファ
+   * @returns 取込結果
+   */
+  async importFromCSV(fileBuffer: Buffer): Promise<{
+    totalRows: number;
+    importedRows: number;
+    skippedRows: number;
+    errors: Array<{ row: number; message: string }>;
+  }> {
+    const TARGET_ACCOUNT_CODES = ['511', '512', '513', '514', '541', '515', '727', '737', '740', '745'];
+    const results: CreateGLEntryData[] = [];
+    const errors: Array<{ row: number; message: string }> = [];
+    let totalRows = 0;
+    let skippedRows = 0;
+
+    try {
+      // Shift_JISからUTF-8に変換
+      const utf8Buffer = iconv.decode(fileBuffer, 'Shift_JIS');
+      
+      // CSVパース
+      await new Promise<void>((resolve, reject) => {
+        const stream = Readable.from(utf8Buffer);
+        let rowIndex = 0;
+
+        stream
+          .pipe(csv({
+            headers: [
+              'accountCode', 'accountName', 'auxCode', 'auxName',
+              'taxCode', 'taxName', 'transactionDate', 'voucherNo',
+              'counterAccountCode', 'counterAccountName', 'counterAuxCode', 'counterAuxName',
+              'counterTaxCode', 'counterTaxName', 'description',
+              'number1', 'number2', 'debitAmount', 'debitTax',
+              'creditAmount', 'creditTax', 'balance'
+            ],
+            skipLines: 0,
+          }))
+          .on('data', (row: any) => {
+            rowIndex++;
+            totalRows++;
+
+            try {
+              // 対象科目コードチェック
+              if (!TARGET_ACCOUNT_CODES.includes(row.accountCode)) {
+                skippedRows++;
+                return;
+              }
+
+              // データ変換
+              const debitAmount = parseFloat(row.debitAmount || '0');
+              const creditAmount = parseFloat(row.creditAmount || '0');
+              
+              if (debitAmount === 0 && creditAmount === 0) {
+                skippedRows++;
+                return;
+              }
+
+              const amount = debitAmount > 0 ? debitAmount : creditAmount;
+              const debitCredit = debitAmount > 0 ? 'debit' : 'credit';
+
+              // 日付からperiodを抽出 (YYYY/MM/DD -> YYYY-MM)
+              const dateParts = row.transactionDate.split('/');
+              if (dateParts.length !== 3) {
+                errors.push({ row: rowIndex, message: '日付フォーマットエラー' });
+                return;
+              }
+              const period = `${dateParts[0]}-${dateParts[1].padStart(2, '0')}`;
+
+              // データ作成
+              const glEntry: CreateGLEntryData = {
+                voucherNo: row.voucherNo,
+                transactionDate: row.transactionDate.replace(/\//g, '-'), // YYYY/MM/DD -> YYYY-MM-DD
+                accountCode: row.accountCode,
+                accountName: row.accountName,
+                amount: amount.toString(),
+                debitCredit,
+                description: row.description || '',
+                period,
+              };
+
+              results.push(glEntry);
+            } catch (error: any) {
+              errors.push({ row: rowIndex, message: error.message });
+            }
+          })
+          .on('end', () => resolve())
+          .on('error', (error) => reject(error));
+      });
+
+      // トランザクション内で一括登録
+      if (results.length > 0) {
+        await db.transaction(async (_tx) => {
+          for (const glEntry of results) {
+            await this.glEntryRepository.create(glEntry);
+          }
+        });
+      }
+
+      return {
+        totalRows,
+        importedRows: results.length,
+        skippedRows,
+        errors,
+      };
+    } catch (error) {
+      console.error('CSV取込エラー:', error);
+      throw new AppError('CSVファイルの取込中にエラーが発生しました', 500);
+    }
+  }
+
+  /**
+   * GL明細の除外設定
+   * 
+   * @param ids - GL明細IDリスト
+   * @param isExcluded - 除外フラグ
+   * @param exclusionReason - 除外理由
+   * @returns 更新件数
+   */
+  async setExclusion(ids: string[], isExcluded: boolean, exclusionReason?: string): Promise<number> {
+    try {
+      let updatedCount = 0;
+      
+      await db.transaction(async (_tx) => {
+        for (const id of ids) {
+          const updated = await this.glEntryRepository.update(id, {
+            isExcluded: isExcluded ? 'true' : 'false',
+            exclusionReason: isExcluded ? exclusionReason : null,
+          });
+          if (updated) {
+            updatedCount++;
+          }
+        }
+      });
+
+      return updatedCount;
+    } catch (error) {
+      console.error('除外設定エラー:', error);
+      throw new AppError('除外設定の更新中にエラーが発生しました', 500);
     }
   }
 }
