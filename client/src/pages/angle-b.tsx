@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 
 import { AdvancedFilterPanel, type FilterState } from "@/components/advanced-filter-panel";
 import { ExcelDataGrid, type GridColumn, type GridRowData } from "@/components/excel-data-grid";
+import { KeyboardShortcutsPanel } from "@/components/keyboard-shortcuts-panel";
+import { type SearchFilter, SearchFilterPanel } from "@/components/search-filter-panel";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -25,10 +27,18 @@ export default function AngleBPage() {
       month: now.getMonth() + 1,
     };
   });
+  
+  // 詳細検索条件
+  const [searchFilter, setSearchFilter] = useState<SearchFilter>({});
+  const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false);
+  
   const { toast } = useToast();
 
-  // Fetch data from backend
-  const { data: angleBForecasts = [], isLoading: angleBLoading, refetch: refetchAngleB } = useAngleBForecasts(filter);
+  // Fetch data from backend with combined filters
+  const { data: angleBForecasts = [], isLoading: angleBLoading, refetch: refetchAngleB } = useAngleBForecasts({
+    ...filter,
+    ...searchFilter,
+  });
   const { data: customers = [], isLoading: customersLoading } = useCustomers();
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
   const { data: accountingItems = [], isLoading: accountingItemsLoading } = useAccountingItems();
@@ -48,11 +58,45 @@ export default function AngleBPage() {
 
   const handleFilterChange = (newFilter: FilterState) => {
     setFilter(newFilter);
-    const filterDesc = `${newFilter.fiscalYear}年度${newFilter.month ? ` ${newFilter.month}月` : ""}`;
+    
+    // フィルタ説明文を生成
+    const filterParts: string[] = [];
+    filterParts.push(`${newFilter.fiscalYear}年度`);
+    if (newFilter.month) filterParts.push(`${newFilter.month}月`);
+    if (newFilter.projectId) filterParts.push("プロジェクト指定");
+    
+    const filterDesc = filterParts.join(", ");
     toast({
       title: "フィルタを変更しました",
       description: `${filterDesc}のデータを読み込みました`,
     });
+  };
+
+  // 詳細検索実行時
+  const handleSearch = (newSearchFilter: SearchFilter) => {
+    setSearchFilter(newSearchFilter);
+    
+    // 検索条件の説明文を生成
+    const searchParts: string[] = [];
+    if (newSearchFilter.salesPerson) searchParts.push(`営業窓口: ${newSearchFilter.salesPerson}`);
+    if (newSearchFilter.accountingItem) searchParts.push(`計上科目: ${newSearchFilter.accountingItem}`);
+    if (newSearchFilter.customerId) {
+      const customer = customers.find(c => c.id === newSearchFilter.customerId);
+      if (customer) searchParts.push(`取引先: ${customer.name}`);
+    }
+    if (newSearchFilter.searchText) searchParts.push(`検索: ${newSearchFilter.searchText}`);
+    
+    if (searchParts.length > 0) {
+      toast({
+        title: "検索を実行しました",
+        description: searchParts.join(", "),
+      });
+    } else {
+      toast({
+        title: "検索条件をクリアしました",
+        description: "すべてのデータを表示しています",
+      });
+    }
   };
 
   // Grid columns
@@ -87,15 +131,23 @@ export default function AngleBPage() {
       type: "autocomplete",
       width: 140,
       required: true,
+      sortable: true,
       autocompleteOptions: (() => {
         const periods: string[] = [];
-        const now = new Date();
-        for (let i = 0; i < 12; i++) {
-          const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-          const periodValue = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
+        const fiscalYear = filter.fiscalYear;
+        
+        // 会計年度: 4月～翌年3月
+        // 4月～12月は同じ年、1月～3月は翌年
+        for (let month = 4; month <= 12; month++) {
+          const periodValue = `${fiscalYear}-${String(month).padStart(2, "0")}`;
           periods.push(periodValue);
         }
-        return periods.map((p) => ({
+        for (let month = 1; month <= 3; month++) {
+          const periodValue = `${fiscalYear + 1}-${String(month).padStart(2, "0")}`;
+          periods.push(periodValue);
+        }
+        
+        return periods.map(p => ({
           value: p,
           label: `${p.split("-")[0]}年${p.split("-")[1]}月`,
         }));
@@ -355,13 +407,6 @@ export default function AngleBPage() {
     }
   };
 
-  const handleSearch = () => {
-    toast({
-      title: "検索機能",
-      description: "検索ダイアログを表示します（モック）",
-    });
-  };
-
   if (angleBLoading || customersLoading || projectsLoading || accountingItemsLoading) {
     return (
       <div className="flex flex-col h-screen">
@@ -396,6 +441,16 @@ export default function AngleBPage() {
             <ArrowUpCircle className="h-4 w-4 mr-2" />
             見込みへ昇格
           </Button>
+          <SearchFilterPanel
+            open={isSearchPanelOpen}
+            onOpenChange={setIsSearchPanelOpen}
+            filter={searchFilter}
+            onSearch={handleSearch}
+            projects={projects}
+            customers={customers}
+            accountingItems={accountingItems}
+          />
+          <KeyboardShortcutsPanel />
           <ThemeToggle />
         </div>
       </header>
@@ -407,7 +462,6 @@ export default function AngleBPage() {
           rows={localRows}
           onRowsChange={handleRowsChange}
           onSave={handleSave}
-          onSearch={handleSearch}
         />
       </main>
     </div>

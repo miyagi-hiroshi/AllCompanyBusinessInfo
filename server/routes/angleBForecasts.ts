@@ -33,6 +33,8 @@ const searchAngleBForecastSchema = z.object({
   month: z.string().transform(Number).optional(),
   createdByUserId: z.string().optional(),
   createdByEmployeeId: z.string().optional(),
+  salesPerson: z.string().optional(),
+  searchText: z.string().optional(),
   page: z.string().transform(Number).optional().default('1'),
   limit: z.string().transform(Number).optional().default('20'),
   sortBy: z.enum(['accountingPeriod', 'amount', 'probability', 'createdAt']).optional().default('createdAt'),
@@ -47,15 +49,6 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
   try {
     const query = searchAngleBForecastSchema.parse(req.query);
     const offset = (query.page - 1) * query.limit;
-
-    // fiscalYearとmonthからperiodを生成
-    let period: string | undefined;
-    if (query.fiscalYear && query.month) {
-      period = `${query.fiscalYear}-${String(query.month).padStart(2, '0')}`;
-    } else if (query.fiscalYear) {
-      // 年度のみの場合はフィルタに含めない（全月取得）
-      period = undefined;
-    }
     
     const [angleBForecasts, totalCount] = await Promise.all([
       angleBForecastRepository.findAll({
@@ -67,10 +60,12 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
           customerCode: query.customerCode,
           accountingPeriod: query.accountingPeriod,
           accountingItem: query.accountingItem,
-          period,
+          period: query.period,
           probability: query.probability,
           createdByUserId: query.createdByUserId,
           createdByEmployeeId: query.createdByEmployeeId,
+          salesPerson: query.salesPerson,
+          searchText: query.searchText,
         },
         limit: query.limit,
         offset,
@@ -85,10 +80,12 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
         customerCode: query.customerCode,
         accountingPeriod: query.accountingPeriod,
         accountingItem: query.accountingItem,
-        period,
+        period: query.period,
         probability: query.probability,
         createdByUserId: query.createdByUserId,
         createdByEmployeeId: query.createdByEmployeeId,
+        salesPerson: query.salesPerson,
+        searchText: query.searchText,
       }),
     ]);
 

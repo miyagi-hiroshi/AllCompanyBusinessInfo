@@ -7,21 +7,53 @@ export interface AngleBForecastFilter {
   fiscalYear: number;
   month?: number;
   projectId?: string;
+  salesPerson?: string;
+  accountingItem?: string;
+  customerId?: string;
+  searchText?: string;
 }
 
 export function useAngleBForecasts(filter: AngleBForecastFilter) {
   const params = new URLSearchParams({
     fiscalYear: filter.fiscalYear.toString(),
   });
+  
+  // 会計年度と月から計上年月を生成してフィルタリング
   if (filter.month) {
-    params.append("month", filter.month.toString());
+    // 月が指定されている場合は、その月の計上年月で絞り込み
+    // 会計年度: 4月～翌年3月
+    const year = filter.month >= 4 ? filter.fiscalYear : filter.fiscalYear + 1;
+    const accountingPeriod = `${year}-${String(filter.month).padStart(2, "0")}`;
+    params.append("accountingPeriod", accountingPeriod);
   }
+  
   if (filter.projectId) {
     params.append("projectId", filter.projectId);
   }
+  if (filter.salesPerson) {
+    params.append("salesPerson", filter.salesPerson);
+  }
+  if (filter.accountingItem) {
+    params.append("accountingItem", filter.accountingItem);
+  }
+  if (filter.customerId) {
+    params.append("customerId", filter.customerId);
+  }
+  if (filter.searchText) {
+    params.append("searchText", filter.searchText);
+  }
   
   return useQuery<AngleBForecast[]>({
-    queryKey: ["/api/angle-b-forecasts", filter.fiscalYear, filter.month ?? null, filter.projectId ?? null],
+    queryKey: [
+      "/api/angle-b-forecasts", 
+      filter.fiscalYear, 
+      filter.month ?? null, 
+      filter.projectId ?? null,
+      filter.salesPerson ?? null,
+      filter.accountingItem ?? null,
+      filter.customerId ?? null,
+      filter.searchText ?? null,
+    ],
     queryFn: async () => {
       const res = await apiRequest("GET", `/api/angle-b-forecasts?${params}`, undefined);
       const result = await res.json();

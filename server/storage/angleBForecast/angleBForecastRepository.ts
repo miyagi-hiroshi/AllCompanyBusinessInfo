@@ -1,5 +1,5 @@
 import type { AngleBForecast, AngleBForecastFilter, NewAngleBForecast } from "@shared/schema";
-import { angleBForecasts } from "@shared/schema";
+import { angleBForecasts, projects } from "@shared/schema";
 import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
 
 import { db } from "../../db";
@@ -19,6 +19,7 @@ export class AngleBForecastRepository {
     const { filter, limit = 100, offset = 0, sortBy = "createdAt", sortOrder = "desc" } = options;
 
     const conditions = this.buildWhereConditions(filter);
+    const needsJoin = filter?.salesPerson;
 
     const orderByColumn = {
       accountingPeriod: angleBForecasts.accountingPeriod,
@@ -27,12 +28,35 @@ export class AngleBForecastRepository {
       createdAt: angleBForecasts.createdAt,
     }[sortBy];
 
-    const query = db
-      .select()
+    let query = db
+      .select({
+        id: angleBForecasts.id,
+        projectId: angleBForecasts.projectId,
+        projectCode: angleBForecasts.projectCode,
+        projectName: angleBForecasts.projectName,
+        customerId: angleBForecasts.customerId,
+        customerCode: angleBForecasts.customerCode,
+        customerName: angleBForecasts.customerName,
+        accountingPeriod: angleBForecasts.accountingPeriod,
+        accountingItem: angleBForecasts.accountingItem,
+        description: angleBForecasts.description,
+        amount: angleBForecasts.amount,
+        probability: angleBForecasts.probability,
+        remarks: angleBForecasts.remarks,
+        period: angleBForecasts.period,
+        createdByUserId: angleBForecasts.createdByUserId,
+        createdByEmployeeId: angleBForecasts.createdByEmployeeId,
+        version: angleBForecasts.version,
+        createdAt: angleBForecasts.createdAt,
+      })
       .from(angleBForecasts)
-      .where(conditions)
-      .limit(limit)
-      .offset(offset);
+      .$dynamic();
+
+    if (needsJoin) {
+      query = query.leftJoin(projects, eq(angleBForecasts.projectId, projects.id));
+    }
+
+    query = query.where(conditions).limit(limit).offset(offset);
 
     if (sortOrder === "asc") {
       return await query.orderBy(orderByColumn);
@@ -42,11 +66,18 @@ export class AngleBForecastRepository {
 
   async count(filter?: AngleBForecastFilter): Promise<number> {
     const conditions = this.buildWhereConditions(filter);
+    const needsJoin = filter?.salesPerson;
 
-    const result = await db
+    let query = db
       .select({ count: sql<number>`count(*)::int` })
       .from(angleBForecasts)
-      .where(conditions);
+      .$dynamic();
+
+    if (needsJoin) {
+      query = query.leftJoin(projects, eq(angleBForecasts.projectId, projects.id));
+    }
+
+    const result = await query.where(conditions);
 
     return result[0]?.count || 0;
   }
@@ -111,6 +142,15 @@ export class AngleBForecastRepository {
       );
     }
 
+    if (filter.searchText) {
+      conditions.push(
+        or(
+          ilike(angleBForecasts.description, `%${filter.searchText}%`),
+          ilike(angleBForecasts.remarks, `%${filter.searchText}%`)
+        )
+      );
+    }
+
     if (filter.projectId) {
       conditions.push(eq(angleBForecasts.projectId, filter.projectId));
     }
@@ -141,6 +181,10 @@ export class AngleBForecastRepository {
 
     if (filter.probability !== undefined) {
       conditions.push(eq(angleBForecasts.probability, filter.probability));
+    }
+
+    if (filter.salesPerson) {
+      conditions.push(eq(projects.salesPerson, filter.salesPerson));
     }
 
     if (filter.createdByUserId) {

@@ -221,6 +221,8 @@ export type AngleBForecastFilter = {
   probability?: number;
   createdByUserId?: string;
   createdByEmployeeId?: string;
+  salesPerson?: string;
+  searchText?: string;
 };
 
 export type BudgetRevenueFilter = {
