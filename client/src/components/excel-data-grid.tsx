@@ -13,7 +13,7 @@ import { type AutocompleteOption,AutocompleteSelect } from "./autocomplete-selec
 export interface GridColumn {
   key: string;
   label: string;
-  type: "text" | "number" | "date" | "autocomplete" | "toggle";
+  type: "text" | "number" | "date" | "autocomplete" | "toggle" | "button";
   width?: number;
   required?: boolean;
   autocompleteOptions?: AutocompleteOption[];
@@ -21,6 +21,9 @@ export interface GridColumn {
   className?: string;
   sortable?: boolean;
   onToggleChange?: (rowId: string, newValue: boolean) => void;
+  onButtonClick?: (rowId: string, value: string | number | boolean | undefined) => void;
+  getButtonLabel?: (value: string | number | boolean | undefined) => string;
+  getButtonVariant?: (value: string | number | boolean | undefined) => "default" | "outline" | "secondary" | "ghost" | "link" | "destructive" | "success" | "warning";
 }
 
 export interface GridRow {
@@ -38,7 +41,6 @@ interface ExcelDataGridProps {
   onRowsChange: (rows: GridRowData[]) => void;
   onSave?: () => void;
   onSearch?: () => void;
-  onRowClick?: (rowId: string) => void;
   enableKeyboardShortcuts?: boolean;
 }
 
@@ -48,7 +50,6 @@ export function ExcelDataGrid({
   onRowsChange,
   onSave,
   onSearch,
-  onRowClick,
   enableKeyboardShortcuts = true,
 }: ExcelDataGridProps) {
   const [activeCell, setActiveCell] = useState<{ rowIndex: number; colKey: string } | null>(null);
@@ -144,6 +145,8 @@ export function ExcelDataGrid({
         newRow[col.key] = 0;
       } else if (col.type === "toggle") {
         newRow[col.key] = false;
+      } else if (col.type === "button") {
+        newRow[col.key] = "unmatched";
       } else {
         newRow[col.key] = "";
       }
@@ -353,6 +356,101 @@ export function ExcelDataGrid({
       }
     );
 
+    // Check for special column types that should render even when readonly
+    if (column.type === "toggle") {
+      const booleanValue = value === "true" || value === true;
+      // Show empty cell if value is false or "false"
+      const showToggle = booleanValue;
+      
+      return (
+        <td
+          key={column.key}
+          className={cn(cellClassName, "text-center")}
+          ref={(el) => {
+            const cellKey = `${rowIndex}-${column.key}`;
+            if (el) {
+              cellRefs.current.set(cellKey, el);
+            } else {
+              cellRefs.current.delete(cellKey);
+            }
+          }}
+          onClick={() => setActiveCell({ rowIndex, colKey: column.key })}
+          onKeyDown={(e) => handleKeyDown(e, rowIndex, column.key)}
+          tabIndex={0}
+          data-testid={`cell-${rowIndex}-${column.key}`}
+        >
+          {showToggle && (
+            <div className="flex items-center justify-center">
+              <Switch
+                checked={booleanValue}
+                onCheckedChange={(checked) => {
+                  if (!isRowReadonly && column.onToggleChange) {
+                    column.onToggleChange(row.id, checked);
+                  }
+                }}
+                disabled={isRowReadonly}
+              />
+            </div>
+          )}
+        </td>
+      );
+    }
+
+    if (column.type === "button" && (column.readonly || isRowReadonly)) {
+      const buttonLabel = column.getButtonLabel ? column.getButtonLabel(value) : String(value || "");
+      const rawVariant = column.getButtonVariant ? column.getButtonVariant(value) : "outline";
+      
+      // Map custom variants to standard variants + custom classes
+      let buttonVariant: "default" | "outline" | "secondary" | "ghost" | "destructive" = "outline";
+      let customClasses = "";
+      
+      if (rawVariant === "success") {
+        buttonVariant = "outline";
+        customClasses = "bg-success/20 text-success border-success/30 hover:bg-success/30";
+      } else if (rawVariant === "warning") {
+        buttonVariant = "outline";
+        customClasses = "bg-warning/20 text-warning border-warning/30 hover:bg-warning/30";
+      } else if (rawVariant === "link") {
+        buttonVariant = "ghost";
+      } else {
+        buttonVariant = rawVariant;
+      }
+      
+      return (
+        <td
+          key={column.key}
+          className={cn(cellClassName, "text-center")}
+          ref={(el) => {
+            const cellKey = `${rowIndex}-${column.key}`;
+            if (el) {
+              cellRefs.current.set(cellKey, el);
+            } else {
+              cellRefs.current.delete(cellKey);
+            }
+          }}
+          onClick={() => setActiveCell({ rowIndex, colKey: column.key })}
+          onKeyDown={(e) => handleKeyDown(e, rowIndex, column.key)}
+          tabIndex={0}
+          data-testid={`cell-${rowIndex}-${column.key}`}
+        >
+          <div className="flex items-center justify-center">
+            <Button
+              variant={buttonVariant}
+              size="sm"
+              onClick={() => {
+                if (column.onButtonClick) {
+                  column.onButtonClick(row.id, value);
+                }
+              }}
+              className={cn("h-7 text-xs", customClasses)}
+            >
+              {buttonLabel}
+            </Button>
+          </div>
+        </td>
+      );
+    }
+
     if (column.readonly || isRowReadonly) {
       // 読み取り専用セルの表示値を決定
       let displayValue = value;
@@ -394,8 +492,26 @@ export function ExcelDataGrid({
       );
     }
 
-    if (column.type === "toggle") {
-      const booleanValue = value === "true" || value === true;
+    if (column.type === "button") {
+      const buttonLabel = column.getButtonLabel ? column.getButtonLabel(value) : String(value || "");
+      const rawVariant = column.getButtonVariant ? column.getButtonVariant(value) : "outline";
+      
+      // Map custom variants to standard variants + custom classes
+      let buttonVariant: "default" | "outline" | "secondary" | "ghost" | "destructive" = "outline";
+      let customClasses = "";
+      
+      if (rawVariant === "success") {
+        buttonVariant = "outline";
+        customClasses = "bg-success/20 text-success border-success/30 hover:bg-success/30";
+      } else if (rawVariant === "warning") {
+        buttonVariant = "outline";
+        customClasses = "bg-warning/20 text-warning border-warning/30 hover:bg-warning/30";
+      } else if (rawVariant === "link") {
+        buttonVariant = "ghost";
+      } else {
+        buttonVariant = rawVariant;
+      }
+      
       return (
         <td
           key={column.key}
@@ -414,15 +530,19 @@ export function ExcelDataGrid({
           data-testid={`cell-${rowIndex}-${column.key}`}
         >
           <div className="flex items-center justify-center">
-            <Switch
-              checked={booleanValue}
-              onCheckedChange={(checked) => {
-                if (!isRowReadonly && column.onToggleChange) {
-                  column.onToggleChange(row.id, checked);
+            <Button
+              variant={buttonVariant}
+              size="sm"
+              onClick={() => {
+                if (!isRowReadonly && column.onButtonClick) {
+                  column.onButtonClick(row.id, value);
                 }
               }}
               disabled={isRowReadonly}
-            />
+              className={cn("h-7 text-xs", customClasses)}
+            >
+              {buttonLabel}
+            </Button>
           </div>
         </td>
       );
@@ -679,32 +799,20 @@ export function ExcelDataGrid({
                 data-testid={`row-${rowIndex}`}
               >
                 <td className="border-r border-border p-2 text-sm text-muted-foreground text-center">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={selectedRows.has(rowIndex)}
-                      onChange={(e) => {
-                        const newSelected = new Set(selectedRows);
-                        if (e.target.checked) {
-                          newSelected.add(rowIndex);
-                        } else {
-                          newSelected.delete(rowIndex);
-                        }
-                        setSelectedRows(newSelected);
-                      }}
-                      data-testid={`checkbox-row-${rowIndex}`}
-                    />
-                    {onRowClick && (
-                      <button
-                        type="button"
-                        className="text-xs text-primary hover:underline"
-                        onClick={() => onRowClick(row.id)}
-                        title="GL突合パネルで手動突合"
-                      >
-                        GL
-                      </button>
-                    )}
-                  </div>
+                  <input
+                    type="checkbox"
+                    checked={selectedRows.has(rowIndex)}
+                    onChange={(e) => {
+                      const newSelected = new Set(selectedRows);
+                      if (e.target.checked) {
+                        newSelected.add(rowIndex);
+                      } else {
+                        newSelected.delete(rowIndex);
+                      }
+                      setSelectedRows(newSelected);
+                    }}
+                    data-testid={`checkbox-row-${rowIndex}`}
+                  />
                 </td>
                 {columns.map((column) => renderCell(row, rowIndex, column))}
               </tr>

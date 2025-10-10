@@ -136,16 +136,27 @@ export default function OrderForecastPage() {
     }
   };
 
+  // 突合状態ボタンのラベルを取得
+  const getReconciliationButtonLabel = (status: string | number | boolean | undefined): string => {
+    if (status === "matched") return "突合済";
+    if (status === "fuzzy") return "曖昧一致";
+    return "未突合";
+  };
+
+  // 突合状態ボタンの配色を取得
+  const getReconciliationButtonVariant = (status: string | number | boolean | undefined): "default" | "outline" | "secondary" | "ghost" | "link" | "destructive" | "success" | "warning" => {
+    if (status === "matched") return "success" as const;
+    if (status === "fuzzy") return "warning" as const;
+    return "destructive";
+  };
+
+  // 突合状態ボタンクリック時の処理
+  const handleReconciliationButtonClick = (rowId: string) => {
+    setSelectedOrderIdForGL(rowId);
+  };
+
   // グリッド列定義
   const columns: GridColumn[] = [
-    {
-      key: "isExcluded",
-      label: "除外",
-      type: "toggle",
-      width: 80,
-      readonly: false,
-      onToggleChange: handleToggleExclusion,
-    },
     {
       key: "projectId",
       label: "プロジェクト",
@@ -231,12 +242,23 @@ export default function OrderForecastPage() {
       width: 200,
     },
     {
+      key: "isExcluded",
+      label: "除外",
+      type: "toggle",
+      width: 80,
+      readonly: false,
+      onToggleChange: handleToggleExclusion,
+    },
+    {
       key: "reconciliationStatus",
       label: "突合状態",
-      type: "text",
+      type: "button",
       width: 120,
       readonly: true,
       className: "text-center",
+      getButtonLabel: getReconciliationButtonLabel,
+      getButtonVariant: getReconciliationButtonVariant,
+      onButtonClick: handleReconciliationButtonClick,
     },
   ];
 
@@ -574,7 +596,6 @@ export default function OrderForecastPage() {
           rows={localRows}
           onRowsChange={handleRowsChange}
           onSave={handleSave}
-          onRowClick={(rowId) => setSelectedOrderIdForGL(rowId)}
         />
       </main>
     </div>
