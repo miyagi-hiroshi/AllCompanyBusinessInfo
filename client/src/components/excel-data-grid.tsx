@@ -498,10 +498,22 @@ export function ExcelDataGrid({
         }
       }
       
+      // 数値型（金額）の場合は、カンマ区切りで小数点以下なしにフォーマット
+      if (column.type === "number" && value != null && value !== "") {
+        const numValue = typeof value === "number" ? value : parseFloat(String(value));
+        if (!isNaN(numValue)) {
+          displayValue = Math.floor(numValue).toLocaleString("ja-JP");
+        }
+      }
+      
       return (
         <td
           key={column.key}
-          className={cn(cellClassName, "bg-muted/50 text-muted-foreground")}
+          className={cn(
+            cellClassName, 
+            "bg-muted/50 text-muted-foreground",
+            column.type === "number" && "text-right"
+          )}
           ref={(el) => {
             const cellKey = `${rowIndex}-${column.key}`;
             if (el) {
@@ -698,16 +710,23 @@ export function ExcelDataGrid({
         {isEditing ? (
           <Input
             type={column.type === "number" ? "number" : column.type === "date" ? "date" : "text"}
+            step={column.type === "number" ? "1" : undefined}
             value={typeof value === "boolean" ? String(value) : (value || "")}
             onChange={(e) => handleCellChange(rowIndex, column.key, e.target.value)}
             onBlur={() => setEditingCell(null)}
             autoFocus
-            className="h-8 border-0 p-1 focus-visible:ring-0"
+            className={cn("h-8 border-0 p-1 focus-visible:ring-0", column.type === "number" && "text-right")}
             data-testid={`input-${rowIndex}-${column.key}`}
           />
         ) : (
           <div className={cn("truncate", column.type === "number" && "font-mono text-right")}>
-            {value}
+            {column.type === "number" && value != null && value !== "" 
+              ? (() => {
+                  const numValue = typeof value === "number" ? value : parseFloat(String(value));
+                  return !isNaN(numValue) ? Math.floor(numValue).toLocaleString("ja-JP") : value;
+                })()
+              : value
+            }
           </div>
         )}
       </td>
