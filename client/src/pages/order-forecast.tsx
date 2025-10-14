@@ -625,7 +625,7 @@ export default function OrderForecastPage() {
       </header>
 
       {/* Main Content - Data Grid */}
-      <main className="flex-1 overflow-hidden min-h-[500px]">
+      <main className="flex-1 overflow-hidden min-h-[500px] pb-16">
         <ExcelDataGrid
           columns={columns}
           rows={localRows}

@@ -850,7 +850,7 @@ export function ExcelDataGrid({
       </div>
 
       {/* Grid */}
-      <div className="flex-1 overflow-auto min-h-0" ref={gridRef}>
+      <div className="flex-1 overflow-auto min-h-0 pb-16" ref={gridRef}>
         <table className="w-full border-collapse">
           <thead className="sticky top-0 z-10">
             <tr className="bg-muted">
@@ -925,8 +925,8 @@ export function ExcelDataGrid({
         </table>
       </div>
 
-      {/* Status Bar */}
-      <div className="flex items-center justify-between px-4 py-2 border-t bg-muted/30 text-xs text-muted-foreground">
+      {/* Status Bar - Fixed at bottom */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-2 border-t bg-muted/30 text-xs text-muted-foreground backdrop-blur-sm">
         <div className="flex items-center gap-4">
           <span>総行数: {sortedRows.length}</span>
           <span>変更済: {sortedRows.filter((r) => r._modified).length}</span>
