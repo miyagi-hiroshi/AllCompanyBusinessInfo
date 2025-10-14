@@ -167,12 +167,11 @@ export class OrderForecastRepository {
       query.orderBy(desc(sortColumn));
     }
     
-    // ページネーション（limit指定時のみ）
-    if (limit !== undefined) {
-      query.limit(limit);
-      if (offset !== undefined) {
-        query.offset(offset);
-      }
+    // ページネーション（limit指定時のみ、未指定時は10000件まで取得）
+    const effectiveLimit = limit ?? 10000;
+    query.limit(effectiveLimit);
+    if (offset !== undefined) {
+      query.offset(offset);
     }
     
     return await query;
