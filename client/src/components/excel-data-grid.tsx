@@ -42,6 +42,8 @@ interface ExcelDataGridProps {
   onSave?: () => void;
   onSearch?: () => void;
   enableKeyboardShortcuts?: boolean;
+  pageSize?: number;
+  onPageSizeChange?: (size: number) => void;
 }
 
 export function ExcelDataGrid({
@@ -51,12 +53,16 @@ export function ExcelDataGrid({
   onSave,
   onSearch,
   enableKeyboardShortcuts = true,
+  pageSize = 50,
+  onPageSizeChange,
 }: ExcelDataGridProps) {
   const [activeCell, setActiveCell] = useState<{ rowIndex: number; colKey: string } | null>(null);
   const [editingCell, setEditingCell] = useState<{ rowIndex: number; colKey: string } | null>(null);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [sortBy, setSortBy] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(pageSize);
   const gridRef = useRef<HTMLDivElement>(null);
   const cellRefs = useRef<Map<string, HTMLTableCellElement>>(new Map());
   const { toast } = useToast();
@@ -252,6 +258,27 @@ export function ExcelDataGrid({
       }
     });
   }
+
+  // ページネーション計算
+  const totalPages = Math.ceil(sortedRows.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const displayedRows = sortedRows.slice(startIndex, endIndex);
+
+  // ページ切り替えハンドラ
+  const handlePageChange = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setItemsPerPage(size);
+    setCurrentPage(1);  // ページを1に戻す
+    if (onPageSizeChange) {
+      onPageSizeChange(size);
+    }
+  };
 
   const handleKeyDown = (
     e: React.KeyboardEvent,
@@ -864,34 +891,36 @@ export function ExcelDataGrid({
             </tr>
           </thead>
           <tbody>
-            {sortedRows.map((row, rowIndex) => (
+            {displayedRows.map((row, displayIndex) => {
+              const actualRowIndex = startIndex + displayIndex;  // 実際の行インデックス
+              return (
               <tr
                 key={row.id}
                 className={cn(
                   "border-b border-border",
-                  selectedRows.has(rowIndex) && "bg-primary/10"
+                  selectedRows.has(actualRowIndex) && "bg-primary/10"
                 )}
-                data-testid={`row-${rowIndex}`}
+                data-testid={`row-${actualRowIndex}`}
               >
                 <td className="border-r border-border p-2 text-sm text-muted-foreground text-center">
                   <input
                     type="checkbox"
-                    checked={selectedRows.has(rowIndex)}
+                    checked={selectedRows.has(actualRowIndex)}
                     onChange={(e) => {
                       const newSelected = new Set(selectedRows);
                       if (e.target.checked) {
-                        newSelected.add(rowIndex);
+                        newSelected.add(actualRowIndex);
                       } else {
-                        newSelected.delete(rowIndex);
+                        newSelected.delete(actualRowIndex);
                       }
                       setSelectedRows(newSelected);
                     }}
-                    data-testid={`checkbox-row-${rowIndex}`}
+                    data-testid={`checkbox-row-${actualRowIndex}`}
                   />
                 </td>
-                {columns.map((column) => renderCell(row, rowIndex, column))}
+                {columns.map((column) => renderCell(row, actualRowIndex, column))}
               </tr>
-            ))}
+            )})}
           </tbody>
         </table>
       </div>
@@ -903,6 +932,80 @@ export function ExcelDataGrid({
           <span>変更済: {sortedRows.filter((r) => r._modified).length}</span>
           {selectedRows.size > 0 && <span>選択: {selectedRows.size}</span>}
         </div>
+        
+        {/* ページネーション */}
+        <div className="flex items-center gap-3">
+          {/* 表示件数選択 */}
+          <div className="flex items-center gap-2">
+            <span>表示件数:</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => handlePageSizeChange(Number(e.target.value))}
+              className="h-7 px-2 text-xs border rounded bg-background"
+            >
+              <option value={20}>20件</option>
+              <option value={50}>50件</option>
+              <option value={100}>100件</option>
+            </select>
+          </div>
+          
+          {/* ページネーション */}
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="h-7 px-2"
+              >
+                前へ
+              </Button>
+              
+              {/* ページ番号 */}
+              <div className="flex gap-1">
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                  // 表示するページ番号を計算（最大5ページ表示）
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  
+                  return (
+                    <Button
+                      key={pageNum}
+                      size="sm"
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      onClick={() => handlePageChange(pageNum)}
+                      className="h-7 w-7 p-0"
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+              </div>
+              
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="h-7 px-2"
+              >
+                次へ
+              </Button>
+              
+              <span className="ml-2">{currentPage} / {totalPages}ページ</span>
+            </div>
+          )}
+        </div>
+        
         <div className="flex items-center gap-2">
           <span className="text-xs">Tab: 次のセル</span>
           <span className="text-xs">Enter: 編集/確定</span>

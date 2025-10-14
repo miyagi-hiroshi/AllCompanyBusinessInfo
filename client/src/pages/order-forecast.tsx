@@ -30,6 +30,10 @@ export default function OrderForecastPage() {
   const [searchFilter, setSearchFilter] = useState<SearchFilter>({});
   const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false);
   
+  // ページネーション関連
+  const [pageSize, setPageSize] = useState(50);  // デフォルト50件
+  const [shouldResetPage, setShouldResetPage] = useState(false);
+  
   const { toast } = useToast();
 
   // Fetch data from backend with combined filters
@@ -65,6 +69,7 @@ export default function OrderForecastPage() {
   // 基本フィルタ変更時にデータを再取得
   const handleFilterChange = (newFilter: FilterState) => {
     setFilter(newFilter);
+    setShouldResetPage(true);  // ページをリセット
     
     // フィルタ説明文を生成
     const filterParts: string[] = [];
@@ -121,6 +126,14 @@ export default function OrderForecastPage() {
       )
     );
   };
+
+  // ページリセット処理
+  useEffect(() => {
+    if (shouldResetPage) {
+      // ページリセットフラグをクリア
+      setShouldResetPage(false);
+    }
+  }, [shouldResetPage]);
 
   // 突合状態ボタンのラベルを取得
   const getReconciliationButtonLabel = (status: string | number | boolean | undefined): string => {
@@ -618,6 +631,8 @@ export default function OrderForecastPage() {
           rows={localRows}
           onRowsChange={handleRowsChange}
           onSave={handleSave}
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
         />
       </main>
     </div>
