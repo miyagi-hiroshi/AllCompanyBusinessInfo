@@ -68,16 +68,7 @@ export function useImportGLEntriesCSV() {
       const formData = new FormData();
       formData.append("file", file);
       
-      const res = await fetch("/api/gl-entries/import-csv", {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
-      
-      if (!res.ok) {
-        throw new Error("CSV取込に失敗しました");
-      }
-      
+      const res = await apiRequest("POST", "/api/gl-entries/import-csv", formData);
       return await res.json();
     },
     onSuccess: () => {

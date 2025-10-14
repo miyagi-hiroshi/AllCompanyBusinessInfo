@@ -14,14 +14,16 @@ export async function apiRequest(
 ): Promise<Response> {
   // ヘッダーを構築（Cookieは自動送信される）
   const headers: Record<string, string> = {};
-  if (data) {
+  
+  // FormDataの場合はContent-Typeを設定しない（ブラウザが自動設定）
+  if (data && !(data instanceof FormData)) {
     headers["Content-Type"] = "application/json";
   }
 
   const res = await fetch(url, {
     method,
     headers,
-    body: data ? JSON.stringify(data) : undefined,
+    body: data ? (data instanceof FormData ? data : JSON.stringify(data)) : undefined,
     credentials: "include", // Cookieを送信
   });
 
