@@ -42,9 +42,14 @@ if (isReplit) {
       }
     : false; // 開発環境ではSSLを無効
 
+  // データベース接続URLに文字エンコーディングを明示的に指定
+  const dbUrl = new URL(process.env.DATABASE_URL);
+  dbUrl.searchParams.set('client_encoding', 'UTF8');
+  
   pool = new PgPool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: dbUrl.toString(),
     ssl: sslConfig,
+    application_name: 'AllCompanyBusinessInfo',
   });
   db = drizzlePg(pool, { schema });
 }

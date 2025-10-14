@@ -11,6 +11,7 @@ export interface GLEntryFilter {
 export function useGLEntries(filter: GLEntryFilter) {
   const params = new URLSearchParams({
     fiscalYear: filter.fiscalYear.toString(),
+    limit: "1000", // 全データを取得するため大きな値を設定
   });
   if (filter.month) {params.append("month", filter.month.toString());}
   

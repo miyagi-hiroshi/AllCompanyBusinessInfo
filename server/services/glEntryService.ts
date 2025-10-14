@@ -361,7 +361,7 @@ export class GLEntryService {
    * @param fileBuffer - CSVファイルのバッファ
    * @returns 取込結果
    */
-  async importFromCSV(fileBuffer: Buffer): Promise<{
+  async importFromCSV(fileBuffer: Buffer, encoding?: string): Promise<{
     totalRows: number;
     importedRows: number;
     skippedRows: number;
@@ -374,12 +374,70 @@ export class GLEntryService {
     let skippedRows = 0;
 
     try {
-      // Shift_JISからUTF-8に変換
-      const utf8Buffer = iconv.decode(fileBuffer, 'Shift_JIS');
+      // 🔍 エンコーディング処理（手動指定対応）
+      console.log('=== CSVファイルエンコーディング処理 ===');
+      console.log('ファイルサイズ:', fileBuffer.length, 'bytes');
+      console.log('指定エンコーディング:', encoding || '自動検出');
+      
+      let utf8Content: string = '';
+      let detectedEncoding = encoding || 'shift_jis';
+      
+      // 手動指定されたエンコーディングがある場合はそれを使用
+      if (encoding) {
+        try {
+          utf8Content = iconv.decode(fileBuffer, encoding);
+          console.log(`指定エンコーディング ${encoding} で処理完了`);
+          console.log(`${encoding} サンプル:`, utf8Content.slice(0, 200));
+        } catch (error) {
+          console.log(`指定エンコーディング ${encoding} でエラー:`, error.message);
+          throw new Error(`指定されたエンコーディング ${encoding} でファイルを読み込めませんでした`);
+        }
+      } else {
+        // 自動検出処理
+        const encodings = ['shift_jis', 'euc-jp', 'utf8', 'iso-2022-jp'];
+        let bestEncoding = 'shift_jis';
+        let bestScore = 0;
+        
+        for (const enc of encodings) {
+          try {
+            const decoded = iconv.decode(fileBuffer, enc);
+            
+            // 日本語文字の数をカウント
+            const japaneseCount = (decoded.match(/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/g) || []).length;
+            
+            // 文字化け文字の数をカウント
+            const garbledCount = (decoded.match(/[\uFFFD]/g) || []).length;
+            
+            // スコア計算（日本語文字が多いほど高スコア、文字化け文字があるほど低スコア）
+            const score = japaneseCount - (garbledCount * 10);
+            
+            console.log(`${enc}: 日本語文字=${japaneseCount}, 文字化け=${garbledCount}, スコア=${score}`);
+            console.log(`${enc} サンプル:`, decoded.slice(0, 100));
+            
+            if (score > bestScore) {
+              bestScore = score;
+              bestEncoding = enc;
+              utf8Content = decoded;
+              detectedEncoding = enc;
+            }
+            
+          } catch (error) {
+            console.log(`${enc}: エラー - ${error.message}`);
+            continue;
+          }
+        }
+        
+        console.log(`最適なエンコーディング: ${bestEncoding} (スコア: ${bestScore})`);
+      }
+      
+      console.log(`最終選択エンコーディング: ${detectedEncoding}`);
       
       // CSVパース
+      console.log('=== CSVパース開始 ===');
+      console.log('CSV内容サンプル:', utf8Content.slice(0, 500));
+      
       await new Promise<void>((resolve, reject) => {
-        const stream = Readable.from(utf8Buffer);
+        const stream = Readable.from(utf8Content);
         let rowIndex = 0;
 
         stream
@@ -399,8 +457,18 @@ export class GLEntryService {
             totalRows++;
 
             try {
+              console.log(`行 ${rowIndex}:`, {
+                accountCode: row.accountCode,
+                accountName: row.accountName,
+                transactionDate: row.transactionDate,
+                voucherNo: row.voucherNo,
+                debitAmount: row.debitAmount,
+                creditAmount: row.creditAmount
+              });
+
               // 対象科目コードチェック
               if (!TARGET_ACCOUNT_CODES.includes(row.accountCode)) {
+                console.log(`行 ${rowIndex}: 対象外科目コード ${row.accountCode}`);
                 skippedRows++;
                 return;
               }
@@ -409,7 +477,10 @@ export class GLEntryService {
               const debitAmount = parseFloat(row.debitAmount || '0');
               const creditAmount = parseFloat(row.creditAmount || '0');
               
+              console.log(`行 ${rowIndex}: 借方=${debitAmount}, 貸方=${creditAmount}`);
+              
               if (debitAmount === 0 && creditAmount === 0) {
+                console.log(`行 ${rowIndex}: 金額が0のためスキップ`);
                 skippedRows++;
                 return;
               }
@@ -417,18 +488,33 @@ export class GLEntryService {
               const amount = debitAmount > 0 ? debitAmount : creditAmount;
               const debitCredit = debitAmount > 0 ? 'debit' : 'credit';
 
-              // 日付からperiodを抽出 (YYYY/MM/DD -> YYYY-MM)
-              const dateParts = row.transactionDate.split('/');
-              if (dateParts.length !== 3) {
-                errors.push({ row: rowIndex, message: '日付フォーマットエラー' });
+              // 日付からperiodを抽出 (YYYYMMDD形式またはYYYY/MM/DD形式)
+              const dateStr = row.transactionDate;
+              let period: string;
+              let transactionDate: string;
+              
+              if (dateStr && dateStr.length === 8 && /^\d{8}$/.test(dateStr)) {
+                // YYYYMMDD形式
+                period = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}`;
+                transactionDate = `${dateStr.substring(0, 4)}-${dateStr.substring(4, 6)}-${dateStr.substring(6, 8)}`;
+              } else if (dateStr && dateStr.includes('/')) {
+                // YYYY/MM/DD形式
+                const dateParts = dateStr.split('/');
+                if (dateParts.length !== 3) {
+                  errors.push({ row: rowIndex, message: '日付フォーマットエラー' });
+                  return;
+                }
+                period = `${dateParts[0]}-${dateParts[1].padStart(2, '0')}`;
+                transactionDate = dateStr.replace(/\//g, '-'); // YYYY/MM/DD -> YYYY-MM-DD
+              } else {
+                errors.push({ row: rowIndex, message: `日付フォーマットエラー: ${dateStr}` });
                 return;
               }
-              const period = `${dateParts[0]}-${dateParts[1].padStart(2, '0')}`;
 
               // データ作成
               const glEntry: CreateGLEntryData = {
                 voucherNo: row.voucherNo,
-                transactionDate: row.transactionDate.replace(/\//g, '-'), // YYYY/MM/DD -> YYYY-MM-DD
+                transactionDate: transactionDate,
                 accountCode: row.accountCode,
                 accountName: row.accountName,
                 amount: amount.toString(),
@@ -437,13 +523,21 @@ export class GLEntryService {
                 period,
               };
 
+              console.log(`行 ${rowIndex}: GLエントリー作成`, glEntry);
               results.push(glEntry);
             } catch (error: any) {
+              console.error(`行 ${rowIndex} 処理エラー:`, error);
               errors.push({ row: rowIndex, message: error.message });
             }
           })
-          .on('end', () => resolve())
-          .on('error', (error) => reject(error));
+          .on('end', () => {
+            console.log(`CSVパース完了: 総行数=${totalRows}, 取込対象=${results.length}, スキップ=${skippedRows}, エラー=${errors.length}`);
+            resolve();
+          })
+          .on('error', (error) => {
+            console.error('CSVパースエラー:', error);
+            reject(error);
+          });
       });
 
       // トランザクション内で一括登録
