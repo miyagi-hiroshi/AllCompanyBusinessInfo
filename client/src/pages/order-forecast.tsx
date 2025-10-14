@@ -15,6 +15,7 @@ import { useAccountingItems,useCustomers, useProjects } from "@/hooks/useMasters
 import { useCreateOrderForecast, useDeleteOrderForecast,useOrderForecasts, useSetOrderForecastsExclusion, useUpdateOrderForecast } from "@/hooks/useOrderForecasts";
 import { useReconciliation } from "@/hooks/useReconciliation";
 import { useToast } from "@/hooks/useToast";
+import { sortAccountingItemsByOrder } from "@/lib/accountingItemOrder";
 
 export default function OrderForecastPage() {
   // Initialize filter with current year and month
@@ -214,7 +215,7 @@ export default function OrderForecastPage() {
       type: "autocomplete",
       width: 200,
       required: true,
-      autocompleteOptions: accountingItems.map((ai) => ({
+      autocompleteOptions: sortAccountingItemsByOrder(accountingItems).map((ai) => ({
         value: ai.name,
         label: ai.name,
         code: ai.code,

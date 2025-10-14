@@ -2,6 +2,7 @@ import { AlertCircle, CheckCircle2, TrendingDown, TrendingUp } from "lucide-reac
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface AccountSummaryCardsProps {
   summary: {
@@ -72,7 +73,13 @@ export function AccountSummaryCards({ summary, isLoading }: AccountSummaryCardsP
             <CardTitle className="text-sm font-medium text-muted-foreground">差異金額</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className={`text-2xl font-bold ${totalDifference === 0 ? 'text-success' : 'text-destructive'}`}>
+            <div className={`text-2xl font-bold ${
+              totalDifference === 0 
+                ? 'text-success' 
+                : totalDifference > 0 
+                  ? 'text-blue-600' 
+                  : 'text-red-600'
+            }`}>
               {totalDifference === 0 ? (
                 <CheckCircle2 className="inline h-6 w-6 mr-2" />
               ) : totalDifference > 0 ? (
@@ -90,7 +97,7 @@ export function AccountSummaryCards({ summary, isLoading }: AccountSummaryCardsP
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">突合率</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">金額整合率</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{matchRate}%</div>
@@ -114,23 +121,32 @@ export function AccountSummaryCards({ summary, isLoading }: AccountSummaryCardsP
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-2">
-              {summary.differences
-                .filter(d => d.difference !== 0)
-                .sort((a, b) => Math.abs(b.difference) - Math.abs(a.difference))
-                .map((diff) => (
-                  <div key={diff.accountCode} className="flex items-center justify-between p-2 bg-muted rounded-md">
-                    <div>
-                      <p className="font-medium">{diff.accountCode} {diff.accountName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        GL: ¥{diff.glAmount.toLocaleString()} / 受発注: ¥{diff.orderAmount.toLocaleString()}
-                      </p>
-                    </div>
-                    <div className={`text-sm font-bold ${diff.difference > 0 ? 'text-destructive' : 'text-warning'}`}>
-                      {diff.difference > 0 ? '+' : ''}¥{diff.difference.toLocaleString()}
-                    </div>
-                  </div>
-                ))}
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>科目名</TableHead>
+                    <TableHead className="text-right">GL金額</TableHead>
+                    <TableHead className="text-right">受発注金額</TableHead>
+                    <TableHead className="text-right">差異</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {summary.differences
+                    .filter(d => d.difference !== 0)
+                    .sort((a, b) => Math.abs(b.difference) - Math.abs(a.difference))
+                    .map((diff) => (
+                      <TableRow key={diff.accountCode}>
+                        <TableCell className="font-medium">{diff.accountName}</TableCell>
+                        <TableCell className="text-right font-mono">¥{diff.glAmount.toLocaleString()}</TableCell>
+                        <TableCell className="text-right font-mono">¥{diff.orderAmount.toLocaleString()}</TableCell>
+                        <TableCell className={`text-right font-mono font-bold ${diff.difference > 0 ? 'text-blue-600' : 'text-red-600'}`}>
+                          {diff.difference > 0 ? '+' : ''}¥{diff.difference.toLocaleString()}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
             </div>
           </CardContent>
         </Card>

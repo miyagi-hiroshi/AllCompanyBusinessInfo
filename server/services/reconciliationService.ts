@@ -1,3 +1,4 @@
+import { accountingItems } from '@shared/schema/accountingItem';
 import { GLEntry,OrderForecast, ReconciliationLog } from '@shared/schema/integrated';
 
 import { db } from '../db';
@@ -226,40 +227,56 @@ export class ReconciliationService {
     differences: Array<{ accountCode: string; accountName: string; difference: number; glAmount: number; orderAmount: number }>;
   }> {
     try {
-      // GL科目別集計
+      // 計上科目マスタを取得して科目名→科目コードのマッピングを作成
+      const accountingItemsData = await db.select().from(accountingItems);
+      const nameToCodeMap = new Map<string, string>();
+      const codeToNameMap = new Map<string, string>();
+      
+      for (const item of accountingItemsData) {
+        nameToCodeMap.set(item.name, item.code);
+        codeToNameMap.set(item.code, item.name);
+      }
+      
+      // GL科目別集計（科目コードで集計）
       const glEntries = await this.glEntryRepository.findByPeriod(period);
       const glMap = new Map<string, { accountName: string; totalAmount: number; count: number }>();
       
       for (const gl of glEntries) {
         if (gl.isExcluded === 'true') continue; // 除外データをスキップ
         
-        const key = gl.accountCode;
+        // 科目名から科目コードを取得、なければ科目名をそのまま使用
+        const accountCode = nameToCodeMap.get(gl.accountName) || gl.accountName;
         const amount = parseFloat(gl.amount);
         
-        if (!glMap.has(key)) {
-          glMap.set(key, { accountName: gl.accountName, totalAmount: 0, count: 0 });
+        if (!glMap.has(accountCode)) {
+          // 科目名は計上科目マスタから取得して統一
+          const accountName = codeToNameMap.get(accountCode) || gl.accountName;
+          glMap.set(accountCode, { accountName, totalAmount: 0, count: 0 });
         }
         
-        const entry = glMap.get(key)!;
+        const entry = glMap.get(accountCode)!;
         entry.totalAmount += amount;
         entry.count++;
       }
       
-      // 受発注見込み科目別集計
+      // 受発注見込み科目別集計（科目コードで集計）
       const orderForecasts = await this.orderForecastRepository.findByPeriod(period);
       const orderMap = new Map<string, { accountName: string; totalAmount: number; count: number }>();
       
       for (const order of orderForecasts) {
         if (order.isExcluded === 'true') continue; // 除外データをスキップ
         
-        const key = order.accountingItem;
+        // 科目名から科目コードを取得、なければ科目名をそのまま使用
+        const accountCode = nameToCodeMap.get(order.accountingItem) || order.accountingItem;
         const amount = parseFloat(order.amount);
         
-        if (!orderMap.has(key)) {
-          orderMap.set(key, { accountName: order.accountingItem, totalAmount: 0, count: 0 });
+        if (!orderMap.has(accountCode)) {
+          // 科目名は計上科目マスタから取得して統一
+          const accountName = codeToNameMap.get(accountCode) || order.accountingItem;
+          orderMap.set(accountCode, { accountName, totalAmount: 0, count: 0 });
         }
         
-        const entry = orderMap.get(key)!;
+        const entry = orderMap.get(accountCode)!;
         entry.totalAmount += amount;
         entry.count++;
       }

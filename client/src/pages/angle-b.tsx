@@ -18,6 +18,7 @@ import {
 } from "@/hooks/useAngleBForecasts";
 import { useAccountingItems, useCustomers, useProjects } from "@/hooks/useMasters";
 import { useToast } from "@/hooks/useToast";
+import { sortAccountingItemsByOrder } from "@/lib/accountingItemOrder";
 
 export default function AngleBPage() {
   const [filter, setFilter] = useState<FilterState>(() => {
@@ -159,7 +160,7 @@ export default function AngleBPage() {
       type: "autocomplete",
       width: 200,
       required: true,
-      autocompleteOptions: accountingItems.map((ai) => ({
+      autocompleteOptions: sortAccountingItemsByOrder(accountingItems).map((ai) => ({
         value: ai.name,
         label: ai.name,
         code: ai.code,

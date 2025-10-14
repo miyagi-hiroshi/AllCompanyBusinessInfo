@@ -20,6 +20,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { sortAccountingItemsByOrder } from "@/lib/accountingItemOrder";
 
 export interface SearchFilter {
   salesPerson?: string;
@@ -144,7 +145,7 @@ export function SearchFilterPanel({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全ての計上科目</SelectItem>
-                {accountingItems.map((item) => (
+                {sortAccountingItemsByOrder(accountingItems).map((item) => (
                   <SelectItem key={item.id} value={item.name}>
                     {item.name}
                   </SelectItem>

@@ -103,57 +103,87 @@ export default function GLReconciliationPage() {
           <p className="text-muted-foreground mt-1">受発注データとGLデータの突合を管理します</p>
         </div>
 
-        {/* Filter Panel */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">期間選択</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex gap-4 items-end">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">年度</label>
-                <Select
-                  value={fiscalYear.toString()}
-                  onValueChange={(value) => setFiscalYear(parseInt(value))}
-                >
-                  <SelectTrigger className="w-[140px]" data-testid="select-fiscal-year">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {yearOptions.map((year) => (
-                      <SelectItem key={year} value={year.toString()}>
-                        {year}年度
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+        {/* Filter and Action Panel */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Filter Panel */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">期間選択</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-4 items-end">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">年度</label>
+                  <Select
+                    value={fiscalYear.toString()}
+                    onValueChange={(value) => setFiscalYear(parseInt(value))}
+                  >
+                    <SelectTrigger className="w-[140px]" data-testid="select-fiscal-year">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {yearOptions.map((year) => (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}年度
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium">月</label>
-                <Select
-                  value={month?.toString() || "all"}
-                  onValueChange={(value) => setMonth(value === "all" ? undefined : parseInt(value))}
-                >
-                  <SelectTrigger className="w-[120px]" data-testid="select-month">
-                    <SelectValue placeholder="全て" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">全て</SelectItem>
-                    {monthOptions.map((m) => (
-                      <SelectItem key={m} value={m.toString()}>
-                        {m}月
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium">月</label>
+                  <Select
+                    value={month?.toString() || "all"}
+                    onValueChange={(value) => setMonth(value === "all" ? undefined : parseInt(value))}
+                  >
+                    <SelectTrigger className="w-[120px]" data-testid="select-month">
+                      <SelectValue placeholder="全て" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">全て</SelectItem>
+                      {monthOptions.map((m) => (
+                        <SelectItem key={m} value={m.toString()}>
+                          {m}月
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        {/* 科目別サマリー */}
-        <AccountSummaryCards summary={accountSummary} isLoading={summaryLoading} />
+          {/* Action Buttons */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">突合実行</CardTitle>
+              <CardDescription>受発注データとGLデータを自動突合します</CardDescription>
+            </CardHeader>
+            <CardContent className="flex gap-3">
+              <Button
+                onClick={() => handleReconcile("exact")}
+                disabled={reconcileMutation.isPending || !month}
+                data-testid="button-exact-match"
+              >
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                厳格突合実行
+                <span className="ml-2 text-xs opacity-80">（伝票No + 日付 + 金額）</span>
+              </Button>
+              
+              <Button
+                variant="outline"
+                onClick={() => handleReconcile("fuzzy")}
+                disabled={reconcileMutation.isPending || !month}
+                data-testid="button-fuzzy-match"
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                ファジー突合実行
+                <span className="ml-2 text-xs opacity-80">（日付±3日 + 金額）</span>
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
 
         {/* Stats Cards */}
         {isLoading ? (
@@ -227,35 +257,9 @@ export default function GLReconciliationPage() {
           </div>
         )}
 
-        {/* Action Buttons */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">突合実行</CardTitle>
-            <CardDescription>受発注データとGLデータを自動突合します</CardDescription>
-          </CardHeader>
-          <CardContent className="flex gap-3">
-            <Button
-              onClick={() => handleReconcile("exact")}
-              disabled={reconcileMutation.isPending || !month}
-              data-testid="button-exact-match"
-            >
-              <CheckCircle2 className="h-4 w-4 mr-2" />
-              厳格突合実行
-              <span className="ml-2 text-xs opacity-80">（伝票No + 日付 + 金額）</span>
-            </Button>
-            
-            <Button
-              variant="outline"
-              onClick={() => handleReconcile("fuzzy")}
-              disabled={reconcileMutation.isPending || !month}
-              data-testid="button-fuzzy-match"
-            >
-              <Sparkles className="h-4 w-4 mr-2" />
-              ファジー突合実行
-              <span className="ml-2 text-xs opacity-80">（日付±3日 + 金額）</span>
-            </Button>
-          </CardContent>
-        </Card>
+        {/* 科目別サマリー */}
+        <AccountSummaryCards summary={accountSummary} isLoading={summaryLoading} />
+
 
         {/* Results Tabs */}
         <Tabs defaultValue="all" className="w-full">
