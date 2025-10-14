@@ -111,29 +111,15 @@ export default function OrderForecastPage() {
     }
   };
 
-  // 除外トグルのハンドラー
-  const handleToggleExclusion = async (rowId: string, isExcluded: boolean) => {
-    try {
-      await setOrderExclusion.mutateAsync({
-        ids: [rowId],
-        isExcluded,
-        exclusionReason: isExcluded ? "手動除外" : undefined,
-      });
-      
-      toast({
-        title: isExcluded ? "除外しました" : "除外を解除しました",
-        description: `明細を${isExcluded ? "突合対象外" : "突合対象"}に設定しました`,
-      });
-      
-      // データを再取得
-      await refetchOrders();
-    } catch (_error) {
-      toast({
-        title: "エラー",
-        description: "除外設定の更新に失敗しました",
-        variant: "destructive",
-      });
-    }
+  // 除外トグルのハンドラー（ローカル状態のみ更新、保存時に反映）
+  const handleToggleExclusion = (rowId: string, isExcluded: boolean) => {
+    setLocalRows(prevRows => 
+      prevRows.map(row => 
+        row.id === rowId 
+          ? { ...row, isExcluded, _modified: true }
+          : row
+      )
+    );
   };
 
   // 突合状態ボタンのラベルを取得
@@ -341,6 +327,14 @@ export default function OrderForecastPage() {
       // Find modified rows
       const modifiedRows = localRows.filter((row) => row._modified);
 
+      // 除外設定が変更された行を抽出
+      const excludedChanges = modifiedRows
+        .filter(row => !row.id.startsWith("temp-"))
+        .filter(row => {
+          const existing = orderForecasts.find((o) => o.id === row.id);
+          return existing && existing.isExcluded !== row.isExcluded;
+        });
+
       // Validate all modified rows before saving
       const validationErrors: string[] = [];
       modifiedRows.forEach((row, index) => {
@@ -363,7 +357,35 @@ export default function OrderForecastPage() {
         return;
       }
 
+      // 除外設定の変更を先に保存
+      if (excludedChanges.length > 0) {
+        for (const row of excludedChanges) {
+          await setOrderExclusion.mutateAsync({
+            ids: [row.id],
+            isExcluded: Boolean(row.isExcluded),
+            exclusionReason: row.isExcluded ? "手動除外" : undefined,
+          });
+        }
+      }
+
+      // 通常の更新処理
       for (const row of modifiedRows) {
+        // 除外設定のみの変更の場合はスキップ（既に保存済み）
+        const existing = orderForecasts.find((o) => o.id === row.id);
+        const isOnlyExclusionChange = existing && 
+          existing.isExcluded !== row.isExcluded &&
+          existing.projectId === row.projectId &&
+          existing.customerId === row.customerId &&
+          existing.accountingPeriod === row.accountingPeriod &&
+          existing.accountingItem === row.accountingItem &&
+          existing.description === row.description &&
+          existing.amount === row.amount &&
+          (existing.remarks || "") === (row.remarks as string || "");
+        
+        if (isOnlyExclusionChange) {
+          continue; // 除外設定のみの変更は既に保存済みなのでスキップ
+        }
+
         if ((row.id).startsWith("temp-")) {
           // Create new order
           const newOrder: NewOrderForecast = {
@@ -383,7 +405,6 @@ export default function OrderForecastPage() {
           await createMutation.mutateAsync({ ...newOrder, filter });
         } else {
           // Update existing order
-          const existing = orderForecasts.find((o) => o.id === row.id);
           if (existing) {
             await updateMutation.mutateAsync({
               id: row.id,
