@@ -850,7 +850,7 @@ export function ExcelDataGrid({
       </div>
 
       {/* Grid */}
-      <div className="flex-1 overflow-auto" ref={gridRef}>
+      <div className="flex-1 overflow-auto min-h-0" ref={gridRef}>
         <table className="w-full border-collapse">
           <thead className="sticky top-0 z-10">
             <tr className="bg-muted">
