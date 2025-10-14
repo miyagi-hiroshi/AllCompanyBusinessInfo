@@ -486,7 +486,7 @@ export default function OrderForecastPage() {
     }
   };
 
-  const handleReconcile = async (type: "exact" | "fuzzy") => {
+  const handleReconcile = async (_type: "exact" | "fuzzy") => {
     // Require month to be specified for reconciliation
     if (!filter.month) {
       toast({
@@ -500,7 +500,7 @@ export default function OrderForecastPage() {
     try {
       const result = await reconcileMutation.mutateAsync({
         period: currentPeriod,
-        type: type === "exact" ? "exact" : "fuzzy",
+        type: "exact",
       });
 
       // Refetch and update local rows with reconciliation results
@@ -528,8 +528,8 @@ export default function OrderForecastPage() {
       }
 
       toast({
-        title: `${type === "exact" ? "厳格" : "ファジー"}突合完了`,
-        description: `突合済: ${result.totalMatched}件、曖昧一致: ${result.totalFuzzy}件`,
+        title: "厳格突合完了",
+        description: `新規突合: ${result.matchedCount}件、既存突合済み: 受発注${result.alreadyMatchedOrders}件/GL${result.alreadyMatchedGl}件`,
       });
     } catch (_error) {
       toast({

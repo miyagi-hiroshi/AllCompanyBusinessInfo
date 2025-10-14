@@ -1,4 +1,4 @@
-import { AlertCircle, AlertTriangle, CheckCircle2, Sparkles } from "lucide-react";
+import { AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 
 import { AccountSummaryCards } from "@/components/account-summary-cards";
@@ -48,7 +48,7 @@ export default function GLReconciliationPage() {
     ? Math.round((matched.length / orderForecasts.length) * 100) 
     : 0;
 
-  const handleReconcile = (type: "exact" | "fuzzy") => {
+  const handleReconcile = () => {
     if (!month) {
       toast({
         variant: "destructive",
@@ -62,13 +62,14 @@ export default function GLReconciliationPage() {
     reconcileMutation.mutate(
       {
         period,
-        type,
+        type: "exact",
       },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
+          const { matchedCount, alreadyMatchedOrders, alreadyMatchedGl } = data;
           toast({
-            title: type === "exact" ? "厳格突合完了" : "ファジー突合完了",
-            description: "GLデータとの突合が完了しました",
+            title: "厳格突合完了",
+            description: `新規突合: ${matchedCount}件、既存突合済み: 受発注${alreadyMatchedOrders}件/GL${alreadyMatchedGl}件`,
           });
           void refetchOrders();
           void refetchGL();
@@ -160,27 +161,24 @@ export default function GLReconciliationPage() {
               <CardTitle className="text-base">突合実行</CardTitle>
               <CardDescription>受発注データとGLデータを自動突合します</CardDescription>
             </CardHeader>
-            <CardContent className="flex gap-3">
-              <Button
-                onClick={() => handleReconcile("exact")}
-                disabled={reconcileMutation.isPending || !month}
-                data-testid="button-exact-match"
-              >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                厳格突合実行
-                <span className="ml-2 text-xs opacity-80">（伝票No + 日付 + 金額）</span>
-              </Button>
+            <CardContent className="space-y-3">
+              <div className="flex gap-3">
+                <Button
+                  onClick={handleReconcile}
+                  disabled={reconcileMutation.isPending || !month}
+                  data-testid="button-exact-match"
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  厳格突合実行
+                  <span className="ml-2 text-xs opacity-80">（月度 + 摘要文 + 金額）</span>
+                </Button>
+              </div>
               
-              <Button
-                variant="outline"
-                onClick={() => handleReconcile("fuzzy")}
-                disabled={reconcileMutation.isPending || !month}
-                data-testid="button-fuzzy-match"
-              >
-                <Sparkles className="h-4 w-4 mr-2" />
-                ファジー突合実行
-                <span className="ml-2 text-xs opacity-80">（日付±3日 + 金額）</span>
-              </Button>
+              {/* 既に突合済みのデータ情報 */}
+              <div className="text-sm text-muted-foreground">
+                <p>※ 既に突合済みのデータは再突合されません</p>
+                <p>※ 突合の重複や上書きを防ぐため、安全に実行されます</p>
+              </div>
             </CardContent>
           </Card>
         </div>

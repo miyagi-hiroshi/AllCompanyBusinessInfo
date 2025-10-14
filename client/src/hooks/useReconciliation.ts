@@ -4,31 +4,26 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 
 interface ReconciliationRequest {
   period: string;
-  type: "exact" | "fuzzy" | "both";
+  type: "exact";
 }
 
 interface ReconciliationResponse {
   success: boolean;
   matchedCount: number;
-  fuzzyMatchedCount: number;
   totalMatched: number;
-  totalFuzzy: number;
   totalUnmatched: number;
   unmatchedGL: number;
+  alreadyMatchedOrders: number;
+  alreadyMatchedGl: number;
 }
 
 export function useReconciliation() {
   return useMutation<ReconciliationResponse, Error, ReconciliationRequest>({
     mutationFn: async ({ period, type }: ReconciliationRequest) => {
-      // Map type to appropriate parameters
-      const params = type === "exact" 
-        ? { period, fuzzyThreshold: 100, dateTolerance: 0, amountTolerance: 0 }
-        : { period, fuzzyThreshold: 80, dateTolerance: 7, amountTolerance: 1000 };
-      
       const response = await apiRequest(
         "POST",
         `/api/reconciliation/execute`,
-        params
+        { period, type }
       );
       const result = await response.json();
       return result.data as ReconciliationResponse;

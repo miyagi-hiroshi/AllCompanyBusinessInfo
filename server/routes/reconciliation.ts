@@ -20,9 +20,7 @@ const reconciliationService = new ReconciliationService(
 // 突合実行スキーマ
 const executeReconciliationSchema = z.object({
   period: z.string().regex(/^\d{4}-\d{2}$/, '期間はYYYY-MM形式で入力してください'),
-  fuzzyThreshold: z.number().min(0).max(100).optional().default(80), // ファジーマッチの閾値（%）
-  dateTolerance: z.number().min(0).max(30).optional().default(7), // 日付許容範囲（日）
-  amountTolerance: z.number().min(0).optional().default(1000), // 金額許容範囲（円）
+  type: z.enum(['exact']).optional().default('exact'), // 突合タイプ（厳格突合のみ）
 });
 
 // 突合ログ検索スキーマ
@@ -42,16 +40,11 @@ const searchReconciliationLogSchema = z.object({
  */
 router.post('/execute', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { period, fuzzyThreshold, dateTolerance, amountTolerance } = executeReconciliationSchema.parse(req.body);
+    const { period, type: _type } = executeReconciliationSchema.parse(req.body);
     const _user = (req as any).user;
 
     // 突合処理の実行（サービス層を使用）
-    const result = await reconciliationService.executeReconciliation(
-      period,
-      fuzzyThreshold,
-      dateTolerance,
-      amountTolerance
-    );
+    const result = await reconciliationService.executeReconciliation(period);
 
     res.json({
       success: true,

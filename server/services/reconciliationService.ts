@@ -24,23 +24,18 @@ export class ReconciliationService {
    * 突合処理実行
    * 
    * @param period - 期間
-   * @param fuzzyThreshold - ファジーマッチの閾値（%）
-   * @param dateTolerance - 日付許容範囲（日）
-   * @param amountTolerance - 金額許容範囲（円）
    * @returns 突合処理結果
    */
   async executeReconciliation(
-    period: string,
-    fuzzyThreshold: number = 80,
-    dateTolerance: number = 7,
-    amountTolerance: number = 1000
+    period: string
   ): Promise<{
     reconciliationLog: ReconciliationLog;
     results: {
       matched: Array<{ order: OrderForecast; gl: GLEntry; score: number }>;
-      fuzzyMatched: Array<{ order: OrderForecast; gl: GLEntry; score: number }>;
       unmatchedOrders: OrderForecast[];
       unmatchedGl: GLEntry[];
+      alreadyMatchedOrders: number;
+      alreadyMatchedGl: number;
     };
   }> {
     try {
@@ -53,11 +48,16 @@ export class ReconciliationService {
       // 突合処理の実行
       const reconciliationResults = await this.performReconciliation(
         orderForecasts,
-        glEntries,
-        fuzzyThreshold,
-        dateTolerance,
-        amountTolerance
+        glEntries
       );
+
+      // 既に突合済みのデータ数を計算
+      const alreadyMatchedOrders = orderForecasts.filter(order => 
+        order.reconciliationStatus === 'matched'
+      ).length;
+      const alreadyMatchedGl = glEntries.filter(gl => 
+        gl.reconciliationStatus === 'matched'
+      ).length;
 
       // トランザクション内で突合結果を保存
       const reconciliationLog = await db.transaction(async (_tx) => {
@@ -66,7 +66,7 @@ export class ReconciliationService {
           period,
           executedAt: new Date(),
           matchedCount: reconciliationResults.matched.length,
-          fuzzyMatchedCount: reconciliationResults.fuzzyMatched.length,
+          fuzzyMatchedCount: 0, // ファジー突合は削除
           unmatchedOrderCount: reconciliationResults.unmatchedOrders.length,
           unmatchedGlCount: reconciliationResults.unmatchedGl.length,
           totalOrderCount: orderForecasts.length,
@@ -78,7 +78,11 @@ export class ReconciliationService {
 
       return {
         reconciliationLog,
-        results: reconciliationResults,
+        results: {
+          ...reconciliationResults,
+          alreadyMatchedOrders,
+          alreadyMatchedGl,
+        },
       };
     } catch (error) {
       console.error('突合処理実行エラー:', error);
@@ -394,86 +398,85 @@ export class ReconciliationService {
    */
   private async performReconciliation(
     orderForecasts: OrderForecast[],
-    glEntries: GLEntry[],
-    fuzzyThreshold: number,
-    dateTolerance: number,
-    amountTolerance: number
+    glEntries: GLEntry[]
   ): Promise<{
     matched: Array<{ order: OrderForecast; gl: GLEntry; score: number }>;
-    fuzzyMatched: Array<{ order: OrderForecast; gl: GLEntry; score: number }>;
     unmatchedOrders: OrderForecast[];
     unmatchedGl: GLEntry[];
   }> {
     const matched: Array<{ order: OrderForecast; gl: GLEntry; score: number }> = [];
-    const fuzzyMatched: Array<{ order: OrderForecast; gl: GLEntry; score: number }> = [];
     const unmatchedOrders: OrderForecast[] = [];
-    const unmatchedGl: GLEntry[] = [...glEntries].filter(gl => gl.isExcluded !== 'true'); // 除外データを除く
+    const unmatchedGl: GLEntry[] = [...glEntries].filter(gl => 
+      gl.isExcluded !== 'true' && gl.reconciliationStatus !== 'matched'
+    ); // 除外データと既に突合済みのデータを除く
 
-    // 受発注データごとに突合処理を実行（除外データをスキップ）
+    // 受発注データごとに突合処理を実行（除外データと既に突合済みのデータをスキップ）
     for (const order of orderForecasts) {
       if (order.isExcluded === 'true') {
         continue; // 除外データはスキップ
       }
       
+      if (order.reconciliationStatus === 'matched') {
+        continue; // 既に突合済みのデータはスキップ
+      }
+      
       let bestMatch: GLEntry | null = null;
       let bestScore = 0;
-      let matchType: 'exact' | 'fuzzy' = 'exact';
 
       // GLデータとの突合チェック
       for (let i = unmatchedGl.length - 1; i >= 0; i--) {
         const gl = unmatchedGl[i];
         
-        // 勘定科目コードの一致チェック
-        if (order.accountingItem !== gl.accountCode) {
+        // 月度の一致チェック（受発注のaccountingPeriodとGLのtransactionDateの月が一致）
+        const orderMonth = order.accountingPeriod; // 例: "2025-08"
+        const glMonth = gl.transactionDate.substring(0, 7); // 例: "2025-08"
+        
+        if (orderMonth !== glMonth) {
           continue;
         }
 
-        // 金額の一致チェック
-        const amountDiff = Math.abs(parseFloat(order.amount) - parseFloat(gl.amount));
-        if (amountDiff > amountTolerance) {
+        // 摘要文の一致チェック（半角・全角の違いを吸収）
+        if (!this.isDescriptionMatch(order.description || '', gl.description || '')) {
           continue;
         }
 
-        // 日付の一致チェック
-        const orderDate = new Date(order.accountingPeriod + '-01');
-        const glDate = new Date(gl.transactionDate);
-        const dateDiff = Math.abs(orderDate.getTime() - glDate.getTime()) / (1000 * 60 * 60 * 24);
+        // 金額の完全一致チェック
+        const orderAmount = parseFloat(order.amount);
+        const glAmount = parseFloat(gl.amount);
+        
+        if (orderAmount !== glAmount) {
+          continue;
+        }
 
-        if (dateDiff <= dateTolerance) {
-          const score = this.calculateMatchScore(order, gl, amountDiff, dateDiff);
-          
-          if (score > bestScore) {
-            bestMatch = gl;
-            bestScore = score;
-            matchType = score >= fuzzyThreshold ? 'fuzzy' : 'exact';
-          }
+        // 厳格突合の条件を満たす場合
+        const score = 100; // 厳格突合なので常に100点
+        
+        if (score > bestScore) {
+          bestMatch = gl;
+          bestScore = score;
         }
       }
 
       // マッチが見つかった場合
-      if (bestMatch && bestScore >= fuzzyThreshold) {
+      if (bestMatch && bestScore > 0) {
         // トランザクション内で突合ステータスを更新
         await db.transaction(async (_tx) => {
           await Promise.all([
             this.orderForecastRepository.updateReconciliationStatus(
               order.id,
-              matchType === 'exact' ? 'matched' : 'fuzzy',
+              'matched',
               bestMatch.id
             ),
             this.glEntryRepository.updateReconciliationStatus(
               bestMatch.id,
-              matchType === 'exact' ? 'matched' : 'fuzzy',
+              'matched',
               order.id
             ),
           ]);
         });
 
         // 結果に追加
-        if (matchType === 'exact') {
-          matched.push({ order, gl: bestMatch, score: bestScore });
-        } else {
-          fuzzyMatched.push({ order, gl: bestMatch, score: bestScore });
-        }
+        matched.push({ order, gl: bestMatch, score: bestScore });
 
         // マッチしたGLデータを未突合リストから削除
         const index = unmatchedGl.findIndex(gl => gl.id === bestMatch.id);
@@ -488,10 +491,39 @@ export class ReconciliationService {
 
     return {
       matched,
-      fuzzyMatched,
       unmatchedOrders,
       unmatchedGl,
     };
+  }
+
+  /**
+   * 摘要文の一致チェック（半角・全角の違いを吸収）
+   * 
+   * @param description1 比較する摘要文1
+   * @param description2 比較する摘要文2
+   * @returns 正規化後に一致する場合true
+   */
+  private isDescriptionMatch(description1: string, description2: string): boolean {
+    if (!description1 || !description2) {
+      return false;
+    }
+    
+    // 半角・全角を正規化して比較
+    const normalize = (text: string): string => {
+      return text
+        // 全角英数字を半角に変換
+        .replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+        // 全角スペースを半角スペースに変換
+        .replace(/\u3000/g, ' ')
+        // 連続する空白を単一のスペースに変換
+        .replace(/\s+/g, ' ')
+        // 前後の空白を除去
+        .trim()
+        // 大文字小文字を統一（小文字に）
+        .toLowerCase();
+    };
+    
+    return normalize(description1) === normalize(description2);
   }
 
   /**
