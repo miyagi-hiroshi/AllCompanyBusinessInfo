@@ -1,4 +1,4 @@
-import { FileUp, Upload } from "lucide-react";
+import { FileUp, Upload, X } from "lucide-react";
 import { useState } from "react";
 
 import { ExclusionDialog } from "@/components/exclusion-dialog";
@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -20,6 +21,7 @@ export default function GLImportPage() {
   const [selectedGLIds, setSelectedGLIds] = useState<Set<string>>(new Set());
   const [exclusionDialogOpen, setExclusionDialogOpen] = useState(false);
   const [isExcluding, setIsExcluding] = useState(true);
+  const [searchFilter, setSearchFilter] = useState<string>("");
   const { toast } = useToast();
 
   // Fetch GL entries
@@ -28,6 +30,17 @@ export default function GLImportPage() {
     month,
   });
   const setGLExclusion = useSetGLEntriesExclusion();
+
+  // フィルタリング処理
+  const filteredGLEntries = glEntries.filter((gl) => {
+    if (!searchFilter) return true;
+    
+    const searchLower = searchFilter.toLowerCase();
+    const accountName = gl.accountName?.toLowerCase() || "";
+    const description = gl.description?.toLowerCase() || "";
+    
+    return accountName.includes(searchLower) || description.includes(searchLower);
+  });
 
   const handleRefresh = () => {
     void refetchGL();
@@ -251,6 +264,34 @@ export default function GLImportPage() {
                 )}
               </div>
               
+              {/* 検索フィールド */}
+              <div className="mb-3">
+                <div className="relative max-w-sm">
+                  <Input
+                    placeholder="勘定科目・摘要で検索..."
+                    value={searchFilter}
+                    onChange={(e) => setSearchFilter(e.target.value)}
+                    className="pr-10"
+                  />
+                  {searchFilter && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                      onClick={() => setSearchFilter("")}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+                {searchFilter && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {filteredGLEntries.length}件 / {glEntries.length}件
+                  </p>
+                )}
+              </div>
+              
               {glLoading ? (
                 <div className="space-y-2">
                   {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
@@ -266,10 +307,10 @@ export default function GLImportPage() {
                       <TableRow>
                         <TableHead className="w-12">
                           <Checkbox
-                            checked={glEntries.length > 0 && selectedGLIds.size === glEntries.length}
+                            checked={filteredGLEntries.length > 0 && selectedGLIds.size === filteredGLEntries.length}
                             onCheckedChange={(checked) => {
                               if (checked) {
-                                setSelectedGLIds(new Set(glEntries.map(gl => gl.id)));
+                                setSelectedGLIds(new Set(filteredGLEntries.map(gl => gl.id)));
                               } else {
                                 setSelectedGLIds(new Set());
                               }
@@ -286,7 +327,7 @@ export default function GLImportPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {glEntries.map((gl) => (
+                      {filteredGLEntries.map((gl) => (
                         <TableRow
                           key={gl.id}
                           className={gl.isExcluded === "true" ? "bg-muted/50" : ""}
