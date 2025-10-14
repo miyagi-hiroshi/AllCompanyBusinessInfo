@@ -3,6 +3,7 @@
  * 半角・全角の違いを吸収するためのヘルパー関数
  */
 
+
 /**
  * 文字列を正規化して比較用のキーを生成
  * 半角・全角の違いを吸収し、空白を除去
@@ -16,6 +17,14 @@ export function normalizeText(text: string): string {
   return text
     // 全角英数字を半角に変換
     .replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+    // 半角カナを全角カナに変換
+    .replace(/[\uFF61-\uFF9F]/g, (s) => {
+      const code = s.charCodeAt(0);
+      if (code >= 0xFF61 && code <= 0xFF9F) {
+        return String.fromCharCode(code - 0xFF61 + 0x3041);
+      }
+      return s;
+    })
     // 全角スペースを半角スペースに変換
     .replace(/\u3000/g, ' ')
     // 連続する空白を単一のスペースに変換

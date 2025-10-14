@@ -496,35 +496,43 @@ export class ReconciliationService {
     };
   }
 
-  /**
-   * 摘要文の一致チェック（半角・全角の違いを吸収）
-   * 
-   * @param description1 比較する摘要文1
-   * @param description2 比較する摘要文2
-   * @returns 正規化後に一致する場合true
-   */
-  private isDescriptionMatch(description1: string, description2: string): boolean {
-    if (!description1 || !description2) {
-      return false;
+    /**
+     * 摘要文の一致チェック（半角・全角の違いを吸収）
+     *
+     * @param description1 比較する摘要文1
+     * @param description2 比較する摘要文2
+     * @returns 正規化後に一致する場合true
+     */
+    private isDescriptionMatch(description1: string, description2: string): boolean {
+      if (!description1 || !description2) {
+        return false;
+      }
+
+      // 半角・全角を正規化して比較
+      const normalize = (text: string): string => {
+        return text
+          // 全角英数字を半角に変換
+          .replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
+          // 半角カナを全角カナに変換
+          .replace(/[\uFF61-\uFF9F]/g, (s) => {
+            const code = s.charCodeAt(0);
+            if (code >= 0xFF61 && code <= 0xFF9F) {
+              return String.fromCharCode(code - 0xFF61 + 0x3041);
+            }
+            return s;
+          })
+          // 全角スペースを半角スペースに変換
+          .replace(/\u3000/g, ' ')
+          // 連続する空白を単一のスペースに変換
+          .replace(/\s+/g, ' ')
+          // 前後の空白を除去
+          .trim()
+          // 大文字小文字を統一（小文字に）
+          .toLowerCase();
+      };
+
+      return normalize(description1) === normalize(description2);
     }
-    
-    // 半角・全角を正規化して比較
-    const normalize = (text: string): string => {
-      return text
-        // 全角英数字を半角に変換
-        .replace(/[Ａ-Ｚａ-ｚ０-９]/g, (s) => String.fromCharCode(s.charCodeAt(0) - 0xFEE0))
-        // 全角スペースを半角スペースに変換
-        .replace(/\u3000/g, ' ')
-        // 連続する空白を単一のスペースに変換
-        .replace(/\s+/g, ' ')
-        // 前後の空白を除去
-        .trim()
-        // 大文字小文字を統一（小文字に）
-        .toLowerCase();
-    };
-    
-    return normalize(description1) === normalize(description2);
-  }
 
   /**
    * マッチスコアの計算（プライベートメソッド）
