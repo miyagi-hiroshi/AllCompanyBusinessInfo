@@ -66,7 +66,10 @@ export default function GLReconciliationPage() {
       },
       {
         onSuccess: (data) => {
-          const { matchedCount, alreadyMatchedOrders, alreadyMatchedGl } = data;
+          const { results } = data;
+          const matchedCount = results.matched.length;
+          const alreadyMatchedOrders = results.alreadyMatchedOrders;
+          const alreadyMatchedGl = results.alreadyMatchedGl;
           toast({
             title: "厳格突合完了",
             description: `新規突合: ${matchedCount}件、既存突合済み: 受発注${alreadyMatchedOrders}件/GL${alreadyMatchedGl}件`,

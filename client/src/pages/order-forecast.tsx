@@ -529,7 +529,7 @@ export default function OrderForecastPage() {
 
       toast({
         title: "厳格突合完了",
-        description: `新規突合: ${result.matchedCount}件、既存突合済み: 受発注${result.alreadyMatchedOrders}件/GL${result.alreadyMatchedGl}件`,
+        description: `新規突合: ${result.results.matched.length}件、既存突合済み: 受発注${result.results.alreadyMatchedOrders}件/GL${result.results.alreadyMatchedGl}件`,
       });
     } catch (_error) {
       toast({

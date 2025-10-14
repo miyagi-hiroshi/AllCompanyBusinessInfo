@@ -8,13 +8,14 @@ interface ReconciliationRequest {
 }
 
 interface ReconciliationResponse {
-  success: boolean;
-  matchedCount: number;
-  totalMatched: number;
-  totalUnmatched: number;
-  unmatchedGL: number;
-  alreadyMatchedOrders: number;
-  alreadyMatchedGl: number;
+  reconciliationLog: any;
+  results: {
+    matched: Array<{ order: any; gl: any; score: number }>;
+    unmatchedOrders: any[];
+    unmatchedGl: any[];
+    alreadyMatchedOrders: number;
+    alreadyMatchedGl: number;
+  };
 }
 
 export function useReconciliation() {
