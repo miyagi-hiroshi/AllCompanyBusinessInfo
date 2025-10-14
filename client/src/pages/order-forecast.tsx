@@ -401,6 +401,7 @@ export default function OrderForecastPage() {
             amount: String(row.amount),
             remarks: (row.remarks as string) || "",
             period: currentPeriod,
+            isExcluded: row.isExcluded ? "true" : "false", // 除外フラグを追加
           };
           await createMutation.mutateAsync({ ...newOrder, filter });
         } else {
