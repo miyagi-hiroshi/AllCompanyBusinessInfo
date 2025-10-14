@@ -45,7 +45,7 @@ export class OrderForecastRepository {
    * 全ての受発注データを取得
    */
   async findAll(options: OrderForecastSearchOptions = {}): Promise<OrderForecast[]> {
-    const { filter, limit = 100, offset = 0, sortBy = 'createdAt', sortOrder = 'desc' } = options;
+    const { filter, limit, offset, sortBy = 'createdAt', sortOrder = 'desc' } = options;
     
     // 常にprojectsテーブルとJOINして営業担当者情報を取得
     const query: any = db.select({
@@ -167,8 +167,13 @@ export class OrderForecastRepository {
       query.orderBy(desc(sortColumn));
     }
     
-    // ページネーション
-    query.limit(limit).offset(offset);
+    // ページネーション（limit指定時のみ）
+    if (limit !== undefined) {
+      query.limit(limit);
+      if (offset !== undefined) {
+        query.offset(offset);
+      }
+    }
     
     return await query;
   }

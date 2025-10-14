@@ -35,8 +35,8 @@ const searchOrderForecastSchema = z.object({
   createdByEmployeeId: z.string().optional(),
   salesPerson: z.string().optional(),
   searchText: z.string().optional(),
-  page: z.string().transform(Number).optional().default('1'),
-  limit: z.string().transform(Number).optional().default('20'),
+  page: z.string().transform(Number).optional(),
+  limit: z.string().transform(Number).optional(),
   sortBy: z.enum(['projectCode', 'customerName', 'accountingPeriod', 'amount', 'createdAt']).optional().default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
 });
@@ -86,7 +86,11 @@ router.post('/set-exclusion', requireAuth, async (req: Request, res: Response) =
 router.get('/', requireAuth, async (req: Request, res: Response) => {
   try {
     const query = searchOrderForecastSchema.parse(req.query);
-    const offset = (query.page - 1) * query.limit;
+    
+    // limit指定なしの場合は全件取得（limitをundefinedに）
+    const limit = query.limit;
+    const page = query.page || 1;
+    const offset = limit ? (page - 1) * limit : undefined;
     
     const [orderForecasts, totalCount] = await Promise.all([
       orderForecastRepository.findAll({
@@ -105,7 +109,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
           salesPerson: query.salesPerson,
           searchText: query.searchText,
         },
-        limit: query.limit,
+        limit,
         offset,
         sortBy: query.sortBy,
         sortOrder: query.sortOrder,
@@ -132,9 +136,9 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
       data: {
         items: orderForecasts,
         total: totalCount,
-        page: query.page,
-        limit: query.limit,
-        totalPages: Math.ceil(totalCount / query.limit),
+        page: page,
+        limit: limit || totalCount,
+        totalPages: limit ? Math.ceil(totalCount / limit) : 1,
       },
     });
   } catch (error) {
