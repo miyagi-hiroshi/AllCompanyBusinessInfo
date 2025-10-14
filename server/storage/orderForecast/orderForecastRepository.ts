@@ -47,36 +47,32 @@ export class OrderForecastRepository {
   async findAll(options: OrderForecastSearchOptions = {}): Promise<OrderForecast[]> {
     const { filter, limit = 100, offset = 0, sortBy = 'createdAt', sortOrder = 'desc' } = options;
     
-    // salesPersonフィルタがある場合はJOINが必要
-    const needsJoin = filter?.salesPerson;
-    
-    let query: any;
-    if (needsJoin) {
-      query = db.select({
-        id: orderForecasts.id,
-        projectId: orderForecasts.projectId,
-        projectCode: orderForecasts.projectCode,
-        projectName: orderForecasts.projectName,
-        customerId: orderForecasts.customerId,
-        customerCode: orderForecasts.customerCode,
-        customerName: orderForecasts.customerName,
-        accountingPeriod: orderForecasts.accountingPeriod,
-        accountingItem: orderForecasts.accountingItem,
-        description: orderForecasts.description,
-        amount: orderForecasts.amount,
-        remarks: orderForecasts.remarks,
-        period: orderForecasts.period,
-        reconciliationStatus: orderForecasts.reconciliationStatus,
-        glMatchId: orderForecasts.glMatchId,
-        createdByUserId: orderForecasts.createdByUserId,
-        createdByEmployeeId: orderForecasts.createdByEmployeeId,
-        version: orderForecasts.version,
-        createdAt: orderForecasts.createdAt,
-        updatedAt: orderForecasts.updatedAt,
-      }).from(orderForecasts).leftJoin(projects, eq(orderForecasts.projectId, projects.id));
-    } else {
-      query = db.select().from(orderForecasts);
-    }
+    // 常にprojectsテーブルとJOINして営業担当者情報を取得
+    const query: any = db.select({
+      id: orderForecasts.id,
+      projectId: orderForecasts.projectId,
+      projectCode: orderForecasts.projectCode,
+      projectName: orderForecasts.projectName,
+      customerId: orderForecasts.customerId,
+      customerCode: orderForecasts.customerCode,
+      customerName: orderForecasts.customerName,
+      accountingPeriod: orderForecasts.accountingPeriod,
+      accountingItem: orderForecasts.accountingItem,
+      description: orderForecasts.description,
+      amount: orderForecasts.amount,
+      remarks: orderForecasts.remarks,
+      period: orderForecasts.period,
+      reconciliationStatus: orderForecasts.reconciliationStatus,
+      glMatchId: orderForecasts.glMatchId,
+      isExcluded: orderForecasts.isExcluded,
+      exclusionReason: orderForecasts.exclusionReason,
+      createdByUserId: orderForecasts.createdByUserId,
+      createdByEmployeeId: orderForecasts.createdByEmployeeId,
+      version: orderForecasts.version,
+      createdAt: orderForecasts.createdAt,
+      updatedAt: orderForecasts.updatedAt,
+      salesPerson: projects.salesPerson,
+    }).from(orderForecasts).leftJoin(projects, eq(orderForecasts.projectId, projects.id))
     
     // フィルタリング
     if (filter) {
@@ -159,20 +155,20 @@ export class OrderForecastRepository {
       }
       
       if (conditions.length > 0) {
-        query = query.where(and(...conditions));
+        query.where(and(...conditions));
       }
     }
     
     // ソート
     const sortColumn = orderForecasts[sortBy];
     if (sortOrder === 'asc') {
-      query = query.orderBy(asc(sortColumn));
+      query.orderBy(asc(sortColumn));
     } else {
-      query = query.orderBy(desc(sortColumn));
+      query.orderBy(desc(sortColumn));
     }
     
     // ページネーション
-    query = query.limit(limit).offset(offset);
+    query.limit(limit).offset(offset);
     
     return await query;
   }
@@ -296,9 +292,6 @@ export class OrderForecastRepository {
     if (filter) {
       const conditions = [];
       
-      // salesPersonフィルタがある場合はJOINが必要
-      const needsJoin = filter.salesPerson;
-      
       if (filter.search) {
         conditions.push(
           or(
@@ -356,17 +349,11 @@ export class OrderForecastRepository {
       }
       
       if (conditions.length > 0) {
-        let query: any;
-        if (needsJoin) {
-          query = db.select({ count: count() })
-            .from(orderForecasts)
-            .leftJoin(projects, eq(orderForecasts.projectId, projects.id))
-            .where(and(...conditions));
-        } else {
-          query = db.select({ count: count() })
-            .from(orderForecasts)
-            .where(and(...conditions));
-        }
+        // 常にJOINする（salesPersonフィルタの有無に関わらず）
+        const query = db.select({ count: count() })
+          .from(orderForecasts)
+          .leftJoin(projects, eq(orderForecasts.projectId, projects.id))
+          .where(and(...conditions));
         const result = await query;
         return result[0]?.count ?? 0;
       }

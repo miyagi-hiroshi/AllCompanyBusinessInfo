@@ -9,7 +9,7 @@
 
 import { glEntries } from '@shared/schema/glEntry';
 import type { GLEntry, NewGLEntry } from '@shared/schema/integrated';
-import { and, asc, desc, eq, gte, like, lte,or } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, like, lte, or, sql } from 'drizzle-orm';
 
 import { db } from '../../db';
 
@@ -23,6 +23,8 @@ export interface GLEntryFilter {
   debitCredit?: 'debit' | 'credit';
   period?: string;
   reconciliationStatus?: 'matched' | 'fuzzy' | 'unmatched';
+  fiscalYear?: number;
+  month?: number;
 }
 
 export interface GLEntrySearchOptions {
@@ -40,7 +42,7 @@ export class GLEntryRepository {
   async findAll(options: GLEntrySearchOptions = {}): Promise<GLEntry[]> {
     const { filter, limit = 100, offset = 0, sortBy = 'createdAt', sortOrder = 'desc' } = options;
     
-    let query = db.select().from(glEntries);
+    const query = db.select().from(glEntries);
     
     // フィルタリング
     if (filter) {
@@ -89,21 +91,47 @@ export class GLEntryRepository {
         conditions.push(eq(glEntries.reconciliationStatus, filter.reconciliationStatus));
       }
       
+      // 年度フィルタリング
+      if (filter.fiscalYear) {
+        // 年度は4月から翌年3月まで
+        const fiscalYearStart = `${filter.fiscalYear}-04-01`;
+        const fiscalYearEnd = `${filter.fiscalYear + 1}-03-31`;
+        conditions.push(
+          and(
+            gte(glEntries.transactionDate, fiscalYearStart),
+            lte(glEntries.transactionDate, fiscalYearEnd)
+          )
+        );
+      }
+      
+      // 月フィルタリング（年度が指定されている場合のみ有効）
+      if (filter.month && filter.fiscalYear) {
+        const year = filter.month >= 4 ? filter.fiscalYear : filter.fiscalYear + 1;
+        const monthStart = `${year}-${filter.month.toString().padStart(2, '0')}-01`;
+        const monthEnd = `${year}-${filter.month.toString().padStart(2, '0')}-31`;
+        conditions.push(
+          and(
+            gte(glEntries.transactionDate, monthStart),
+            lte(glEntries.transactionDate, monthEnd)
+          )
+        );
+      }
+      
       if (conditions.length > 0) {
-        query = query.where(and(...conditions)) as any;
+        query.where(and(...conditions));
       }
     }
     
     // ソート
     const sortColumn = glEntries[sortBy];
     if (sortOrder === 'asc') {
-      query = query.orderBy(asc(sortColumn)) as any;
+      query.orderBy(asc(sortColumn));
     } else {
-      query = query.orderBy(desc(sortColumn)) as any;
+      query.orderBy(desc(sortColumn));
     }
     
     // ページネーション
-    query = query.limit(limit).offset(offset) as any;
+    query.limit(limit).offset(offset);
     
     return await query;
   }
@@ -256,6 +284,32 @@ export class GLEntryRepository {
       
       if (filter.reconciliationStatus) {
         conditions.push(eq(glEntries.reconciliationStatus, filter.reconciliationStatus));
+      }
+      
+      // 年度フィルタリング
+      if (filter.fiscalYear) {
+        // 年度は4月から翌年3月まで
+        const fiscalYearStart = `${filter.fiscalYear}-04-01`;
+        const fiscalYearEnd = `${filter.fiscalYear + 1}-03-31`;
+        conditions.push(
+          and(
+            gte(glEntries.transactionDate, fiscalYearStart),
+            lte(glEntries.transactionDate, fiscalYearEnd)
+          )
+        );
+      }
+      
+      // 月フィルタリング（年度が指定されている場合のみ有効）
+      if (filter.month && filter.fiscalYear) {
+        const year = filter.month >= 4 ? filter.fiscalYear : filter.fiscalYear + 1;
+        const monthStart = `${year}-${filter.month.toString().padStart(2, '0')}-01`;
+        const monthEnd = `${year}-${filter.month.toString().padStart(2, '0')}-31`;
+        conditions.push(
+          and(
+            gte(glEntries.transactionDate, monthStart),
+            lte(glEntries.transactionDate, monthEnd)
+          )
+        );
       }
       
       if (conditions.length > 0) {

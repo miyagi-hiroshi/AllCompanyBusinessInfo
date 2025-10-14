@@ -286,9 +286,12 @@ export default function GLReconciliationPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>ステータス</TableHead>
-                          <TableHead>摘要</TableHead>
-                          <TableHead>計上年月</TableHead>
+                          <TableHead>プロジェクト</TableHead>
+                          <TableHead>営業担当者</TableHead>
                           <TableHead>取引先</TableHead>
+                          <TableHead>計上年月</TableHead>
+                          <TableHead>計上科目</TableHead>
+                          <TableHead>摘要文</TableHead>
                           <TableHead className="text-right">金額</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -298,9 +301,12 @@ export default function GLReconciliationPage() {
                             <TableCell>
                               <ReconciliationStatusBadge status={order.reconciliationStatus as "matched" | "fuzzy" | "unmatched"} />
                             </TableCell>
-                            <TableCell className="font-medium">{order.description}</TableCell>
-                            <TableCell>{order.accountingPeriod}</TableCell>
+                            <TableCell className="font-medium">{order.projectName}</TableCell>
+                            <TableCell>{order.salesPerson || "-"}</TableCell>
                             <TableCell>{order.customerName}</TableCell>
+                            <TableCell>{order.accountingPeriod}</TableCell>
+                            <TableCell>{order.accountingItem}</TableCell>
+                            <TableCell>{order.description}</TableCell>
                             <TableCell className="text-right font-mono">{formatCurrency(order.amount)}</TableCell>
                           </TableRow>
                         ))}
@@ -329,18 +335,24 @@ export default function GLReconciliationPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>摘要</TableHead>
-                          <TableHead>計上年月</TableHead>
+                          <TableHead>プロジェクト</TableHead>
+                          <TableHead>営業担当者</TableHead>
                           <TableHead>取引先</TableHead>
+                          <TableHead>計上年月</TableHead>
+                          <TableHead>計上科目</TableHead>
+                          <TableHead>摘要文</TableHead>
                           <TableHead className="text-right">金額</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {matched.map((order) => (
                           <TableRow key={order.id} className="bg-success/5" data-testid={`matched-row-${order.id}`}>
-                            <TableCell className="font-medium">{order.description}</TableCell>
-                            <TableCell>{order.accountingPeriod}</TableCell>
+                            <TableCell className="font-medium">{order.projectName}</TableCell>
+                            <TableCell>{order.salesPerson || "-"}</TableCell>
                             <TableCell>{order.customerName}</TableCell>
+                            <TableCell>{order.accountingPeriod}</TableCell>
+                            <TableCell>{order.accountingItem}</TableCell>
+                            <TableCell>{order.description}</TableCell>
                             <TableCell className="text-right font-mono">{formatCurrency(order.amount)}</TableCell>
                           </TableRow>
                         ))}
@@ -369,18 +381,24 @@ export default function GLReconciliationPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>摘要</TableHead>
-                          <TableHead>計上年月</TableHead>
+                          <TableHead>プロジェクト</TableHead>
+                          <TableHead>営業担当者</TableHead>
                           <TableHead>取引先</TableHead>
+                          <TableHead>計上年月</TableHead>
+                          <TableHead>計上科目</TableHead>
+                          <TableHead>摘要文</TableHead>
                           <TableHead className="text-right">金額</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {fuzzy.map((order) => (
                           <TableRow key={order.id} className="bg-warning/5" data-testid={`fuzzy-row-${order.id}`}>
-                            <TableCell className="font-medium">{order.description}</TableCell>
-                            <TableCell>{order.accountingPeriod}</TableCell>
+                            <TableCell className="font-medium">{order.projectName}</TableCell>
+                            <TableCell>{order.salesPerson || "-"}</TableCell>
                             <TableCell>{order.customerName}</TableCell>
+                            <TableCell>{order.accountingPeriod}</TableCell>
+                            <TableCell>{order.accountingItem}</TableCell>
+                            <TableCell>{order.description}</TableCell>
                             <TableCell className="text-right font-mono">{formatCurrency(order.amount)}</TableCell>
                           </TableRow>
                         ))}
@@ -412,18 +430,24 @@ export default function GLReconciliationPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>摘要</TableHead>
-                          <TableHead>計上年月</TableHead>
+                          <TableHead>プロジェクト</TableHead>
+                          <TableHead>営業担当者</TableHead>
                           <TableHead>取引先</TableHead>
+                          <TableHead>計上年月</TableHead>
+                          <TableHead>計上科目</TableHead>
+                          <TableHead>摘要文</TableHead>
                           <TableHead className="text-right">金額</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {unmatched.map((order) => (
                           <TableRow key={order.id} className="bg-destructive/5" data-testid={`unmatched-row-${order.id}`}>
-                            <TableCell className="font-medium">{order.description}</TableCell>
-                            <TableCell>{order.accountingPeriod}</TableCell>
+                            <TableCell className="font-medium">{order.projectName}</TableCell>
+                            <TableCell>{order.salesPerson || "-"}</TableCell>
                             <TableCell>{order.customerName}</TableCell>
+                            <TableCell>{order.accountingPeriod}</TableCell>
+                            <TableCell>{order.accountingItem}</TableCell>
+                            <TableCell>{order.description}</TableCell>
                             <TableCell className="text-right font-mono">{formatCurrency(order.amount)}</TableCell>
                           </TableRow>
                         ))}

@@ -128,7 +128,9 @@ export type UpdateProjectData = Partial<CreateProjectData>;
 export type AccountingItem = z.infer<typeof selectAccountingItemSchema>;
 export type NewAccountingItem = z.infer<typeof insertAccountingItemSchema>;
 
-export type OrderForecast = z.infer<typeof selectOrderForecastSchema>;
+export type OrderForecast = z.infer<typeof selectOrderForecastSchema> & {
+  salesPerson?: string | null;
+};
 export type NewOrderForecast = z.infer<typeof insertOrderForecastSchema>;
 export type CreateOrderForecastData = z.infer<typeof insertOrderForecastSchema>;
 export type UpdateOrderForecastData = Partial<CreateOrderForecastData>;

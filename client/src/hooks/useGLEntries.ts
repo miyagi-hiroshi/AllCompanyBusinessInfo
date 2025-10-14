@@ -13,7 +13,9 @@ export function useGLEntries(filter: GLEntryFilter) {
     fiscalYear: filter.fiscalYear.toString(),
     limit: "1000", // 全データを取得するため大きな値を設定
   });
-  if (filter.month) {params.append("month", filter.month.toString());}
+  if (filter.month) {
+    params.append("month", filter.month.toString());
+  }
   
   return useQuery<GLEntry[]>({
     // Use scalar segments for stable cache keys

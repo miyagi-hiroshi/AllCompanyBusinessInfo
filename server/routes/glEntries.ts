@@ -49,6 +49,8 @@ const searchGLEntrySchema = z.object({
   debitCredit: z.enum(['debit', 'credit']).optional(),
   period: z.string().optional(),
   reconciliationStatus: z.enum(['matched', 'fuzzy', 'unmatched']).optional(),
+  fiscalYear: z.string().transform(Number).optional(),
+  month: z.string().transform(Number).optional(),
   page: z.string().transform(Number).optional().default('1'),
   limit: z.string().transform(Number).optional().default('20'),
   sortBy: z.enum(['voucherNo', 'transactionDate', 'accountCode', 'amount', 'createdAt']).optional().default('createdAt'),
@@ -143,6 +145,8 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
           debitCredit: query.debitCredit,
           period: query.period,
           reconciliationStatus: query.reconciliationStatus,
+          fiscalYear: query.fiscalYear,
+          month: query.month,
         },
         limit: query.limit,
         offset,
@@ -159,6 +163,8 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
         debitCredit: query.debitCredit,
         period: query.period,
         reconciliationStatus: query.reconciliationStatus,
+        fiscalYear: query.fiscalYear,
+        month: query.month,
       }),
     ]);
 
