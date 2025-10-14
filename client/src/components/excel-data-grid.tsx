@@ -926,7 +926,7 @@ export function ExcelDataGrid({
       </div>
 
       {/* Status Bar */}
-      <div className="flex items-center justify-between px-4 py-2 border-t bg-muted/30 text-xs text-muted-foreground mb-4">
+      <div className="flex items-center justify-between px-4 py-2 border-t bg-muted/30 text-xs text-muted-foreground">
         <div className="flex items-center gap-4">
           <span>総行数: {sortedRows.length}</span>
           <span>変更済: {sortedRows.filter((r) => r._modified).length}</span>
