@@ -189,7 +189,7 @@ export class OrderForecastRepository {
    * 期間で受発注データを取得
    */
   async findByPeriod(period: string): Promise<OrderForecast[]> {
-    return await db.select().from(orderForecasts).where(eq(orderForecasts.period, period));
+    return await db.select().from(orderForecasts).where(eq(orderForecasts.accountingPeriod, period));
   }
 
   /**

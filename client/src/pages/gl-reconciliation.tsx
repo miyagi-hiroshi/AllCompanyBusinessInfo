@@ -173,7 +173,7 @@ export default function GLReconciliationPage() {
                 >
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   厳格突合実行
-                  <span className="ml-2 text-xs opacity-80">（月度 + 摘要文 + 金額）</span>
+                  <span className="ml-2 text-xs opacity-80">（月度 + 計上科目 + 摘要文 + 金額）</span>
                 </Button>
               </div>
               
