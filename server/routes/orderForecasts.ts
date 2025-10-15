@@ -30,7 +30,7 @@ const searchOrderForecastSchema = z.object({
   accountingPeriod: z.string().optional(),
   accountingItem: z.string().optional(),
   period: z.string().optional(),
-  reconciliationStatus: z.enum(['matched', 'fuzzy', 'unmatched']).optional(),
+  reconciliationStatus: z.enum(['matched', 'fuzzy', 'unmatched', 'excluded']).optional(),
   createdByUserId: z.string().optional(),
   createdByEmployeeId: z.string().optional(),
   salesPerson: z.string().optional(),
@@ -357,7 +357,7 @@ router.put('/:id/reconciliation-status', requireAuth, async (req: Request, res: 
     const { id } = req.params;
     const { status, glMatchId } = req.body;
     
-    if (!status || !['matched', 'fuzzy', 'unmatched'].includes(status)) {
+    if (!status || !['matched', 'fuzzy', 'unmatched', 'excluded'].includes(status)) {
       return res.status(400).json({
         success: false,
         message: '突合ステータスが正しくありません',

@@ -1,8 +1,8 @@
-import { AlertTriangle, Check, X } from "lucide-react";
+import { AlertTriangle, Ban, Check, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 
-type ReconciliationStatus = "matched" | "fuzzy" | "unmatched";
+type ReconciliationStatus = "matched" | "fuzzy" | "unmatched" | "excluded";
 
 interface ReconciliationStatusBadgeProps {
   status: ReconciliationStatus;
@@ -25,6 +25,11 @@ export function ReconciliationStatusBadge({ status, className }: ReconciliationS
       label: "未突合",
       icon: X,
       className: "bg-destructive/20 text-destructive border-destructive/30",
+    },
+    excluded: {
+      label: "除外",
+      icon: Ban,
+      className: "bg-muted/20 text-muted-foreground border-muted/30",
     },
   };
 

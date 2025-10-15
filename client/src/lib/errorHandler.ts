@@ -1,6 +1,5 @@
-// import { toast } from "sonner";
-
 // 一時的な代替実装（sonnerが利用可能になるまで）
+// import { toast } from "sonner";
 const toast = {
   error: (message: string, _options?: any) => {
     // Toast Error: message (実際のUI表示はsonner導入後に実装)

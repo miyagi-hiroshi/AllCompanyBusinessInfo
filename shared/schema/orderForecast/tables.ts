@@ -19,7 +19,7 @@ export const orderForecasts = appSchema.table("order_forecasts", {
   amount: decimal("amount", { precision: 14, scale: 2 }).notNull(), // 金額
   remarks: text("remarks"),
   period: text("period").notNull(), // 期間 (YYYY-MM形式)
-  reconciliationStatus: text("reconciliation_status").notNull().default("unmatched"), // matched, fuzzy, unmatched
+  reconciliationStatus: text("reconciliation_status").notNull().default("unmatched"), // matched, fuzzy, unmatched, excluded
   glMatchId: varchar("gl_match_id"), // 突合されたGL IDへの参照
   isExcluded: text("is_excluded").notNull().default("false"), // 突合対象外フラグ (true/false)
   exclusionReason: text("exclusion_reason"), // 除外理由

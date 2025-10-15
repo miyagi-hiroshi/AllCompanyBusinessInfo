@@ -25,7 +25,7 @@ export interface OrderForecastFilter {
   accountingPeriod?: string;
   accountingItem?: string;
   period?: string;
-  reconciliationStatus?: 'matched' | 'fuzzy' | 'unmatched';
+  reconciliationStatus?: 'matched' | 'fuzzy' | 'unmatched' | 'excluded';
   createdByUserId?: string;
   createdByEmployeeId?: string;
   salesPerson?: string;
@@ -238,7 +238,7 @@ export class OrderForecastRepository {
   /**
    * 受発注データを更新
    */
-  async update(id: string, data: Partial<NewOrderForecast>): Promise<OrderForecast | null> {
+  async update(id: string, data: Partial<OrderForecast>): Promise<OrderForecast | null> {
     const result = await db
       .update(orderForecasts)
       .set({ 
@@ -265,7 +265,7 @@ export class OrderForecastRepository {
    */
   async updateReconciliationStatus(
     id: string, 
-    status: 'matched' | 'fuzzy' | 'unmatched',
+    status: 'matched' | 'fuzzy' | 'unmatched' | 'excluded',
     glMatchId?: string
   ): Promise<OrderForecast | null> {
     const updateData: any = {

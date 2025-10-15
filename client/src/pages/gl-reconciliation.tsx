@@ -1,4 +1,4 @@
-import { AlertCircle, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { AlertCircle, AlertTriangle, Ban, CheckCircle2 } from "lucide-react";
 import { useState } from "react";
 
 import { AccountSummaryCards } from "@/components/account-summary-cards";
@@ -42,10 +42,11 @@ export default function GLReconciliationPage() {
   const matched = orderForecasts.filter((o) => o.reconciliationStatus === "matched");
   const fuzzy = orderForecasts.filter((o) => o.reconciliationStatus === "fuzzy");
   const unmatched = orderForecasts.filter((o) => o.reconciliationStatus === "unmatched");
+  const excluded = orderForecasts.filter((o) => o.reconciliationStatus === "excluded");
   const unmatchedGL = glEntries.filter((g) => g.reconciliationStatus === "unmatched");
 
-  const matchRate = orderForecasts.length > 0 
-    ? Math.round((matched.length / orderForecasts.length) * 100) 
+  const matchRate = (orderForecasts.length - excluded.length) > 0 
+    ? Math.round((matched.length / (orderForecasts.length - excluded.length)) * 100) 
     : 0;
 
   const handleReconcile = () => {
@@ -226,7 +227,10 @@ export default function GLReconciliationPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">{matched.length}</div>
-                <p className="text-xs text-muted-foreground mt-1">/ {orderForecasts.length}件</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  / {orderForecasts.length}件
+                  {excluded.length > 0 && <span className="text-muted-foreground">（除外{excluded.length}件を除く）</span>}
+                </p>
               </CardContent>
             </Card>
 
@@ -252,7 +256,10 @@ export default function GLReconciliationPage() {
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-destructive">{unmatched.length}</div>
-                <p className="text-xs text-muted-foreground mt-1">受発注: {unmatched.length} / GL: {unmatchedGL.length}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  受発注: {unmatched.length} / GL: {unmatchedGL.length}
+                  {excluded.length > 0 && <span className="text-muted-foreground">（除外{excluded.length}件を除く）</span>}
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -269,6 +276,7 @@ export default function GLReconciliationPage() {
             <TabsTrigger value="matched" data-testid="tab-matched">突合済 ({matched.length})</TabsTrigger>
             <TabsTrigger value="fuzzy" data-testid="tab-fuzzy">曖昧一致 ({fuzzy.length})</TabsTrigger>
             <TabsTrigger value="unmatched" data-testid="tab-unmatched">未突合 ({unmatched.length})</TabsTrigger>
+            <TabsTrigger value="excluded" data-testid="tab-excluded">除外 ({excluded.length})</TabsTrigger>
             <TabsTrigger value="gl" data-testid="tab-gl">未突合GL ({unmatchedGL.length})</TabsTrigger>
           </TabsList>
 
@@ -304,7 +312,7 @@ export default function GLReconciliationPage() {
                         {orderForecasts.map((order) => (
                           <TableRow key={order.id} data-testid={`order-row-${order.id}`}>
                             <TableCell>
-                              <ReconciliationStatusBadge status={order.reconciliationStatus as "matched" | "fuzzy" | "unmatched"} />
+                              <ReconciliationStatusBadge status={order.reconciliationStatus as "matched" | "fuzzy" | "unmatched" | "excluded"} />
                             </TableCell>
                             <TableCell className="font-medium">{order.projectName}</TableCell>
                             <TableCell>{order.salesPerson || "-"}</TableCell>
@@ -404,6 +412,58 @@ export default function GLReconciliationPage() {
                             <TableCell>{order.accountingPeriod}</TableCell>
                             <TableCell>{order.accountingItem}</TableCell>
                             <TableCell>{order.description}</TableCell>
+                            <TableCell className="text-right font-mono">{formatCurrency(order.amount)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Excluded Orders */}
+          <TabsContent value="excluded" className="mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Ban className="h-5 w-5 text-muted-foreground" />
+                  除外データ
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {excluded.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">除外されたデータがありません</div>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>ステータス</TableHead>
+                          <TableHead>プロジェクト</TableHead>
+                          <TableHead>営業担当者</TableHead>
+                          <TableHead>取引先</TableHead>
+                          <TableHead>計上年月</TableHead>
+                          <TableHead>計上科目</TableHead>
+                          <TableHead>摘要文</TableHead>
+                          <TableHead>除外理由</TableHead>
+                          <TableHead className="text-right">金額</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {excluded.map((order) => (
+                          <TableRow key={order.id} className="bg-muted/30" data-testid={`excluded-row-${order.id}`}>
+                            <TableCell>
+                              <ReconciliationStatusBadge status="excluded" />
+                            </TableCell>
+                            <TableCell className="font-medium">{order.projectName}</TableCell>
+                            <TableCell>{order.salesPerson || "-"}</TableCell>
+                            <TableCell>{order.customerName}</TableCell>
+                            <TableCell>{order.accountingPeriod}</TableCell>
+                            <TableCell>{order.accountingItem}</TableCell>
+                            <TableCell>{order.description}</TableCell>
+                            <TableCell>{order.exclusionReason || "-"}</TableCell>
                             <TableCell className="text-right font-mono">{formatCurrency(order.amount)}</TableCell>
                           </TableRow>
                         ))}

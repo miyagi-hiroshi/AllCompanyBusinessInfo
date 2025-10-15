@@ -9,7 +9,7 @@
 
 import { glEntries } from '@shared/schema/glEntry';
 import type { GLEntry, NewGLEntry } from '@shared/schema/integrated';
-import { and, asc, desc, eq, gte, like, lte, or, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, gte, like, lte, or } from 'drizzle-orm';
 
 import { db } from '../../db';
 
@@ -22,7 +22,7 @@ export interface GLEntryFilter {
   accountName?: string;
   debitCredit?: 'debit' | 'credit';
   period?: string;
-  reconciliationStatus?: 'matched' | 'fuzzy' | 'unmatched';
+  reconciliationStatus?: 'matched' | 'fuzzy' | 'unmatched' | 'excluded';
   fiscalYear?: number;
   month?: number;
 }

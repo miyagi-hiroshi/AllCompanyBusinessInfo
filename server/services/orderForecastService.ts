@@ -245,7 +245,7 @@ export class OrderForecastService {
    */
   async updateReconciliationStatus(
     id: string, 
-    status: 'matched' | 'fuzzy' | 'unmatched', 
+    status: 'matched' | 'fuzzy' | 'unmatched' | 'excluded', 
     glMatchId?: string
   ): Promise<OrderForecast> {
     try {
@@ -256,7 +256,7 @@ export class OrderForecastService {
       }
 
       // ステータスの妥当性チェック
-      if (!['matched', 'fuzzy', 'unmatched'].includes(status)) {
+      if (!['matched', 'fuzzy', 'unmatched', 'excluded'].includes(status)) {
         throw new AppError('突合ステータスが正しくありません', 400);
       }
 
@@ -354,6 +354,8 @@ export class OrderForecastService {
       await db.transaction(async (_tx) => {
         for (const id of ids) {
           const updated = await this.orderForecastRepository.update(id, {
+            reconciliationStatus: isExcluded ? 'excluded' : 'unmatched',
+            glMatchId: isExcluded ? null : undefined, // 除外時は突合情報をクリア
             isExcluded: isExcluded ? 'true' : 'false',
             exclusionReason: isExcluded ? exclusionReason : null,
           });

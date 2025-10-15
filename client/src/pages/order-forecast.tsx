@@ -98,8 +98,15 @@ export default function OrderForecastPage() {
       if (customer) searchParts.push(`取引先: ${customer.name}`);
     }
     if (newSearchFilter.reconciliationStatus) {
-      const statusLabel = newSearchFilter.reconciliationStatus === 'matched' ? '突合済み' : 
-                          newSearchFilter.reconciliationStatus === 'fuzzy' ? '曖昧一致' : '未突合';
+      let statusLabel = '未突合';
+      const status = newSearchFilter.reconciliationStatus as 'matched' | 'fuzzy' | 'unmatched' | 'excluded';
+      if (status === 'matched') {
+        statusLabel = '突合済み';
+      } else if (status === 'fuzzy') {
+        statusLabel = '曖昧一致';
+      } else if (status === 'excluded') {
+        statusLabel = '除外';
+      }
       searchParts.push(`突合状態: ${statusLabel}`);
     }
     if (newSearchFilter.searchText) searchParts.push(`検索: ${newSearchFilter.searchText}`);
@@ -122,7 +129,12 @@ export default function OrderForecastPage() {
     setLocalRows(prevRows => 
       prevRows.map(row => 
         row.id === rowId 
-          ? { ...row, isExcluded, _modified: true }
+          ? { 
+              ...row, 
+              isExcluded, 
+              reconciliationStatus: isExcluded ? 'excluded' : 'unmatched',
+              _modified: true 
+            }
           : row
       )
     );
@@ -140,6 +152,7 @@ export default function OrderForecastPage() {
   const getReconciliationButtonLabel = (status: string | number | boolean | undefined): string => {
     if (status === "matched") return "突合済";
     if (status === "fuzzy") return "曖昧一致";
+    if (status === "excluded") return "除外";
     return "未突合";
   };
 
@@ -147,6 +160,7 @@ export default function OrderForecastPage() {
   const getReconciliationButtonVariant = (status: string | number | boolean | undefined): "default" | "outline" | "secondary" | "ghost" | "link" | "destructive" | "success" | "warning" => {
     if (status === "matched") return "success" as const;
     if (status === "fuzzy") return "warning" as const;
+    if (status === "excluded") return "secondary" as const;
     return "destructive";
   };
 
@@ -374,11 +388,15 @@ export default function OrderForecastPage() {
       // 除外設定の変更を先に保存
       if (excludedChanges.length > 0) {
         for (const row of excludedChanges) {
-          await setOrderExclusion.mutateAsync({
-            ids: [row.id],
-            isExcluded: Boolean(row.isExcluded),
-            exclusionReason: row.isExcluded ? "手動除外" : undefined,
-          });
+          try {
+            await setOrderExclusion.mutateAsync({
+              ids: [row.id],
+              isExcluded: Boolean(row.isExcluded),
+              exclusionReason: row.isExcluded ? "手動除外" : undefined,
+            });
+          } catch (error) {
+            console.error('除外設定APIエラー:', error);
+          }
         }
       }
 

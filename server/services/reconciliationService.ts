@@ -52,7 +52,7 @@ export class ReconciliationService {
         glEntries
       );
 
-      // 既に突合済みのデータ数を計算
+      // 既に突合済みのデータ数を計算（除外データは除く）
       const alreadyMatchedOrders = orderForecasts.filter(order => 
         order.reconciliationStatus === 'matched'
       ).length;
@@ -247,7 +247,7 @@ export class ReconciliationService {
       const glMap = new Map<string, { accountName: string; totalAmount: number; count: number }>();
       
       for (const gl of glEntries) {
-        if (gl.isExcluded === 'true') continue; // 除外データをスキップ
+        if (gl.reconciliationStatus === 'excluded') continue; // 除外データをスキップ
         
         // 科目名から科目コードを取得、なければ科目名をそのまま使用
         const accountCode = nameToCodeMap.get(gl.accountName) || gl.accountName;
@@ -269,7 +269,7 @@ export class ReconciliationService {
       const orderMap = new Map<string, { accountName: string; totalAmount: number; count: number }>();
       
       for (const order of orderForecasts) {
-        if (order.isExcluded === 'true') continue; // 除外データをスキップ
+        if (order.reconciliationStatus === 'excluded') continue; // 除外データをスキップ
         
         // 科目名から科目コードを取得、なければ科目名をそのまま使用
         const accountCode = nameToCodeMap.get(order.accountingItem) || order.accountingItem;
@@ -408,12 +408,12 @@ export class ReconciliationService {
     const matched: Array<{ order: OrderForecast; gl: GLEntry; score: number }> = [];
     const unmatchedOrders: OrderForecast[] = [];
     const unmatchedGl: GLEntry[] = [...glEntries].filter(gl => 
-      gl.isExcluded !== 'true' && gl.reconciliationStatus !== 'matched'
+      gl.reconciliationStatus !== 'excluded' && gl.reconciliationStatus !== 'matched'
     ); // 除外データと既に突合済みのデータを除く
 
       // 受発注データごとに突合処理を実行（除外データと既に突合済みのデータをスキップ）
-      for (const order of orderForecasts) {
-        if (order.isExcluded === 'true') {
+        for (const order of orderForecasts) {
+        if (order.reconciliationStatus === 'excluded') {
           continue; // 除外データはスキップ
         }
 

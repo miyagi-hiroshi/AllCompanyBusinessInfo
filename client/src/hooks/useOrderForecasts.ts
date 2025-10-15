@@ -11,7 +11,7 @@ export interface OrderForecastFilter {
   accountingItem?: string;
   customerId?: string;
   searchText?: string;
-  reconciliationStatus?: 'matched' | 'fuzzy' | 'unmatched';
+  reconciliationStatus?: 'matched' | 'fuzzy' | 'unmatched' | 'excluded';
 }
 
 export function useOrderForecasts(filter: OrderForecastFilter) {

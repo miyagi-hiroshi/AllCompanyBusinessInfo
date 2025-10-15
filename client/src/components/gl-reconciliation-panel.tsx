@@ -15,9 +15,11 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
+import { useAccountingItems } from "@/hooks/useMasters";
 import { useManualReconcile, useUnmatchReconciliation } from "@/hooks/useReconciliation";
 import { useToast } from "@/hooks/useToast";
 
+import { AutocompleteSelect } from "./autocomplete-select";
 import { ReconciliationStatusBadge } from "./reconciliation-status-badge";
 
 interface GLReconciliationPanelProps {
@@ -50,6 +52,19 @@ export function GLReconciliationPanel({
   const [unmatchedOnly, setUnmatchedOnly] = useState(true);
   const { toast } = useToast();
 
+  // 会計項目マスタデータを取得
+  const { data: accountingItems = [] } = useAccountingItems();
+
+  // 会計項目の選択肢を生成
+  const accountingItemOptions = [
+    { value: "", label: "すべて", code: "" },
+    ...accountingItems.map(item => ({
+      value: item.code,
+      label: item.name,
+      code: item.code
+    }))
+  ];
+
   // Auto-open panel when order is selected
   useEffect(() => {
     if (externalSelectedOrderId) {
@@ -76,7 +91,7 @@ export function GLReconciliationPanel({
   const filteredGLEntries = useMemo(() => {
     return glEntries.filter(gl => {
       if (unmatchedOnly && gl.reconciliationStatus !== "unmatched") return false;
-      if (accountCodeFilter && !gl.accountCode.includes(accountCodeFilter)) return false;
+      if (accountCodeFilter && gl.accountCode !== accountCodeFilter) return false;
       if (searchText) {
         const text = searchText.toLowerCase();
         return gl.description?.toLowerCase().includes(text) || 
@@ -315,10 +330,13 @@ export function GLReconciliationPanel({
                     />
                   </div>
                   
-                  <Input
-                    placeholder="科目コードでフィルタ..."
+                  <AutocompleteSelect
                     value={accountCodeFilter}
-                    onChange={(e) => setAccountCodeFilter(e.target.value)}
+                    onChange={(value) => setAccountCodeFilter(value)}
+                    options={accountingItemOptions}
+                    placeholder="科目を選択..."
+                    searchPlaceholder="科目コードまたは名称で検索..."
+                    emptyText="該当する科目がありません"
                   />
                   
                   <div className="flex items-center gap-2">

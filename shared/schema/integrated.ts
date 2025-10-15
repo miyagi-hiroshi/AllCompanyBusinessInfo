@@ -194,7 +194,7 @@ export type OrderForecastFilter = {
   accountingPeriod?: string;
   accountingItem?: string;
   period?: string;
-  reconciliationStatus?: "matched" | "fuzzy" | "unmatched";
+  reconciliationStatus?: "matched" | "fuzzy" | "unmatched" | "excluded";
   createdByUserId?: string;
   createdByEmployeeId?: string;
 };
@@ -208,7 +208,7 @@ export type GLEntryFilter = {
   accountName?: string;
   debitCredit?: "debit" | "credit";
   period?: string;
-  reconciliationStatus?: "matched" | "fuzzy" | "unmatched";
+  reconciliationStatus?: "matched" | "fuzzy" | "unmatched" | "excluded";
 };
 
 export type AngleBForecastFilter = {
