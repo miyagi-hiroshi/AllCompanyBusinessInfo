@@ -7,12 +7,14 @@ import { ProjectService } from '../services/projectService';
 import { CustomerRepository } from '../storage/customer';
 import { OrderForecastRepository } from '../storage/orderForecast';
 import { ProjectRepository } from '../storage/project';
+import { StaffingRepository } from '../storage/staffing';
 
 const router = express.Router();
 const projectRepository = new ProjectRepository();
 const customerRepository = new CustomerRepository();
 const orderForecastRepository = new OrderForecastRepository();
-const projectService = new ProjectService(projectRepository, customerRepository, orderForecastRepository);
+const staffingRepository = new StaffingRepository();
+const projectService = new ProjectService(projectRepository, customerRepository, orderForecastRepository, staffingRepository);
 
 // プロジェクト作成スキーマ
 const createProjectSchema = insertProjectSchema;
@@ -100,6 +102,46 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'プロジェクト一覧の取得中にエラーが発生しました',
+    });
+  }
+});
+
+/**
+ * プロジェクト分析サマリー取得API
+ * GET /api/projects/analysis-summary
+ */
+router.get('/analysis-summary', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { fiscalYear } = req.query;
+    
+    if (!fiscalYear || typeof fiscalYear !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: '年度パラメータが必要です',
+      });
+    }
+    
+    const fiscalYearNum = parseInt(fiscalYear);
+    if (isNaN(fiscalYearNum)) {
+      return res.status(400).json({
+        success: false,
+        message: '年度が正しくありません',
+      });
+    }
+    
+    const analysisSummaries = await projectService.getProjectAnalysisSummary(fiscalYearNum);
+
+    res.json({
+      success: true,
+      data: {
+        projects: analysisSummaries,
+      },
+    });
+  } catch (error: any) {
+    console.error('プロジェクト分析サマリー取得エラー:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'プロジェクト分析サマリーの取得中にエラーが発生しました',
     });
   }
 });

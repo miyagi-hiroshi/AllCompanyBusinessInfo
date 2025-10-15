@@ -1,10 +1,11 @@
-import { CreateProjectData, Project, ProjectFilter,UpdateProjectData } from '@shared/schema/integrated';
+import { CreateProjectData, Project, ProjectAnalysisSummary,ProjectFilter, UpdateProjectData } from '@shared/schema/integrated';
 
 // import { db } from '../db'; // 未使用のためコメントアウト
 import { AppError } from '../middleware/errorHandler';
 import { CustomerRepository } from '../storage/customer';
 import { OrderForecastRepository } from '../storage/orderForecast';
 import { ProjectRepository } from '../storage/project';
+import { StaffingRepository } from '../storage/staffing';
 
 /**
  * プロジェクト管理サービスクラス
@@ -16,7 +17,8 @@ export class ProjectService {
   constructor(
     private projectRepository: ProjectRepository,
     private customerRepository: CustomerRepository,
-    private orderForecastRepository: OrderForecastRepository
+    private orderForecastRepository: OrderForecastRepository,
+    private staffingRepository: StaffingRepository
   ) {}
 
   /**
@@ -292,6 +294,110 @@ export class ProjectService {
     } catch (error) {
       console.error('プロジェクト統計情報取得エラー:', error);
       throw new AppError('プロジェクト統計情報の取得中にエラーが発生しました', 500);
+    }
+  }
+
+  /**
+   * プロジェクト分析サマリー取得
+   * 
+   * @param fiscalYear - 年度
+   * @returns プロジェクト分析サマリー一覧
+   */
+  async getProjectAnalysisSummary(fiscalYear: number): Promise<ProjectAnalysisSummary[]> {
+    try {
+      // 年度のプロジェクト一覧取得
+      const projects = await this.projectRepository.findByFiscalYear(fiscalYear);
+      
+      const analysisSummaries: ProjectAnalysisSummary[] = [];
+
+      for (const project of projects) {
+        // 各プロジェクトの受発注データを集計
+        const orderForecasts = await this.orderForecastRepository.findAll({
+          filter: { projectId: project.id },
+          limit: undefined,
+          offset: 0,
+          sortBy: 'accountingPeriod',
+          sortOrder: 'asc'
+        });
+
+        // 計上科目名別に集計
+        let revenue = 0;      // 売上（保守売上、ソフト売上、商品売上、消耗品売上、その他売上）
+        let costOfSales = 0;  // 仕入高
+        let sgaExpenses = 0;  // 販管費（通信費、消耗品費、支払保守料、外注加工費、その他調整経費）
+
+        for (const order of orderForecasts) {
+          const amount = parseFloat(order.amount || '0');
+          const accountingItem = order.accountingItem;
+
+          if (accountingItem === '保守売上' || accountingItem === 'ソフト売上' || 
+              accountingItem === '商品売上' || accountingItem === '消耗品売上' || 
+              accountingItem === 'その他売上') {
+            revenue += amount;
+          } else if (accountingItem === '仕入高') {
+            costOfSales += amount;
+          } else if (accountingItem === '通信費' || accountingItem === '消耗品費' || 
+                     accountingItem === '支払保守料' || accountingItem === '外注加工費' || 
+                     accountingItem === 'その他調整経費') {
+            sgaExpenses += amount;
+          }
+        }
+
+        // 各プロジェクトの配員計画データ（山積み工数）を集計
+        const staffingData = await this.staffingRepository.findAll({
+          filter: { projectId: project.id, fiscalYear },
+          limit: undefined,
+          offset: 0,
+          sortBy: 'month',
+          sortOrder: 'asc'
+        });
+
+        const workHours = staffingData.reduce((sum, staff) => sum + parseFloat(staff.workHours || '0'), 0);
+
+        // 分析区分別の計算
+        const grossProfit = revenue - costOfSales - sgaExpenses;
+        const productivity = workHours > 0 ? grossProfit / workHours : 0;
+
+        const summary: ProjectAnalysisSummary = {
+          id: project.id,
+          code: project.code,
+          name: project.name,
+          serviceType: project.serviceType,
+          analysisType: project.analysisType,
+          revenue,
+          costOfSales,
+          sgaExpenses,
+          workHours,
+          ...(project.analysisType === '生産性' ? { productivity } : { grossProfit })
+        };
+
+        analysisSummaries.push(summary);
+      }
+
+      // サービス区分→分析区分→プロジェクトコードの順でソート
+      const serviceOrder = ['インテグレーション', 'エンジニアリング', 'ソフトウェアマネージド', 'リセール'];
+      const analysisTypeOrder = ['生産性', '粗利'];
+
+      return analysisSummaries.sort((a, b) => {
+        // サービス区分でソート
+        const serviceIndexA = serviceOrder.indexOf(a.serviceType);
+        const serviceIndexB = serviceOrder.indexOf(b.serviceType);
+        if (serviceIndexA !== serviceIndexB) {
+          return serviceIndexA - serviceIndexB;
+        }
+
+        // 分析区分でソート
+        const analysisIndexA = analysisTypeOrder.indexOf(a.analysisType);
+        const analysisIndexB = analysisTypeOrder.indexOf(b.analysisType);
+        if (analysisIndexA !== analysisIndexB) {
+          return analysisIndexA - analysisIndexB;
+        }
+
+        // プロジェクトコードでソート
+        return a.code.localeCompare(b.code);
+      });
+    } catch (error) {
+      console.error('プロジェクト分析サマリー取得エラー:', error);
+      throw new AppError('プロジェクト分析サマリーの取得中にエラーが発生しました', 500);
     }
   }
 }
