@@ -86,3 +86,54 @@ export function useDeleteStaffing() {
   });
 }
 
+export function useBulkCreateStaffing() {
+  return useMutation({
+    mutationFn: async (data: NewStaffing[]) => {
+      const promises = data.map(item => 
+        apiRequest("POST", "/api/staffing", item).then(res => res.json())
+      );
+      const results = await Promise.all(promises);
+      return results;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ 
+        queryKey: ["/api/staffing"] 
+      });
+    },
+  });
+}
+
+export function useBulkUpdateStaffing() {
+  return useMutation({
+    mutationFn: async (data: Array<{ id: string; data: Partial<NewStaffing> }>) => {
+      const promises = data.map(({ id, data: updateData }) => 
+        apiRequest("PUT", `/api/staffing/${id}`, updateData).then(res => res.json())
+      );
+      const results = await Promise.all(promises);
+      return results;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ 
+        queryKey: ["/api/staffing"] 
+      });
+    },
+  });
+}
+
+export function useBulkDeleteStaffing() {
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const promises = ids.map(id => 
+        apiRequest("DELETE", `/api/staffing/${id}`, undefined)
+      );
+      const results = await Promise.all(promises);
+      return results;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ 
+        queryKey: ["/api/staffing"] 
+      });
+    },
+  });
+}
+

@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -50,6 +51,7 @@ import {
   useUpdateStaffing,
 } from "@/hooks/useStaffing";
 import { useToast } from "@/hooks/useToast";
+import { ProjectStaffingInput } from "@/components/project-staffing-input";
 
 const FISCAL_YEARS = [2023, 2024, 2025, 2026];
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -250,65 +252,177 @@ export default function StaffingPage() {
   return (
     <div className="h-full p-6">
       <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <CalendarDays className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold" data-testid="text-page-title">
-              要員山積み登録
-            </h1>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Label htmlFor="fiscal-year-select">年度:</Label>
-            <Select
-              value={selectedYear.toString()}
-              onValueChange={(value) => setSelectedYear(parseInt(value))}
-            >
-              <SelectTrigger id="fiscal-year-select" className="w-[120px]" data-testid="select-fiscal-year">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {FISCAL_YEARS.map((year) => (
-                  <SelectItem key={year} value={year.toString()}>
-                    {year}年度
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Label htmlFor="month-select">月:</Label>
-            <Select
-              value={selectedMonth.toString()}
-              onValueChange={(value) => setSelectedMonth(parseInt(value))}
-            >
-              <SelectTrigger id="month-select" className="w-[100px]" data-testid="select-month">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {MONTHS.map((month) => (
-                  <SelectItem key={month} value={month.toString()}>
-                    {month}月
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Label htmlFor="project-select">プロジェクト:</Label>
-            <MultiSelect
-              options={productivityProjects
-                .filter((p) => p.fiscalYear === selectedYear)
-                .map((project) => ({
-                  label: project.name,
-                  value: project.id,
-                }))}
-              selected={selectedProjectIds}
-              onChange={setSelectedProjectIds}
-              placeholder="全て"
-              className="w-[300px]"
-            />
-          </div>
+        <div className="flex items-center gap-3">
+          <CalendarDays className="h-6 w-6 text-primary" />
+          <h1 className="text-2xl font-bold" data-testid="text-page-title">
+            要員山積み登録
+          </h1>
         </div>
         <p className="text-muted-foreground mt-1">プロジェクトごとの要員配置を登録・管理します</p>
+      </div>
+
+      <Tabs defaultValue="monthly" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-2">
+          <TabsTrigger value="monthly">月別入力</TabsTrigger>
+          <TabsTrigger value="project">プロジェクト別入力</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="monthly" className="space-y-6">
+          <MonthlyStaffingInput
+            selectedYear={selectedYear}
+            setSelectedYear={setSelectedYear}
+            selectedMonth={selectedMonth}
+            setSelectedMonth={setSelectedMonth}
+            selectedProjectIds={selectedProjectIds}
+            setSelectedProjectIds={setSelectedProjectIds}
+            productivityProjects={productivityProjects}
+            projects={projects}
+            employees={employees}
+            staffingData={staffingData}
+            isLoading={isLoading}
+            employeeTotals={employeeTotals}
+            dialogOpen={dialogOpen}
+            setDialogOpen={setDialogOpen}
+            editMode={editMode}
+            selectedStaffing={selectedStaffing}
+            setSelectedStaffing={setSelectedStaffing}
+            formData={formData}
+            setFormData={setFormData}
+            deleteOpen={deleteOpen}
+            setDeleteOpen={setDeleteOpen}
+            openCreateDialog={openCreateDialog}
+            openEditDialog={openEditDialog}
+            handleSave={handleSave}
+            handleDelete={handleDelete}
+            handleProjectChange={handleProjectChange}
+            handleEmployeeChange={handleEmployeeChange}
+            createMutation={createMutation}
+            updateMutation={updateMutation}
+            deleteMutation={deleteMutation}
+          />
+        </TabsContent>
+
+        <TabsContent value="project" className="space-y-6">
+          <ProjectStaffingInput />
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}
+
+function MonthlyStaffingInput({
+  selectedYear,
+  setSelectedYear,
+  selectedMonth,
+  setSelectedMonth,
+  selectedProjectIds,
+  setSelectedProjectIds,
+  productivityProjects,
+  projects,
+  employees,
+  staffingData,
+  isLoading,
+  employeeTotals,
+  dialogOpen,
+  setDialogOpen,
+  editMode,
+  selectedStaffing,
+  setSelectedStaffing,
+  formData,
+  setFormData,
+  deleteOpen,
+  setDeleteOpen,
+  openCreateDialog,
+  openEditDialog,
+  handleSave,
+  handleDelete,
+  handleProjectChange,
+  handleEmployeeChange,
+  createMutation,
+  updateMutation,
+  deleteMutation,
+}: {
+  selectedYear: number;
+  setSelectedYear: (year: number) => void;
+  selectedMonth: number;
+  setSelectedMonth: (month: number) => void;
+  selectedProjectIds: string[];
+  setSelectedProjectIds: (ids: string[]) => void;
+  productivityProjects: any[];
+  projects: any[];
+  employees: any[];
+  staffingData: Staffing[];
+  isLoading: boolean;
+  employeeTotals: Record<string, number>;
+  dialogOpen: boolean;
+  setDialogOpen: (open: boolean) => void;
+  editMode: boolean;
+  selectedStaffing: Staffing | null;
+  setSelectedStaffing: (staffing: Staffing | null) => void;
+  formData: Partial<NewStaffing>;
+  setFormData: (data: Partial<NewStaffing>) => void;
+  deleteOpen: boolean;
+  setDeleteOpen: (open: boolean) => void;
+  openCreateDialog: () => void;
+  openEditDialog: (staffing: Staffing) => void;
+  handleSave: () => void;
+  handleDelete: () => void;
+  handleProjectChange: (projectId: string) => void;
+  handleEmployeeChange: (employeeId: string) => void;
+  createMutation: any;
+  updateMutation: any;
+  deleteMutation: any;
+}) {
+  return (
+    <>
+      <div className="flex items-center gap-2">
+        <Label htmlFor="fiscal-year-select">年度:</Label>
+        <Select
+          value={selectedYear.toString()}
+          onValueChange={(value) => setSelectedYear(parseInt(value))}
+        >
+          <SelectTrigger id="fiscal-year-select" className="w-[120px]" data-testid="select-fiscal-year">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {FISCAL_YEARS.map((year) => (
+              <SelectItem key={year} value={year.toString()}>
+                {year}年度
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Label htmlFor="month-select">月:</Label>
+        <Select
+          value={selectedMonth.toString()}
+          onValueChange={(value) => setSelectedMonth(parseInt(value))}
+        >
+          <SelectTrigger id="month-select" className="w-[100px]" data-testid="select-month">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {MONTHS.map((month) => (
+              <SelectItem key={month} value={month.toString()}>
+                {month}月
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Label htmlFor="project-select">プロジェクト:</Label>
+        <MultiSelect
+          options={productivityProjects
+            .filter((p) => p.fiscalYear === selectedYear)
+            .map((project) => ({
+              label: project.name,
+              value: project.id,
+            }))}
+          selected={selectedProjectIds}
+          onChange={setSelectedProjectIds}
+          placeholder="全て"
+          className="w-[300px]"
+        />
       </div>
 
       <Card>
@@ -523,6 +637,7 @@ export default function StaffingPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </>
   );
 }
+
