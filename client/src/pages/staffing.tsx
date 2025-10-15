@@ -2,6 +2,7 @@ import type { NewStaffing, Staffing } from "@shared/schema";
 import { CalendarDays, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
+import { ProjectStaffingInput } from "@/components/project-staffing-input";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,7 +33,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Table,
   TableBody,
@@ -41,6 +41,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useProjects } from "@/hooks/useMasters";
@@ -51,7 +52,6 @@ import {
   useUpdateStaffing,
 } from "@/hooks/useStaffing";
 import { useToast } from "@/hooks/useToast";
-import { ProjectStaffingInput } from "@/components/project-staffing-input";
 
 const FISCAL_YEARS = [2023, 2024, 2025, 2026];
 const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -326,7 +326,7 @@ function MonthlyStaffingInput({
   dialogOpen,
   setDialogOpen,
   editMode,
-  selectedStaffing,
+  selectedStaffing: _selectedStaffing,
   setSelectedStaffing,
   formData,
   setFormData,
@@ -338,9 +338,9 @@ function MonthlyStaffingInput({
   handleDelete,
   handleProjectChange,
   handleEmployeeChange,
-  createMutation,
-  updateMutation,
-  deleteMutation,
+  createMutation: _createMutation,
+  updateMutation: _updateMutation,
+  deleteMutation: _deleteMutation,
 }: {
   selectedYear: number;
   setSelectedYear: (year: number) => void;

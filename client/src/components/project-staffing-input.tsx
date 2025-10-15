@@ -351,6 +351,7 @@ export function ProjectStaffingInput() {
             <SelectContent>
               <SelectItem value="all">全従業員</SelectItem>
               {employees
+                .filter((employee) => employee.status !== "terminated")
                 .sort((a, b) => parseInt(a.id) - parseInt(b.id))
                 .map((employee) => (
                   <SelectItem key={employee.id} value={employee.id.toString()}>
@@ -427,13 +428,15 @@ export function ProjectStaffingInput() {
                             <SelectTrigger>
                               <SelectValue placeholder="従業員を選択" />
                             </SelectTrigger>
-                            <SelectContent>
-                              {employees.map((employee) => (
-                                <SelectItem key={employee.id} value={String(employee.id)}>
-                                  {employee.lastName} {employee.firstName}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
+                <SelectContent>
+                  {employees
+                    .filter((employee) => employee.status !== "terminated")
+                    .map((employee) => (
+                      <SelectItem key={employee.id} value={String(employee.id)}>
+                        {employee.lastName} {employee.firstName}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
                           </Select>
                         )}
                       </TableCell>
