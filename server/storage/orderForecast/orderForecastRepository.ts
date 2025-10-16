@@ -366,4 +366,37 @@ export class OrderForecastRepository {
     const result = await db.select({ count: count() }).from(orderForecasts);
     return result[0]?.count ?? 0;
   }
+
+  /**
+   * 月次サマリデータを取得
+   * 
+   * @param fiscalYear - 年度
+   * @returns 月次サマリデータ
+   */
+  async getMonthlySummary(fiscalYear: number): Promise<Array<{
+    accounting_period: string;
+    accounting_item: string;
+    total_amount: string;
+  }>> {
+    const startPeriod = `${fiscalYear}-04`;
+    const endPeriod = `${fiscalYear + 1}-03`;
+    
+    const result = await db
+      .select({
+        accounting_period: orderForecasts.accountingPeriod,
+        accounting_item: orderForecasts.accountingItem,
+        total_amount: sql<string>`SUM(${orderForecasts.amount})`
+      })
+      .from(orderForecasts)
+      .where(
+        and(
+          sql`${orderForecasts.accountingPeriod} >= ${startPeriod}`,
+          sql`${orderForecasts.accountingPeriod} <= ${endPeriod}`
+        )
+      )
+      .groupBy(orderForecasts.accountingPeriod, orderForecasts.accountingItem)
+      .orderBy(orderForecasts.accountingPeriod, orderForecasts.accountingItem);
+    
+    return result;
+  }
 }

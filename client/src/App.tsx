@@ -8,6 +8,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/hooks/useAuth";
+import AccountingSummaryPage from "@/pages/accounting-summary";
 import AngleBPage from "@/pages/angle-b";
 import BudgetPage from "@/pages/budget";
 import CustomersPage from "@/pages/customers";
@@ -27,6 +28,7 @@ function Router() {
     <Switch>
       <Route path="/" component={DashboardPage} />
       <Route path="/project-analysis" component={ProjectAnalysisPage} />
+      <Route path="/accounting-summary" component={AccountingSummaryPage} />
       <Route path="/gl-import" component={GLImportPage} />
       <Route path="/gl-reconciliation" component={GLReconciliationPage} />
       <Route path="/order-forecast" component={OrderForecastPage} />

@@ -1,7 +1,9 @@
 import { CreateOrderForecastData, OrderForecast, OrderForecastFilter,UpdateOrderForecastData } from '@shared/schema/integrated';
+import type { AccountingItemMonthlySummary, MonthlySummaryResponse } from '@shared/schema/orderForecast';
 
 import { db } from '../db';
 import { AppError } from '../middleware/errorHandler';
+import { AccountingItemRepository } from '../storage/accountingItem';
 import { GLEntryRepository } from '../storage/glEntry';
 import { OrderForecastRepository } from '../storage/orderForecast';
 import { ProjectRepository } from '../storage/project';
@@ -16,7 +18,8 @@ export class OrderForecastService {
   constructor(
     private orderForecastRepository: OrderForecastRepository,
     private projectRepository: ProjectRepository,
-    private glEntryRepository: GLEntryRepository
+    private glEntryRepository: GLEntryRepository,
+    private accountingItemRepository: AccountingItemRepository
   ) {}
 
   /**
@@ -369,6 +372,117 @@ export class OrderForecastService {
     } catch (error) {
       console.error('除外設定エラー:', error);
       throw new AppError('除外設定の更新中にエラーが発生しました', 500);
+    }
+  }
+
+  /**
+   * 計上区分別月次サマリ取得
+   * 
+   * @param fiscalYear - 年度
+   * @returns 月次サマリレスポンス
+   */
+  async getMonthlySummaryByAccountingItem(fiscalYear: number): Promise<MonthlySummaryResponse> {
+    try {
+      // 計上区分マスタから全15種類を取得（コード昇順）
+      const accountingItems = await this.accountingItemRepository.findAll({
+        sortBy: 'code',
+        sortOrder: 'asc'
+      });
+
+      // 年度の全12ヶ月（4月〜3月）を生成
+      const months: string[] = [];
+      for (let month = 4; month <= 12; month++) {
+        months.push(`${fiscalYear}-${month.toString().padStart(2, '0')}`);
+      }
+      for (let month = 1; month <= 3; month++) {
+        months.push(`${fiscalYear + 1}-${month.toString().padStart(2, '0')}`);
+      }
+
+      // order_forecastsから年度のデータを集計
+      const monthlyData = await this.orderForecastRepository.getMonthlySummary(fiscalYear);
+
+      // 計上区分のマッピング定義
+      const revenueCodes = ['511', '512', '513', '514', '515']; // 純売上
+      const costOfSalesCodes = ['541', '1100', '1200', '1300', '1400']; // 売上原価
+      const sgaExpensesCodes = ['727', '737', '740', '745', '9999']; // 販管費
+
+      // コード→名称のマッピング作成
+      const codeToNameMap = new Map<string, string>();
+      accountingItems.forEach(item => {
+        codeToNameMap.set(item.code, item.name);
+      });
+
+      // データを月次・計上区分別に整理
+      const dataMap = new Map<string, Map<string, number>>();
+      monthlyData.forEach(row => {
+        const period = row.accounting_period;
+        const item = row.accounting_item;
+        const amount = parseFloat(row.total_amount);
+
+        // 計上区分がコードの場合は名称に変換
+        const itemName = codeToNameMap.get(item) || item;
+
+        if (!dataMap.has(period)) {
+          dataMap.set(period, new Map());
+        }
+        dataMap.get(period)!.set(itemName, amount);
+      });
+
+      // AccountingItemMonthlySummary配列を作成
+      const accountingItemSummaries: AccountingItemMonthlySummary[] = [];
+      const summaries = {
+        revenue: { monthlyTotals: {} as Record<string, number> },
+        costOfSales: { monthlyTotals: {} as Record<string, number> },
+        sgaExpenses: { monthlyTotals: {} as Record<string, number> }
+      };
+
+      // 各月のサマリを初期化
+      months.forEach(month => {
+        summaries.revenue.monthlyTotals[month] = 0;
+        summaries.costOfSales.monthlyTotals[month] = 0;
+        summaries.sgaExpenses.monthlyTotals[month] = 0;
+      });
+
+      // 各計上区分のデータを処理
+      accountingItems.forEach(item => {
+        const monthlyAmounts: Record<string, number> = {};
+        let category: 'revenue' | 'costOfSales' | 'sgaExpenses';
+
+        // カテゴリを決定
+        if (revenueCodes.includes(item.code)) {
+          category = 'revenue';
+        } else if (costOfSalesCodes.includes(item.code)) {
+          category = 'costOfSales';
+        } else if (sgaExpensesCodes.includes(item.code)) {
+          category = 'sgaExpenses';
+        } else {
+          return; // 該当しない計上区分はスキップ
+        }
+
+        // 各月の金額を取得
+        months.forEach(month => {
+          const amount = dataMap.get(month)?.get(item.name) || 0;
+          monthlyAmounts[month] = amount;
+          summaries[category].monthlyTotals[month] += amount;
+        });
+
+        accountingItemSummaries.push({
+          code: item.code,
+          name: item.name,
+          category,
+          monthlyAmounts
+        });
+      });
+
+      return {
+        fiscalYear,
+        months,
+        accountingItems: accountingItemSummaries,
+        summaries
+      };
+    } catch (error) {
+      console.error('月次サマリ取得エラー:', error);
+      throw new AppError('月次サマリの取得中にエラーが発生しました', 500);
     }
   }
 }

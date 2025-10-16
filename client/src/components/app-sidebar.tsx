@@ -28,6 +28,11 @@ const menuItems = {
       icon: BarChart3,
     },
     {
+      title: "計上区分別月次サマリ",
+      url: "/accounting-summary",
+      icon: BarChart3,
+    },
+    {
       title: "GL突合",
       url: "/gl-reconciliation",
       icon: GitMerge,

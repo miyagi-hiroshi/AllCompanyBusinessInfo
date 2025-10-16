@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { requireAuth } from '../middleware/auth';
 import { OrderForecastService } from '../services/orderForecastService';
+import { AccountingItemRepository } from '../storage/accountingItem';
 import { GLEntryRepository } from '../storage/glEntry';
 import { OrderForecastRepository } from '../storage/orderForecast';
 import { ProjectRepository } from '../storage/project';
@@ -12,7 +13,8 @@ const router = express.Router();
 const orderForecastRepository = new OrderForecastRepository();
 const projectRepository = new ProjectRepository();
 const glEntryRepository = new GLEntryRepository();
-const orderForecastService = new OrderForecastService(orderForecastRepository, projectRepository, glEntryRepository);
+const accountingItemRepository = new AccountingItemRepository();
+const orderForecastService = new OrderForecastService(orderForecastRepository, projectRepository, glEntryRepository, accountingItemRepository);
 
 // 受発注データ作成スキーマ
 const createOrderForecastSchema = insertOrderForecastSchema;
@@ -154,6 +156,35 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: '受発注データ一覧の取得中にエラーが発生しました',
+    });
+  }
+});
+
+/**
+ * 月次サマリ取得API
+ * GET /api/order-forecasts/monthly-summary
+ */
+router.get('/monthly-summary', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { fiscalYear } = req.query;
+    
+    if (!fiscalYear || isNaN(Number(fiscalYear))) {
+      return res.status(400).json({
+        success: false,
+        message: '年度を指定してください',
+      });
+    }
+
+    const summary = await orderForecastService.getMonthlySummaryByAccountingItem(Number(fiscalYear));
+    
+    res.json({
+      success: true,
+      data: summary,
+    });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || '月次サマリの取得中にエラーが発生しました',
     });
   }
 });
