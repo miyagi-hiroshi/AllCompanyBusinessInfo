@@ -128,9 +128,10 @@ export class AngleBForecastRepository {
    * 年度別月次サマリ取得
    * 
    * @param fiscalYear - 年度
+   * @param salesPerson - 営業担当者（オプション）
    * @returns 計上年月・計上科目ごとの金額集計
    */
-  async getMonthlySummary(fiscalYear: number): Promise<Array<{
+  async getMonthlySummary(fiscalYear: number, salesPerson?: string): Promise<Array<{
     accounting_period: string;
     accounting_item: string;
     total_amount: string;
@@ -139,6 +140,16 @@ export class AngleBForecastRepository {
     const startYear = fiscalYear;
     const endYear = fiscalYear + 1;
     
+    // WHERE条件を構築
+    const whereConditions = [
+      sql`${angleBForecasts.accountingPeriod} >= ${`${startYear}-04`}`,
+      sql`${angleBForecasts.accountingPeriod} <= ${`${endYear}-03`}`
+    ];
+    
+    if (salesPerson) {
+      whereConditions.push(eq(projects.salesPerson, salesPerson));
+    }
+    
     const result = await db
       .select({
         accounting_period: angleBForecasts.accountingPeriod,
@@ -146,12 +157,8 @@ export class AngleBForecastRepository {
         total_amount: sql<string>`COALESCE(SUM(${angleBForecasts.amount}), 0)`
       })
       .from(angleBForecasts)
-      .where(
-        and(
-          sql`${angleBForecasts.accountingPeriod} >= ${`${startYear}-04`}`,
-          sql`${angleBForecasts.accountingPeriod} <= ${`${endYear}-03`}`
-        )
-      )
+      .leftJoin(projects, eq(angleBForecasts.projectId, projects.id))
+      .where(and(...whereConditions))
       .groupBy(angleBForecasts.accountingPeriod, angleBForecasts.accountingItem)
       .orderBy(angleBForecasts.accountingPeriod, angleBForecasts.accountingItem);
 

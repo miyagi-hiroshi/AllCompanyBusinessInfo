@@ -20,15 +20,20 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAccountingSummary } from "@/hooks/useAccountingSummary";
+import { useSalesPersons } from "@/hooks/useSalesPersons";
 
 const FISCAL_YEARS = [2023, 2024, 2025, 2026];
 
 export default function AccountingSummaryPage() {
   const [selectedYear, setSelectedYear] = useState<number>(2025);
   const [includeAngleB, setIncludeAngleB] = useState<boolean>(false);
+  const [selectedSalesPerson, setSelectedSalesPerson] = useState<string>("all");
+
+  // 営業担当者一覧取得
+  const { data: salesPersons } = useSalesPersons();
 
   // 月次サマリデータ取得
-  const { data: summaryData, isLoading } = useAccountingSummary(selectedYear, includeAngleB);
+  const { data: summaryData, isLoading } = useAccountingSummary(selectedYear, includeAngleB, selectedSalesPerson);
 
   // 数値フォーマット関数
   const formatCurrency = (value: number) => {
@@ -127,32 +132,46 @@ export default function AccountingSummaryPage() {
             <h1 className="text-xl font-bold">
               {selectedYear}年度 計上区分別月次サマリ
               {includeAngleB ? "（受発注見込み+角度B）" : "（受発注見込みのみ）"}
+              {selectedSalesPerson !== "all" && ` - ${selectedSalesPerson}`}
             </h1>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Switch
-                id="include-angle-b"
-                checked={includeAngleB}
-                onCheckedChange={setIncludeAngleB}
-              />
-              <label htmlFor="include-angle-b" className="text-sm font-medium">
-                角度B案件を含める
-              </label>
-            </div>
-            <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(Number(value))}>
-              <SelectTrigger className="w-[120px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {FISCAL_YEARS.map((year) => (
-                  <SelectItem key={year} value={year.toString()}>
-                    {year}年度
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="include-angle-b"
+                    checked={includeAngleB}
+                    onCheckedChange={setIncludeAngleB}
+                  />
+                  <label htmlFor="include-angle-b" className="text-sm font-medium">
+                    角度B案件を含める
+                  </label>
+                </div>
+                <Select value={selectedSalesPerson} onValueChange={setSelectedSalesPerson}>
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="営業担当者" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">すべて</SelectItem>
+                    {salesPersons?.map((person) => (
+                      <SelectItem key={person} value={person}>
+                        {person}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(Number(value))}>
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {FISCAL_YEARS.map((year) => (
+                      <SelectItem key={year} value={year.toString()}>
+                        {year}年度
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
         </div>
 
         {/* データテーブル */}

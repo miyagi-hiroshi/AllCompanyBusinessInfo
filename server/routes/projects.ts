@@ -42,6 +42,27 @@ const searchProjectSchema = z.object({
 });
 
 /**
+ * 営業担当者一覧取得API
+ * GET /api/projects/sales-persons
+ */
+router.get('/sales-persons', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const salesPersons = await projectRepository.getSalesPersons();
+    
+    res.json({
+      success: true,
+      data: salesPersons,
+    });
+  } catch (error) {
+    console.error('営業担当者一覧取得エラー:', error);
+    res.status(500).json({
+      success: false,
+      message: '営業担当者一覧の取得中にエラーが発生しました',
+    });
+  }
+});
+
+/**
  * プロジェクト一覧取得API
  * GET /api/projects
  */

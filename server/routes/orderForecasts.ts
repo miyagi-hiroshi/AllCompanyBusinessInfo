@@ -168,7 +168,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
  */
 router.get('/monthly-summary', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { fiscalYear, includeAngleB } = req.query;
+    const { fiscalYear, includeAngleB, salesPerson } = req.query;
     
     if (!fiscalYear || isNaN(Number(fiscalYear))) {
       return res.status(400).json({
@@ -178,7 +178,8 @@ router.get('/monthly-summary', requireAuth, async (req: Request, res: Response) 
     }
 
     const includeAngleBFlag = includeAngleB === 'true';
-    const summary = await orderForecastService.getMonthlySummaryByAccountingItem(Number(fiscalYear), includeAngleBFlag);
+    const salesPersonParam = typeof salesPerson === 'string' && salesPerson !== 'all' ? salesPerson : undefined;
+    const summary = await orderForecastService.getMonthlySummaryByAccountingItem(Number(fiscalYear), includeAngleBFlag, salesPersonParam);
     
     res.json({
       success: true,

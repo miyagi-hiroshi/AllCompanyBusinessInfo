@@ -371,15 +371,26 @@ export class OrderForecastRepository {
    * 月次サマリデータを取得
    * 
    * @param fiscalYear - 年度
+   * @param salesPerson - 営業担当者（オプション）
    * @returns 月次サマリデータ
    */
-  async getMonthlySummary(fiscalYear: number): Promise<Array<{
+  async getMonthlySummary(fiscalYear: number, salesPerson?: string): Promise<Array<{
     accounting_period: string;
     accounting_item: string;
     total_amount: string;
   }>> {
     const startPeriod = `${fiscalYear}-04`;
     const endPeriod = `${fiscalYear + 1}-03`;
+    
+    // WHERE条件を構築
+    const whereConditions = [
+      sql`${orderForecasts.accountingPeriod} >= ${startPeriod}`,
+      sql`${orderForecasts.accountingPeriod} <= ${endPeriod}`
+    ];
+    
+    if (salesPerson) {
+      whereConditions.push(eq(projects.salesPerson, salesPerson));
+    }
     
     const result = await db
       .select({
@@ -388,12 +399,8 @@ export class OrderForecastRepository {
         total_amount: sql<string>`SUM(${orderForecasts.amount})`
       })
       .from(orderForecasts)
-      .where(
-        and(
-          sql`${orderForecasts.accountingPeriod} >= ${startPeriod}`,
-          sql`${orderForecasts.accountingPeriod} <= ${endPeriod}`
-        )
-      )
+      .leftJoin(projects, eq(orderForecasts.projectId, projects.id))
+      .where(and(...whereConditions))
       .groupBy(orderForecasts.accountingPeriod, orderForecasts.accountingItem)
       .orderBy(orderForecasts.accountingPeriod, orderForecasts.accountingItem);
     

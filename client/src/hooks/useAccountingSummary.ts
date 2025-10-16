@@ -21,13 +21,22 @@ export interface AccountingSummaryResponse {
   };
 }
 
-export function useAccountingSummary(fiscalYear: number, includeAngleB: boolean = false) {
+export function useAccountingSummary(fiscalYear: number, includeAngleB: boolean = false, salesPerson?: string) {
   return useQuery<AccountingSummaryResponse>({
-    queryKey: ['/api/order-forecasts/monthly-summary', fiscalYear, includeAngleB],
+    queryKey: ['/api/order-forecasts/monthly-summary', fiscalYear, includeAngleB, salesPerson],
     queryFn: async () => {
+      const params = new URLSearchParams({
+        fiscalYear: fiscalYear.toString(),
+        includeAngleB: includeAngleB.toString()
+      });
+      
+      if (salesPerson && salesPerson !== 'all') {
+        params.append('salesPerson', salesPerson);
+      }
+      
       const res = await apiRequest(
         "GET",
-        `/api/order-forecasts/monthly-summary?fiscalYear=${fiscalYear}&includeAngleB=${includeAngleB}`,
+        `/api/order-forecasts/monthly-summary?${params}`,
         undefined
       );
       return await res.json();

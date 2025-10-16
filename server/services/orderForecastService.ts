@@ -382,9 +382,10 @@ export class OrderForecastService {
    * 
    * @param fiscalYear - 年度
    * @param includeAngleB - 角度B案件を含めるかどうか
+   * @param salesPerson - 営業担当者（オプション）
    * @returns 月次サマリレスポンス
    */
-  async getMonthlySummaryByAccountingItem(fiscalYear: number, includeAngleB: boolean = false): Promise<MonthlySummaryResponse> {
+  async getMonthlySummaryByAccountingItem(fiscalYear: number, includeAngleB: boolean = false, salesPerson?: string): Promise<MonthlySummaryResponse> {
     try {
       // 計上区分マスタから全15種類を取得（コード昇順）
       const accountingItems = await this.accountingItemRepository.findAll({
@@ -402,7 +403,7 @@ export class OrderForecastService {
       }
 
       // order_forecastsから年度のデータを集計
-      const monthlyData = await this.orderForecastRepository.getMonthlySummary(fiscalYear);
+      const monthlyData = await this.orderForecastRepository.getMonthlySummary(fiscalYear, salesPerson);
 
       // 角度B案件データを取得（includeAngleBがtrueの場合）
       let angleBData: Array<{
@@ -412,7 +413,7 @@ export class OrderForecastService {
       }> = [];
       
       if (includeAngleB) {
-        angleBData = await this.angleBForecastRepository.getMonthlySummary(fiscalYear);
+        angleBData = await this.angleBForecastRepository.getMonthlySummary(fiscalYear, salesPerson);
       }
 
       // 計上区分のマッピング定義

@@ -9,7 +9,7 @@
 
 import type { NewProject,Project } from '@shared/schema/integrated';
 import { projects } from '@shared/schema/project';
-import { and, asc, count,desc, eq, like, ne, or } from 'drizzle-orm';
+import { and, asc, count,desc, eq, like, ne, or, sql } from 'drizzle-orm';
 
 import { db } from '../../db';
 
@@ -238,5 +238,23 @@ export class ProjectRepository {
     
     const result = await db.select({ count: count() }).from(projects);
     return result[0]?.count ?? 0;
+  }
+
+  /**
+   * 営業担当者一覧取得
+   * 
+   * @returns 重複なしの営業担当者リスト
+   */
+  async getSalesPersons(): Promise<string[]> {
+    const result = await db
+      .selectDistinct({ salesPerson: projects.salesPerson })
+      .from(projects)
+      .where(and(
+        sql`${projects.salesPerson} IS NOT NULL`,
+        sql`${projects.salesPerson} != ''`
+      ))
+      .orderBy(projects.salesPerson);
+
+    return result.map(row => row.salesPerson).filter(Boolean);
   }
 }
