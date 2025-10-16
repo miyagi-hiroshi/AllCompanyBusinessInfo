@@ -147,7 +147,7 @@ export default function BudgetPage() {
   const formatTargetValue = (value: string | number, analysisType: string) => {
     const numValue = Number(value);
     if (analysisType === "生産性") {
-      return `${numValue.toFixed(2)}/人月`;
+      return `${Math.round(numValue).toLocaleString()}/人月`;
     } else if (analysisType === "粗利") {
       return `¥${numValue.toLocaleString()}`;
     }
@@ -406,23 +406,19 @@ export default function BudgetPage() {
 
     // 分析区分に応じたバリデーション
     if (targetFormData.analysisType === "生産性") {
-      if (targetValue > 999.99) {
+      if (!Number.isInteger(targetValue)) {
         toast({
           title: "入力エラー",
-          description: "生産性の目標値は999.99以下で入力してください",
+          description: "生産性の目標値は整数で入力してください",
           variant: "destructive",
         });
         return;
       }
       
-      // 小数部分が2桁を超えていないかチェック
-      const targetValueStr = targetFormData.targetValue;
-      const [, decimalPart] = targetValueStr.includes('.') ? targetValueStr.split('.') : [targetValueStr, ''];
-      
-      if (decimalPart.length > 2) {
+      if (targetValue > 999999999) {
         toast({
           title: "入力エラー",
-          description: "生産性の目標値の小数部分は2桁まで入力できます",
+          description: "生産性の目標値は999,999,999以下で入力してください",
           variant: "destructive",
         });
         return;
@@ -994,16 +990,16 @@ export default function BudgetPage() {
               <Input
                 id="target-value"
                 type="number"
-                step={targetFormData.analysisType === "生産性" ? "0.01" : "1"}
-                max={targetFormData.analysisType === "生産性" ? 999.99 : 999999999999}
+                step="1"
+                max={targetFormData.analysisType === "生産性" ? 999999999 : 999999999999}
                 value={targetFormData.targetValue}
                 onChange={(e) => setTargetFormData({ ...targetFormData, targetValue: e.target.value })}
-                placeholder={targetFormData.analysisType === "生産性" ? "100.50" : "5000"}
+                placeholder={targetFormData.analysisType === "生産性" ? "100000" : "5000"}
                 data-testid="input-target-value"
               />
               <p className="text-xs text-muted-foreground">
                 {targetFormData.analysisType === "生産性" 
-                  ? "生産性: 999.99以下、小数部分2桁まで（例: 100.50/人月）" 
+                  ? "生産性: 999,999,999以下の整数（例: 100,000/人月）" 
                   : "粗利: 999,999,999,999以下の整数（例: ¥5,000）"}
               </p>
             </div>

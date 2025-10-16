@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { requireAuth } from '../middleware/auth';
 import { ProjectService } from '../services/projectService';
+import { BudgetTargetRepository } from '../storage/budgetTarget';
 import { CustomerRepository } from '../storage/customer';
 import { OrderForecastRepository } from '../storage/orderForecast';
 import { ProjectRepository } from '../storage/project';
@@ -14,7 +15,8 @@ const projectRepository = new ProjectRepository();
 const customerRepository = new CustomerRepository();
 const orderForecastRepository = new OrderForecastRepository();
 const staffingRepository = new StaffingRepository();
-const projectService = new ProjectService(projectRepository, customerRepository, orderForecastRepository, staffingRepository);
+const budgetTargetRepository = new BudgetTargetRepository();
+const projectService = new ProjectService(projectRepository, customerRepository, orderForecastRepository, staffingRepository, budgetTargetRepository);
 
 // プロジェクト作成スキーマ
 const createProjectSchema = insertProjectSchema;

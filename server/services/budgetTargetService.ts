@@ -102,10 +102,13 @@ export class BudgetTargetService {
         throw new Error("目標値は0以上の数値を入力してください");
       }
 
-      // 生産性の場合は小数点2桁まで、粗利の場合は整数のみ
+      // 生産性の場合は整数のみ、粗利の場合は整数のみ
       if (data.analysisType === "生産性") {
-        if (targetValue > 999.99) {
-          throw new Error("生産性の目標値は999.99以下で入力してください");
+        if (!Number.isInteger(targetValue)) {
+          throw new Error("生産性の目標値は整数で入力してください");
+        }
+        if (targetValue > 999999999) {
+          throw new Error("生産性の目標値は999,999,999以下で入力してください");
         }
       } else if (data.analysisType === "粗利") {
         if (!Number.isInteger(targetValue)) {

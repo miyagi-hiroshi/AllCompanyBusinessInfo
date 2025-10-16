@@ -2,6 +2,7 @@ import { CreateProjectData, Project, ProjectAnalysisSummary,ProjectFilter, Updat
 
 // import { db } from '../db'; // 未使用のためコメントアウト
 import { AppError } from '../middleware/errorHandler';
+import { BudgetTargetRepository } from '../storage/budgetTarget';
 import { CustomerRepository } from '../storage/customer';
 import { OrderForecastRepository } from '../storage/orderForecast';
 import { ProjectRepository } from '../storage/project';
@@ -18,7 +19,8 @@ export class ProjectService {
     private projectRepository: ProjectRepository,
     private customerRepository: CustomerRepository,
     private orderForecastRepository: OrderForecastRepository,
-    private staffingRepository: StaffingRepository
+    private staffingRepository: StaffingRepository,
+    private budgetTargetRepository: BudgetTargetRepository
   ) {}
 
   /**
@@ -308,6 +310,22 @@ export class ProjectService {
       // 年度のプロジェクト一覧取得
       const projects = await this.projectRepository.findByFiscalYear(fiscalYear);
       
+      // 目標値を取得
+      const budgetTargets = await this.budgetTargetRepository.findAll({
+        filter: { fiscalYear },
+        limit: undefined,
+        offset: 0,
+        sortBy: 'serviceType',
+        sortOrder: 'asc'
+      });
+      
+      // Map作成: "サービス区分_分析区分" => 目標値
+      const targetMap = new Map<string, number>();
+      for (const target of budgetTargets) {
+        const key = `${target.serviceType}_${target.analysisType}`;
+        targetMap.set(key, parseFloat(target.targetValue));
+      }
+      
       const analysisSummaries: ProjectAnalysisSummary[] = [];
 
       for (const project of projects) {
@@ -367,7 +385,8 @@ export class ProjectService {
           costOfSales,
           sgaExpenses,
           workHours,
-          ...(project.analysisType === '生産性' ? { productivity } : { grossProfit })
+          ...(project.analysisType === '生産性' ? { productivity } : { grossProfit }),
+          targetValue: targetMap.get(`${project.serviceType}_${project.analysisType}`)
         };
 
         analysisSummaries.push(summary);

@@ -1,10 +1,7 @@
 import { BarChart3 } from "lucide-react";
 import { useState } from "react";
 
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -22,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { type ProjectAnalysisSummary,useProjectAnalysis } from "@/hooks/useProjectAnalysis";
+import { cn } from "@/lib/utils";
 
 const FISCAL_YEARS = [2023, 2024, 2025, 2026];
 
@@ -37,25 +35,6 @@ export default function ProjectAnalysisPage() {
   // プロジェクト分析サマリー取得
   const { data: analysisData, isLoading } = useProjectAnalysis(selectedYear);
 
-  // データをサービス区分→分析区分でグループ化
-  const groupedData = analysisData?.data?.projects?.reduce((acc, project) => {
-    const serviceType = project.serviceType;
-    const analysisType = project.analysisType;
-
-    if (!acc[serviceType]) {
-      acc[serviceType] = {};
-    }
-    if (!acc[serviceType][analysisType]) {
-      acc[serviceType][analysisType] = [];
-    }
-
-    acc[serviceType][analysisType].push(project);
-    return acc;
-  }, {} as Record<string, Record<string, ProjectAnalysisSummary[]>>) || {};
-
-  // サービス区分を表示順序でソート
-  const sortedServiceTypes = SERVICE_ORDER.filter(service => groupedData[service]);
-
   // 数値フォーマット関数
   const formatCurrency = (value: number) => {
     return `¥${value.toLocaleString()}`;
@@ -67,6 +46,26 @@ export default function ProjectAnalysisPage() {
 
   const formatProductivity = (value: number) => {
     return `¥${Math.round(value).toLocaleString()}/人月`;
+  };
+
+  // 達成度による色分けを返す関数
+  const getAchievementColor = (actualValue: number, targetValue?: number): string => {
+    if (targetValue === undefined || targetValue === 0) {
+      return ''; // 目標値がない場合は色分けなし
+    }
+    
+    const achievementRate = actualValue / targetValue;
+    
+    if (achievementRate >= 1.1) {
+      // 大幅達成（110%以上）：緑
+      return 'text-green-600 bg-green-50 font-semibold';
+    } else if (achievementRate >= 1.0) {
+      // 達成（100%以上110%未満）：青
+      return 'text-blue-600 bg-blue-50 font-semibold';
+    } else {
+      // 未達（100%未満）：赤
+      return 'text-red-600 bg-red-50 font-semibold';
+    }
   };
 
   // グループのサマリー計算
@@ -88,180 +87,214 @@ export default function ProjectAnalysisPage() {
     };
   };
 
+  // データを平坦化する関数
+  const flattenData = (projects: ProjectAnalysisSummary[]) => {
+    const rows: Array<{
+      type: 'project' | 'subtotal';
+      serviceType: string;
+      projectName?: string;
+      projectCode?: string;
+      analysisType: string;
+      revenue: number;
+      costOfSales: number;
+      sgaExpenses: number;
+      workHours: number;
+      targetValue?: number;
+      actualValue?: number;
+    }> = [];
+
+    // サービス区分→分析区分でグループ化
+    const grouped = projects.reduce((acc, project) => {
+      const key = `${project.serviceType}_${project.analysisType}`;
+      if (!acc[key]) {
+        acc[key] = {
+          serviceType: project.serviceType,
+          analysisType: project.analysisType,
+          projects: []
+        };
+      }
+      acc[key].projects.push(project);
+      return acc;
+    }, {} as Record<string, any>);
+
+    // サービス順、分析区分順でソート
+    const sortedKeys = Object.keys(grouped).sort((a, b) => {
+      const [serviceA, analysisA] = a.split('_');
+      const [serviceB, analysisB] = b.split('_');
+      
+      const serviceIndexA = SERVICE_ORDER.indexOf(serviceA);
+      const serviceIndexB = SERVICE_ORDER.indexOf(serviceB);
+      if (serviceIndexA !== serviceIndexB) {
+        return serviceIndexA - serviceIndexB;
+      }
+      
+      const analysisIndexA = ANALYSIS_TYPE_ORDER.indexOf(analysisA);
+      const analysisIndexB = ANALYSIS_TYPE_ORDER.indexOf(analysisB);
+      return analysisIndexA - analysisIndexB;
+    });
+
+    // 各グループのプロジェクト行と小計行を追加
+    for (const key of sortedKeys) {
+      const group = grouped[key];
+      
+      // プロジェクト行
+      for (const project of group.projects) {
+        rows.push({
+          type: 'project',
+          serviceType: project.serviceType,
+          projectName: project.name,
+          projectCode: project.code,
+          analysisType: project.analysisType,
+          revenue: project.revenue,
+          costOfSales: project.costOfSales,
+          sgaExpenses: project.sgaExpenses,
+          workHours: project.workHours,
+          actualValue: project.analysisType === '生産性' ? project.productivity : project.grossProfit
+        });
+      }
+
+      // 小計行
+      const summary = calculateGroupSummary(group.projects);
+      rows.push({
+        type: 'subtotal',
+        serviceType: group.serviceType,
+        analysisType: group.analysisType,
+        revenue: summary.totalRevenue,
+        costOfSales: summary.totalCostOfSales,
+        sgaExpenses: summary.totalSgaExpenses,
+        workHours: summary.totalWorkHours,
+        targetValue: group.projects[0]?.targetValue,
+        actualValue: group.analysisType === '生産性' 
+          ? summary.totalProductivity 
+          : summary.totalGrossProfit
+      });
+    }
+
+    return rows;
+  };
+
   return (
     <div className="h-full overflow-auto">
-      <div className="p-6 space-y-6">
-        {/* Header */}
-        <div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <BarChart3 className="h-6 w-6 text-primary" />
-              <h1 className="text-2xl font-bold" data-testid="text-page-title">
-                プロジェクト分析
-              </h1>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Label htmlFor="fiscal-year-select">年度:</Label>
-              <Select
-                value={selectedYear.toString()}
-                onValueChange={(value) => setSelectedYear(parseInt(value))}
-              >
-                <SelectTrigger id="fiscal-year-select" className="w-[120px]" data-testid="select-fiscal-year">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {FISCAL_YEARS.map((year) => (
-                    <SelectItem key={year} value={year.toString()}>
-                      {year}年度
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+      <div className="p-4 space-y-3">
+        {/* ヘッダー */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            <h1 className="text-xl font-bold">{selectedYear}年度 プロジェクト分析</h1>
           </div>
-          <p className="text-muted-foreground mt-1">年度ごとのプロジェクト毎サマリーリストを表示します</p>
+          <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {FISCAL_YEARS.map((year) => (
+                <SelectItem key={year} value={year.toString()}>
+                  {year}年度
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
+        {/* 統一テーブル */}
         {isLoading ? (
-          <div className="space-y-4">
-            <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-96 w-full" />
-          </div>
+          <Skeleton className="h-96 w-full" />
         ) : (
           <Card>
-            <CardHeader>
-              <CardTitle>{selectedYear}年度 プロジェクト分析サマリー</CardTitle>
-              <CardDescription>
-                サービス区分→分析区分でグループ化されたプロジェクト一覧
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {sortedServiceTypes.length === 0 ? (
+            <CardContent className="p-4">
+              {analysisData?.data?.projects?.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   {selectedYear}年度のプロジェクトデータがありません
                 </div>
               ) : (
-                <Accordion type="multiple" className="w-full" defaultValue={SERVICE_ORDER}>
-                  {sortedServiceTypes.map((serviceType) => {
-                    const serviceData = groupedData[serviceType];
-                    const analysisTypes = ANALYSIS_TYPE_ORDER.filter(type => serviceData[type]);
-
-                    return (
-                      <AccordionItem key={serviceType} value={serviceType}>
-                        <AccordionTrigger className="text-lg font-semibold">
-                          {serviceType}サービス
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-6">
-                            {analysisTypes.map((analysisType) => {
-                              const projects = serviceData[analysisType];
-                              const summary = calculateGroupSummary(projects);
-
-                              return (
-                                <div key={analysisType} className="space-y-2">
-                                  <div className="flex items-center gap-2">
-                                    <h4 className="text-base font-medium">{analysisType}</h4>
-                                    <Badge variant="outline">{projects.length}件</Badge>
-                                  </div>
-                                  
-                                  <Table>
-                                    <TableHeader>
-                                      <TableRow>
-                                        <TableHead className="w-[200px]">プロジェクト名</TableHead>
-                                        <TableHead className="text-right w-[120px]">売上</TableHead>
-                                        <TableHead className="text-right w-[120px]">仕入高</TableHead>
-                                        <TableHead className="text-right w-[120px]">販管費</TableHead>
-                                        {analysisType === '生産性' && (
-                                          <TableHead className="text-right w-[120px]">山積み工数（人月）</TableHead>
-                                        )}
-                                        {analysisType === '粗利' && (
-                                          <TableHead className="text-right w-[120px]">-</TableHead>
-                                        )}
-                                        <TableHead className="text-right w-[120px]">
-                                          {analysisType === '生産性' ? '生産性（円/人月）' : '粗利'}
-                                        </TableHead>
-                                      </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                      {projects.map((project) => (
-                                        <TableRow key={project.id}>
-                                          <TableCell className="font-medium">
-                                            <div>
-                                              <div className="font-semibold">{project.name}</div>
-                                              <div className="text-sm text-muted-foreground">{project.code}</div>
-                                            </div>
-                                          </TableCell>
-                                          <TableCell className="text-right font-mono">
-                                            {formatCurrency(project.revenue)}
-                                          </TableCell>
-                                          <TableCell className="text-right font-mono">
-                                            {formatCurrency(project.costOfSales)}
-                                          </TableCell>
-                                          <TableCell className="text-right font-mono">
-                                            {formatCurrency(project.sgaExpenses)}
-                                          </TableCell>
-                                          {analysisType === '生産性' && (
-                                            <TableCell className="text-right font-mono">
-                                              {formatHours(project.workHours)}
-                                            </TableCell>
-                                          )}
-                                          {analysisType === '粗利' && (
-                                            <TableCell className="text-right text-muted-foreground">
-                                              -
-                                            </TableCell>
-                                          )}
-                                          <TableCell className="text-right font-mono">
-                                            {analysisType === '生産性' && project.productivity !== undefined
-                                              ? formatProductivity(project.productivity)
-                                              : analysisType === '粗利' && project.grossProfit !== undefined
-                                              ? formatCurrency(project.grossProfit)
-                                              : '-'
-                                            }
-                                          </TableCell>
-                                        </TableRow>
-                                      ))}
-                                      
-                                      {/* サマリー行 */}
-                                      <TableRow className="font-bold bg-muted/50">
-                                        <TableCell>合計</TableCell>
-                                        <TableCell className="text-right font-mono">
-                                          {formatCurrency(summary.totalRevenue)}
-                                        </TableCell>
-                                        <TableCell className="text-right font-mono">
-                                          {formatCurrency(summary.totalCostOfSales)}
-                                        </TableCell>
-                                        <TableCell className="text-right font-mono">
-                                          {formatCurrency(summary.totalSgaExpenses)}
-                                        </TableCell>
-                                        {analysisType === '生産性' && (
-                                          <TableCell className="text-right font-mono">
-                                            {formatHours(summary.totalWorkHours)}
-                                          </TableCell>
-                                        )}
-                                        {analysisType === '粗利' && (
-                                          <TableCell className="text-right text-muted-foreground">
-                                            -
-                                          </TableCell>
-                                        )}
-                                        <TableCell className="text-right font-mono">
-                                          {analysisType === '生産性'
-                                            ? formatProductivity(summary.totalProductivity)
-                                            : formatCurrency(summary.totalGrossProfit)
-                                          }
-                                        </TableCell>
-                                      </TableRow>
-                                    </TableBody>
-                                  </Table>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    );
-                  })}
-                </Accordion>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[120px] text-xs py-1 px-2">サービス</TableHead>
+                      <TableHead className="w-[80px] text-xs py-1 px-2">分析区分</TableHead>
+                      <TableHead className="w-[180px] text-xs py-1 px-2">プロジェクト名</TableHead>
+                      <TableHead className="text-right w-[100px] text-xs py-1 px-2">売上</TableHead>
+                      <TableHead className="text-right w-[100px] text-xs py-1 px-2">仕入高</TableHead>
+                      <TableHead className="text-right w-[100px] text-xs py-1 px-2">販管費</TableHead>
+                      <TableHead className="text-right w-[100px] text-xs py-1 px-2">山積み工数</TableHead>
+                      <TableHead className="text-right w-[110px] text-xs py-1 px-2">生産性/粗利(目標)</TableHead>
+                      <TableHead className="text-right w-[110px] text-xs py-1 px-2">生産性/粗利(実績)</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {flattenData(analysisData?.data?.projects || []).map((row, index) => (
+                      <TableRow 
+                        key={index} 
+                        className={row.type === 'subtotal' ? 'font-bold bg-muted/50' : ''}
+                      >
+                        {/* サービス列 */}
+                        <TableCell className="text-xs py-1 px-2">
+                          {row.type === 'subtotal' ? row.serviceType : ''}
+                        </TableCell>
+                        
+                        {/* 分析区分列 */}
+                        <TableCell className="text-xs py-1 px-2">
+                          {row.type === 'subtotal' ? row.analysisType : ''}
+                        </TableCell>
+                        
+                        {/* プロジェクト名列 */}
+                        <TableCell className="text-xs py-1 px-2">
+                          {row.type === 'project' ? (
+                            <div>
+                              <div className="font-semibold">{row.projectName}</div>
+                              <div className="text-muted-foreground">{row.projectCode}</div>
+                            </div>
+                          ) : '-'}
+                        </TableCell>
+                        
+                        {/* 売上列 */}
+                        <TableCell className="text-right font-mono text-xs py-1 px-2">
+                          {formatCurrency(row.revenue)}
+                        </TableCell>
+                        
+                        {/* 仕入高列 */}
+                        <TableCell className="text-right font-mono text-xs py-1 px-2">
+                          {formatCurrency(row.costOfSales)}
+                        </TableCell>
+                        
+                        {/* 販管費列 */}
+                        <TableCell className="text-right font-mono text-xs py-1 px-2">
+                          {formatCurrency(row.sgaExpenses)}
+                        </TableCell>
+                        
+                        {/* 山積み工数列 */}
+                        <TableCell className="text-right font-mono text-xs py-1 px-2">
+                          {row.analysisType === '生産性' ? formatHours(row.workHours) : '-'}
+                        </TableCell>
+                        
+                        {/* 生産性/粗利(目標)列 */}
+                        <TableCell className="text-right font-mono text-xs py-1 px-2">
+                          {row.type === 'subtotal' && row.targetValue !== undefined
+                            ? (row.analysisType === '生産性'
+                                ? formatProductivity(row.targetValue)
+                                : formatCurrency(row.targetValue))
+                            : '-'
+                          }
+                        </TableCell>
+                        
+                        {/* 生産性/粗利(実績)列 */}
+                        <TableCell className={cn(
+                          "text-right font-mono text-xs py-1 px-2",
+                          row.type === 'subtotal' 
+                            ? getAchievementColor(row.actualValue || 0, row.targetValue)
+                            : ''
+                        )}>
+                          {row.actualValue !== undefined
+                            ? (row.analysisType === '生産性'
+                                ? formatProductivity(row.actualValue)
+                                : formatCurrency(row.actualValue))
+                            : '-'
+                          }
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               )}
             </CardContent>
           </Card>

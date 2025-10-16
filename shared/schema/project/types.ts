@@ -15,6 +15,7 @@ export interface ProjectAnalysisSummary {
   workHours: number;        // 山積み工数
   productivity?: number;    // 生産性（分析区分=生産性の場合）
   grossProfit?: number;     // 粗利（分析区分=粗利の場合）
+  targetValue?: number;     // 目標値
 }
 
 /**
@@ -32,6 +33,7 @@ export const createProjectAnalysisSummarySchema = z.object({
   workHours: z.number(),
   productivity: z.number().optional(),
   grossProfit: z.number().optional(),
+  targetValue: z.number().optional(),
 });
 
 /**
