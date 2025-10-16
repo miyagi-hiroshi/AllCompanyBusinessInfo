@@ -1,7 +1,7 @@
 import { BarChart3 } from "lucide-react";
 import { useState } from "react";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -86,9 +86,6 @@ export default function AccountingSummaryPage() {
           <h1 className="text-2xl font-semibold">計上区分別月次サマリ</h1>
         </div>
         <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-48" />
-          </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <Skeleton className="h-10 w-full" />
@@ -116,7 +113,7 @@ export default function AccountingSummaryPage() {
     );
   }
 
-  const { fiscalYear, months, accountingItems, summaries } = summaryData.data;
+  const { months, accountingItems, summaries } = summaryData.data;
 
   return (
     <div className="h-full overflow-auto">
@@ -125,7 +122,7 @@ export default function AccountingSummaryPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <BarChart3 className="h-5 w-5 text-primary" />
-            <h1 className="text-xl font-bold">計上区分別月次サマリ</h1>
+            <h1 className="text-xl font-bold">{selectedYear}年度 計上区分別月次サマリ</h1>
           </div>
           <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(Number(value))}>
             <SelectTrigger className="w-[120px]">
@@ -143,9 +140,6 @@ export default function AccountingSummaryPage() {
 
         {/* データテーブル */}
         <Card>
-          <CardHeader>
-            <CardTitle>{fiscalYear}年度 計上区分別月次サマリ</CardTitle>
-          </CardHeader>
           <CardContent className="p-4">
             <div className="overflow-x-auto">
             <Table>
