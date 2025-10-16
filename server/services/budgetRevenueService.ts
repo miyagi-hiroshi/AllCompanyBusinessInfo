@@ -52,5 +52,9 @@ export class BudgetRevenueService {
       throw new Error(`売上予算が見つかりません: ${id}`);
     }
   }
+
+  async getAnnualBudgetByFiscalYear(fiscalYear: number): Promise<number> {
+    return await this.budgetRevenueRepository.getAnnualTotal(fiscalYear);
+  }
 }
 

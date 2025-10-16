@@ -93,6 +93,15 @@ export class BudgetRevenueRepository {
     return result.length > 0;
   }
 
+  async getAnnualTotal(fiscalYear: number): Promise<number> {
+    const result = await db
+      .select({ total: sql<number>`COALESCE(SUM(${budgetsRevenue.budgetAmount}::numeric), 0)` })
+      .from(budgetsRevenue)
+      .where(eq(budgetsRevenue.fiscalYear, fiscalYear));
+
+    return parseFloat(result[0]?.total?.toString() || '0');
+  }
+
   private buildWhereConditions(filter?: BudgetRevenueFilter) {
     if (!filter) {
       return undefined;

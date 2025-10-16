@@ -9,6 +9,7 @@ import budgetsExpenseRoutes from "./routes/budgetsExpense";
 import budgetsRevenueRoutes from "./routes/budgetsRevenue";
 import budgetsTargetRoutes from "./routes/budgetsTarget";
 import customersRoutes from "./routes/customers";
+import dashboardRoutes from "./routes/dashboard";
 import employeesRoutes from "./routes/employees";
 import glEntriesRoutes from "./routes/glEntries";
 import itemsRoutes from "./routes/items";
@@ -37,6 +38,7 @@ export function registerRoutes(app: Express): Server {
   app.use('/api/budgets/expense', budgetsExpenseRoutes);
   app.use('/api/budgets/target', budgetsTargetRoutes);
   app.use('/api/staffing', staffingRoutes);
+  app.use('/api/dashboard', dashboardRoutes);
   
   // Existing System Data APIs
   app.use('/api/employees', employeesRoutes);

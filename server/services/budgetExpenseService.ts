@@ -52,5 +52,9 @@ export class BudgetExpenseService {
       throw new Error(`販管費予算が見つかりません: ${id}`);
     }
   }
+
+  async getAnnualBudgetByFiscalYear(fiscalYear: number): Promise<number> {
+    return await this.budgetExpenseRepository.getAnnualTotal(fiscalYear);
+  }
 }
 
