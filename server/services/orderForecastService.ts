@@ -4,6 +4,7 @@ import type { AccountingItemMonthlySummary, MonthlySummaryResponse } from '@shar
 import { db } from '../db';
 import { AppError } from '../middleware/errorHandler';
 import { AccountingItemRepository } from '../storage/accountingItem';
+import { AngleBForecastRepository } from '../storage/angleBForecast';
 import { GLEntryRepository } from '../storage/glEntry';
 import { OrderForecastRepository } from '../storage/orderForecast';
 import { ProjectRepository } from '../storage/project';
@@ -19,7 +20,8 @@ export class OrderForecastService {
     private orderForecastRepository: OrderForecastRepository,
     private projectRepository: ProjectRepository,
     private glEntryRepository: GLEntryRepository,
-    private accountingItemRepository: AccountingItemRepository
+    private accountingItemRepository: AccountingItemRepository,
+    private angleBForecastRepository: AngleBForecastRepository
   ) {}
 
   /**
@@ -379,9 +381,10 @@ export class OrderForecastService {
    * 計上区分別月次サマリ取得
    * 
    * @param fiscalYear - 年度
+   * @param includeAngleB - 角度B案件を含めるかどうか
    * @returns 月次サマリレスポンス
    */
-  async getMonthlySummaryByAccountingItem(fiscalYear: number): Promise<MonthlySummaryResponse> {
+  async getMonthlySummaryByAccountingItem(fiscalYear: number, includeAngleB: boolean = false): Promise<MonthlySummaryResponse> {
     try {
       // 計上区分マスタから全15種類を取得（コード昇順）
       const accountingItems = await this.accountingItemRepository.findAll({
@@ -401,6 +404,17 @@ export class OrderForecastService {
       // order_forecastsから年度のデータを集計
       const monthlyData = await this.orderForecastRepository.getMonthlySummary(fiscalYear);
 
+      // 角度B案件データを取得（includeAngleBがtrueの場合）
+      let angleBData: Array<{
+        accounting_period: string;
+        accounting_item: string;
+        total_amount: string;
+      }> = [];
+      
+      if (includeAngleB) {
+        angleBData = await this.angleBForecastRepository.getMonthlySummary(fiscalYear);
+      }
+
       // 計上区分のマッピング定義
       const revenueCodes = ['511', '512', '513', '514', '515']; // 純売上
       const costOfSalesCodes = ['541', '1100', '1200', '1300', '1400']; // 売上原価
@@ -414,19 +428,40 @@ export class OrderForecastService {
 
       // データを月次・計上区分別に整理
       const dataMap = new Map<string, Map<string, number>>();
+      
+      // 受発注見込みデータを処理
       monthlyData.forEach(row => {
         const period = row.accounting_period;
         const item = row.accounting_item;
         const amount = parseFloat(row.total_amount);
 
-        // 計上区分がコードの場合は名称に変換
+        // 計上区分がコードの場合は名称に変換、既に名称の場合はそのまま使用
         const itemName = codeToNameMap.get(item) || item;
 
         if (!dataMap.has(period)) {
           dataMap.set(period, new Map());
         }
-        dataMap.get(period)!.set(itemName, amount);
+        const existingAmount = dataMap.get(period)!.get(itemName) || 0;
+        dataMap.get(period)!.set(itemName, existingAmount + amount);
       });
+
+      // 角度B案件データを処理（includeAngleBがtrueの場合）
+      if (includeAngleB) {
+        angleBData.forEach(row => {
+          const period = row.accounting_period;
+          const item = row.accounting_item;
+          const amount = parseFloat(row.total_amount);
+
+          // 角度B案件の計上科目は既に名称で格納されているため、そのまま使用
+          const itemName = item;
+
+          if (!dataMap.has(period)) {
+            dataMap.set(period, new Map());
+          }
+          const existingAmount = dataMap.get(period)!.get(itemName) || 0;
+          dataMap.get(period)!.set(itemName, existingAmount + amount);
+        });
+      }
 
       // AccountingItemMonthlySummary配列を作成
       const accountingItemSummaries: AccountingItemMonthlySummary[] = [];

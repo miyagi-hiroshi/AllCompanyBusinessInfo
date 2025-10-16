@@ -124,6 +124,40 @@ export class AngleBForecastRepository {
     return result.length > 0;
   }
 
+  /**
+   * 年度別月次サマリ取得
+   * 
+   * @param fiscalYear - 年度
+   * @returns 計上年月・計上科目ごとの金額集計
+   */
+  async getMonthlySummary(fiscalYear: number): Promise<Array<{
+    accounting_period: string;
+    accounting_item: string;
+    total_amount: string;
+  }>> {
+    // 年度の開始月（4月）から終了月（3月）までの期間を定義
+    const startYear = fiscalYear;
+    const endYear = fiscalYear + 1;
+    
+    const result = await db
+      .select({
+        accounting_period: angleBForecasts.accountingPeriod,
+        accounting_item: angleBForecasts.accountingItem,
+        total_amount: sql<string>`COALESCE(SUM(${angleBForecasts.amount}), 0)`
+      })
+      .from(angleBForecasts)
+      .where(
+        and(
+          sql`${angleBForecasts.accountingPeriod} >= ${`${startYear}-04`}`,
+          sql`${angleBForecasts.accountingPeriod} <= ${`${endYear}-03`}`
+        )
+      )
+      .groupBy(angleBForecasts.accountingPeriod, angleBForecasts.accountingItem)
+      .orderBy(angleBForecasts.accountingPeriod, angleBForecasts.accountingItem);
+
+    return result;
+  }
+
   private buildWhereConditions(filter?: AngleBForecastFilter) {
     if (!filter) {
       return undefined;

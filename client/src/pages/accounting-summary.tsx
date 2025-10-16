@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import {
   Table,
   TableBody,
@@ -24,9 +25,10 @@ const FISCAL_YEARS = [2023, 2024, 2025, 2026];
 
 export default function AccountingSummaryPage() {
   const [selectedYear, setSelectedYear] = useState<number>(2025);
+  const [includeAngleB, setIncludeAngleB] = useState<boolean>(false);
 
   // 月次サマリデータ取得
-  const { data: summaryData, isLoading } = useAccountingSummary(selectedYear);
+  const { data: summaryData, isLoading } = useAccountingSummary(selectedYear, includeAngleB);
 
   // 数値フォーマット関数
   const formatCurrency = (value: number) => {
@@ -122,20 +124,35 @@ export default function AccountingSummaryPage() {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <BarChart3 className="h-5 w-5 text-primary" />
-            <h1 className="text-xl font-bold">{selectedYear}年度 計上区分別月次サマリ</h1>
+            <h1 className="text-xl font-bold">
+              {selectedYear}年度 計上区分別月次サマリ
+              {includeAngleB ? "（受発注見込み+角度B）" : "（受発注見込みのみ）"}
+            </h1>
           </div>
-          <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(Number(value))}>
-            <SelectTrigger className="w-[120px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {FISCAL_YEARS.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}年度
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="include-angle-b"
+                checked={includeAngleB}
+                onCheckedChange={setIncludeAngleB}
+              />
+              <label htmlFor="include-angle-b" className="text-sm font-medium">
+                角度B案件を含める
+              </label>
+            </div>
+            <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(Number(value))}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {FISCAL_YEARS.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}年度
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* データテーブル */}

@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { requireAuth } from '../middleware/auth';
 import { OrderForecastService } from '../services/orderForecastService';
 import { AccountingItemRepository } from '../storage/accountingItem';
+import { AngleBForecastRepository } from '../storage/angleBForecast';
 import { GLEntryRepository } from '../storage/glEntry';
 import { OrderForecastRepository } from '../storage/orderForecast';
 import { ProjectRepository } from '../storage/project';
@@ -14,7 +15,8 @@ const orderForecastRepository = new OrderForecastRepository();
 const projectRepository = new ProjectRepository();
 const glEntryRepository = new GLEntryRepository();
 const accountingItemRepository = new AccountingItemRepository();
-const orderForecastService = new OrderForecastService(orderForecastRepository, projectRepository, glEntryRepository, accountingItemRepository);
+const angleBForecastRepository = new AngleBForecastRepository();
+const orderForecastService = new OrderForecastService(orderForecastRepository, projectRepository, glEntryRepository, accountingItemRepository, angleBForecastRepository);
 
 // 受発注データ作成スキーマ
 const createOrderForecastSchema = insertOrderForecastSchema;
@@ -166,7 +168,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
  */
 router.get('/monthly-summary', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { fiscalYear } = req.query;
+    const { fiscalYear, includeAngleB } = req.query;
     
     if (!fiscalYear || isNaN(Number(fiscalYear))) {
       return res.status(400).json({
@@ -175,7 +177,8 @@ router.get('/monthly-summary', requireAuth, async (req: Request, res: Response) 
       });
     }
 
-    const summary = await orderForecastService.getMonthlySummaryByAccountingItem(Number(fiscalYear));
+    const includeAngleBFlag = includeAngleB === 'true';
+    const summary = await orderForecastService.getMonthlySummaryByAccountingItem(Number(fiscalYear), includeAngleBFlag);
     
     res.json({
       success: true,

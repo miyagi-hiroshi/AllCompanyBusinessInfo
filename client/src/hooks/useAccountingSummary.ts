@@ -21,13 +21,13 @@ export interface AccountingSummaryResponse {
   };
 }
 
-export function useAccountingSummary(fiscalYear: number) {
+export function useAccountingSummary(fiscalYear: number, includeAngleB: boolean = false) {
   return useQuery<AccountingSummaryResponse>({
-    queryKey: ['/api/order-forecasts/monthly-summary', fiscalYear],
+    queryKey: ['/api/order-forecasts/monthly-summary', fiscalYear, includeAngleB],
     queryFn: async () => {
       const res = await apiRequest(
         "GET",
-        `/api/order-forecasts/monthly-summary?fiscalYear=${fiscalYear}`,
+        `/api/order-forecasts/monthly-summary?fiscalYear=${fiscalYear}&includeAngleB=${includeAngleB}`,
         undefined
       );
       return await res.json();
