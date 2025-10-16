@@ -38,3 +38,4 @@ export const createProjectAnalysisSummarySchema = z.object({
  * プロジェクト分析サマリー型（Zodスキーマから生成）
  */
 export type ProjectAnalysisSummaryType = z.infer<typeof createProjectAnalysisSummarySchema>;
+

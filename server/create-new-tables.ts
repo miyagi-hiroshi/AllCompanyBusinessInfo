@@ -52,6 +52,7 @@ async function createNewTables() {
         fiscal_year INTEGER NOT NULL,
         service_type TEXT NOT NULL,
         budget_amount DECIMAL(14, 2) NOT NULL,
+        remarks TEXT,
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         UNIQUE(fiscal_year, service_type)
       )
@@ -67,6 +68,7 @@ async function createNewTables() {
         fiscal_year INTEGER NOT NULL,
         accounting_item TEXT NOT NULL,
         budget_amount DECIMAL(14, 2) NOT NULL,
+        remarks TEXT,
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         UNIQUE(fiscal_year, accounting_item)
       )
@@ -74,7 +76,24 @@ async function createNewTables() {
     console.log('✅ budgets_expense テーブルを作成');
     
     // ========================================
-    // 4. 配員計画テーブル
+    // 4. 目標値予算テーブル
+    // ========================================
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS app.budgets_target (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        fiscal_year INTEGER NOT NULL,
+        service_type TEXT NOT NULL,
+        analysis_type TEXT NOT NULL,
+        target_value DECIMAL(14, 2) NOT NULL,
+        remarks TEXT,
+        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+        UNIQUE(fiscal_year, service_type, analysis_type)
+      )
+    `);
+    console.log('✅ budgets_target テーブルを作成');
+    
+    // ========================================
+    // 5. 配員計画テーブル
     // ========================================
     await pool.query(`
       CREATE TABLE IF NOT EXISTS app.staffing (
@@ -121,6 +140,18 @@ async function createNewTables() {
       CREATE INDEX IF NOT EXISTS idx_budgets_expense_fiscal_year 
       ON app.budgets_expense(fiscal_year)
     `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_budgets_target_fiscal_year 
+      ON app.budgets_target(fiscal_year)
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_budgets_target_service_type 
+      ON app.budgets_target(service_type)
+    `);
+    await pool.query(`
+      CREATE INDEX IF NOT EXISTS idx_budgets_target_analysis_type 
+      ON app.budgets_target(analysis_type)
+    `);
     console.log('✅ budgets のインデックスを作成');
     
     // 配員計画のインデックス
@@ -143,6 +174,7 @@ async function createNewTables() {
     console.log('  - app.angle_b_forecasts (角度B案件)');
     console.log('  - app.budgets_revenue (売上予算)');
     console.log('  - app.budgets_expense (販管費予算)');
+    console.log('  - app.budgets_target (目標値予算)');
     console.log('  - app.staffing (配員計画)');
     
   } catch (error: any) {

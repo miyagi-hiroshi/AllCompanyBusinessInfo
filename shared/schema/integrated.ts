@@ -5,6 +5,7 @@ import * as accountingItems from "./accountingItem";
 import * as angleBForecasts from "./angleBForecast";
 import * as budgetsExpense from "./budgetExpense";
 import * as budgetsRevenue from "./budgetRevenue";
+import * as budgetsTarget from "./budgetTarget";
 // import * as businessRelations from "./business/relations"; // 未使用のためコメントアウト
 // 新規業務データスキーマ
 import * as customers from "./customer";
@@ -35,6 +36,7 @@ export const schema = {
   ...angleBForecasts,
   ...budgetsRevenue,
   ...budgetsExpense,
+  ...budgetsTarget,
   ...staffing,
 };
 
@@ -46,6 +48,7 @@ export * from "./accountingItem";
 export * from "./angleBForecast";
 export * from "./budgetExpense";
 export * from "./budgetRevenue";
+export * from "./budgetTarget";
 export * from "./customer";
 export * from "./glEntry";
 export * from "./item";
@@ -95,6 +98,9 @@ export const selectBudgetRevenueSchema = createSelectSchema(budgetsRevenue.budge
 
 export const insertBudgetExpenseSchema = createInsertSchema(budgetsExpense.budgetsExpense);
 export const selectBudgetExpenseSchema = createSelectSchema(budgetsExpense.budgetsExpense);
+
+export const insertBudgetTargetSchema = createInsertSchema(budgetsTarget.budgetsTarget);
+export const selectBudgetTargetSchema = createSelectSchema(budgetsTarget.budgetsTarget);
 
 export const insertStaffingSchema = createInsertSchema(staffing.staffing).extend({
   workHours: z.union([z.string(), z.number().transform(String)]),
@@ -157,6 +163,11 @@ export type BudgetExpense = z.infer<typeof selectBudgetExpenseSchema>;
 export type NewBudgetExpense = z.infer<typeof insertBudgetExpenseSchema>;
 export type CreateBudgetExpenseData = z.infer<typeof insertBudgetExpenseSchema>;
 export type UpdateBudgetExpenseData = Partial<CreateBudgetExpenseData>;
+
+export type BudgetTarget = z.infer<typeof selectBudgetTargetSchema>;
+export type NewBudgetTarget = z.infer<typeof insertBudgetTargetSchema>;
+export type CreateBudgetTargetData = z.infer<typeof insertBudgetTargetSchema>;
+export type UpdateBudgetTargetData = Partial<CreateBudgetTargetData>;
 
 export type Staffing = z.infer<typeof selectStaffingSchema>;
 export type NewStaffing = z.infer<typeof insertStaffingSchema>;
@@ -235,6 +246,12 @@ export type BudgetRevenueFilter = {
 export type BudgetExpenseFilter = {
   fiscalYear?: number;
   accountingItem?: string;
+};
+
+export type BudgetTargetFilter = {
+  fiscalYear?: number;
+  serviceType?: string;
+  analysisType?: string;
 };
 
 export type StaffingFilter = {

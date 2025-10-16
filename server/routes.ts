@@ -7,6 +7,7 @@ import auditRoutes from "./routes/audit";
 import authRoutes from "./routes/auth";
 import budgetsExpenseRoutes from "./routes/budgetsExpense";
 import budgetsRevenueRoutes from "./routes/budgetsRevenue";
+import budgetsTargetRoutes from "./routes/budgetsTarget";
 import customersRoutes from "./routes/customers";
 import employeesRoutes from "./routes/employees";
 import glEntriesRoutes from "./routes/glEntries";
@@ -34,6 +35,7 @@ export function registerRoutes(app: Express): Server {
   app.use('/api/items', itemsRoutes);
   app.use('/api/budgets/revenue', budgetsRevenueRoutes);
   app.use('/api/budgets/expense', budgetsExpenseRoutes);
+  app.use('/api/budgets/target', budgetsTargetRoutes);
   app.use('/api/staffing', staffingRoutes);
   
   // Existing System Data APIs

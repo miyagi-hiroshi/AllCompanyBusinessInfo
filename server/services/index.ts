@@ -40,3 +40,6 @@ export { BudgetExpenseService } from './budgetExpenseService';
 // 配員計画管理サービス
 export { StaffingService } from './staffingService';
 
+// 目標値予算管理サービス
+export { BudgetTargetService } from './budgetTargetService';
+

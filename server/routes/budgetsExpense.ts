@@ -119,6 +119,16 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
         errors: error.errors,
       });
     }
+    
+    // PostgreSQLの一意制約違反エラーの場合
+    if (error instanceof Error && error.message.includes('duplicate key value')) {
+      const data = createBudgetExpenseSchema.parse(req.body);
+      return res.status(409).json({
+        success: false,
+        message: `${data.fiscalYear}年度の${data.accountingItem}の販管費予算は既に登録されています。`,
+      });
+    }
+    
     console.error('販管費予算作成エラー:', error);
     res.status(500).json({
       success: false,

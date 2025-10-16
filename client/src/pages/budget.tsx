@@ -1,4 +1,4 @@
-import type { BudgetExpense, BudgetRevenue, NewBudgetExpense, NewBudgetRevenue } from "@shared/schema";
+import type { BudgetExpense, BudgetRevenue, BudgetTarget, NewBudgetExpense, NewBudgetRevenue, NewBudgetTarget } from "@shared/schema";
 import { DollarSign, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
@@ -12,6 +12,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -41,6 +42,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { useAccountingItems } from "@/hooks/useAccountingItems";
 import {
   useBudgetsExpense,
   useCreateBudgetExpense,
@@ -53,6 +55,12 @@ import {
   useDeleteBudgetRevenue,
   useUpdateBudgetRevenue,
 } from "@/hooks/useBudgetsRevenue";
+import {
+  useBudgetsTarget,
+  useCreateBudgetTarget,
+  useDeleteBudgetTarget,
+  useUpdateBudgetTarget,
+} from "@/hooks/useBudgetsTarget";
 import { useToast } from "@/hooks/useToast";
 
 const SERVICE_TYPES = [
@@ -62,14 +70,7 @@ const SERVICE_TYPES = [
   "リセール",
 ];
 
-const EXPENSE_ITEMS = [
-  "人件費",
-  "外注費",
-  "交通費",
-  "通信費",
-  "消耗品費",
-  "その他販管費",
-];
+const ANALYSIS_TYPES = ["生産性", "粗利"] as const;
 
 const FISCAL_YEARS = [2023, 2024, 2025, 2026];
 
@@ -101,9 +102,28 @@ export default function BudgetPage() {
     remarks: "",
   });
 
+  // Target budget states
+  const [targetDialogOpen, setTargetDialogOpen] = useState(false);
+  const [targetEditMode, setTargetEditMode] = useState(false);
+  const [selectedTarget, setSelectedTarget] = useState<BudgetTarget | null>(null);
+  const [targetDeleteOpen, setTargetDeleteOpen] = useState(false);
+  const [targetFormData, setTargetFormData] = useState<Partial<NewBudgetTarget>>({
+    fiscalYear: selectedYear,
+    serviceType: "",
+    analysisType: "生産性",
+    targetValue: "",
+    remarks: "",
+  });
+
   // Fetch budgets
   const { data: revenuebudgets = [], isLoading: revenueLoading } = useBudgetsRevenue({ fiscalYear: selectedYear });
   const { data: expenseBudgets = [], isLoading: expenseLoading } = useBudgetsExpense({ fiscalYear: selectedYear });
+  const { data: targetBudgets = [], isLoading: targetLoading } = useBudgetsTarget({ fiscalYear: selectedYear });
+  
+  // 計上科目マスタを取得（売上系コード510-519を除外）
+  const { data: accountingItems = { items: [], total: 0 }, isLoading: accountingItemsLoading } = useAccountingItems({ 
+    excludeRevenueCodes: true 
+  });
 
   // Revenue mutations
   const createRevenueMutation = useCreateBudgetRevenue();
@@ -115,8 +135,23 @@ export default function BudgetPage() {
   const updateExpenseMutation = useUpdateBudgetExpense();
   const deleteExpenseMutation = useDeleteBudgetExpense();
 
+  // Target mutations
+  const createTargetMutation = useCreateBudgetTarget();
+  const updateTargetMutation = useUpdateBudgetTarget();
+  const deleteTargetMutation = useDeleteBudgetTarget();
+
   const formatCurrency = (value: string | number) => {
     return `¥${Number(value).toLocaleString()}`;
+  };
+
+  const formatTargetValue = (value: string | number, analysisType: string) => {
+    const numValue = Number(value);
+    if (analysisType === "生産性") {
+      return `${numValue.toFixed(2)}/人月`;
+    } else if (analysisType === "粗利") {
+      return `¥${numValue.toLocaleString()}`;
+    }
+    return numValue.toString();
   };
 
   // Revenue handlers
@@ -186,10 +221,11 @@ export default function BudgetPage() {
           });
           setRevenueDialogOpen(false);
         },
-        onError: () => {
+        onError: (error: any) => {
+          const errorMessage = error?.message || "売上予算の作成に失敗しました";
           toast({
             title: "エラー",
-            description: "売上予算の作成に失敗しました",
+            description: errorMessage,
             variant: "destructive",
           });
         },
@@ -264,14 +300,14 @@ export default function BudgetPage() {
           onSuccess: () => {
             toast({
               title: "更新完了",
-              description: "販管費予算を更新しました",
+              description: "原価・販管費予算を更新しました",
             });
             setExpenseDialogOpen(false);
           },
           onError: () => {
             toast({
               title: "エラー",
-              description: "販管費予算の更新に失敗しました",
+              description: "原価・販管費予算の更新に失敗しました",
               variant: "destructive",
             });
           },
@@ -282,14 +318,15 @@ export default function BudgetPage() {
         onSuccess: () => {
           toast({
             title: "作成完了",
-            description: "販管費予算を作成しました",
+            description: "原価・販管費予算を作成しました",
           });
           setExpenseDialogOpen(false);
         },
-        onError: () => {
+        onError: (error: any) => {
+          const errorMessage = error?.message || "原価・販管費予算の作成に失敗しました";
           toast({
             title: "エラー",
-            description: "販管費予算の作成に失敗しました",
+            description: errorMessage,
             variant: "destructive",
           });
         },
@@ -303,7 +340,7 @@ export default function BudgetPage() {
         onSuccess: () => {
           toast({
             title: "削除完了",
-            description: "販管費予算を削除しました",
+            description: "原価・販管費予算を削除しました",
           });
           setExpenseDeleteOpen(false);
           setSelectedExpense(null);
@@ -311,7 +348,165 @@ export default function BudgetPage() {
         onError: () => {
           toast({
             title: "エラー",
-            description: "販管費予算の削除に失敗しました",
+            description: "原価・販管費予算の削除に失敗しました",
+            variant: "destructive",
+          });
+        },
+      });
+    }
+  };
+
+  // Target handlers
+  const openTargetCreateDialog = () => {
+    setTargetEditMode(false);
+    setSelectedTarget(null);
+    setTargetFormData({
+      fiscalYear: selectedYear,
+      serviceType: "",
+      analysisType: "生産性",
+      targetValue: "",
+      remarks: "",
+    });
+    setTargetDialogOpen(true);
+  };
+
+  const openTargetEditDialog = (budget: BudgetTarget) => {
+    setTargetEditMode(true);
+    setSelectedTarget(budget);
+    setTargetFormData({
+      fiscalYear: budget.fiscalYear,
+      serviceType: budget.serviceType,
+      analysisType: budget.analysisType,
+      targetValue: budget.targetValue,
+      remarks: budget.remarks || "",
+    });
+    setTargetDialogOpen(true);
+  };
+
+  const handleTargetSave = () => {
+    if (!targetFormData.serviceType || !targetFormData.analysisType || !targetFormData.targetValue) {
+      toast({
+        title: "入力エラー",
+        description: "サービス区分、分析区分、目標値を入力してください",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // 目標値の桁数チェック
+    const targetValue = parseFloat(targetFormData.targetValue);
+    if (isNaN(targetValue)) {
+      toast({
+        title: "入力エラー",
+        description: "目標値は数値で入力してください",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // 分析区分に応じたバリデーション
+    if (targetFormData.analysisType === "生産性") {
+      if (targetValue > 999.99) {
+        toast({
+          title: "入力エラー",
+          description: "生産性の目標値は999.99以下で入力してください",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // 小数部分が2桁を超えていないかチェック
+      const targetValueStr = targetFormData.targetValue;
+      const [, decimalPart] = targetValueStr.includes('.') ? targetValueStr.split('.') : [targetValueStr, ''];
+      
+      if (decimalPart.length > 2) {
+        toast({
+          title: "入力エラー",
+          description: "生産性の目標値の小数部分は2桁まで入力できます",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else if (targetFormData.analysisType === "粗利") {
+      if (!Number.isInteger(targetValue)) {
+        toast({
+          title: "入力エラー",
+          description: "粗利の目標値は整数で入力してください",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      if (targetValue > 999999999999) {
+        toast({
+          title: "入力エラー",
+          description: "粗利の目標値は999,999,999,999以下で入力してください",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    if (targetEditMode && selectedTarget) {
+      updateTargetMutation.mutate(
+        {
+          id: selectedTarget.id,
+          data: targetFormData as NewBudgetTarget,
+        },
+        {
+          onSuccess: () => {
+            toast({
+              title: "更新完了",
+              description: "目標値予算を更新しました",
+            });
+            setTargetDialogOpen(false);
+          },
+          onError: (error: any) => {
+            const errorMessage = error?.message || "目標値予算の更新に失敗しました";
+            toast({
+              title: "エラー",
+              description: errorMessage,
+              variant: "destructive",
+            });
+          },
+        }
+      );
+    } else {
+      createTargetMutation.mutate(targetFormData as NewBudgetTarget, {
+        onSuccess: () => {
+          toast({
+            title: "作成完了",
+            description: "目標値予算を作成しました",
+          });
+          setTargetDialogOpen(false);
+        },
+        onError: (error: any) => {
+          const errorMessage = error?.message || "目標値予算の作成に失敗しました";
+          toast({
+            title: "エラー",
+            description: errorMessage,
+            variant: "destructive",
+          });
+        },
+      });
+    }
+  };
+
+  const handleTargetDelete = () => {
+    if (selectedTarget) {
+      deleteTargetMutation.mutate(selectedTarget.id, {
+        onSuccess: () => {
+          toast({
+            title: "削除完了",
+            description: "目標値予算を削除しました",
+          });
+          setTargetDeleteOpen(false);
+          setSelectedTarget(null);
+        },
+        onError: () => {
+          toast({
+            title: "エラー",
+            description: "目標値予算の削除に失敗しました",
             variant: "destructive",
           });
         },
@@ -349,7 +544,7 @@ export default function BudgetPage() {
             </Select>
           </div>
         </div>
-        <p className="text-muted-foreground mt-1">年度ごとの売上予算・販管費予算を管理します</p>
+        <p className="text-muted-foreground mt-1">年度ごとの売上予算・原価・販管費予算・目標値を管理します</p>
       </div>
 
       <Tabs defaultValue="revenue" className="w-full">
@@ -358,7 +553,10 @@ export default function BudgetPage() {
             売上予算
           </TabsTrigger>
           <TabsTrigger value="expense" data-testid="tab-expense">
-            販管費予算
+            原価・販管費予算
+          </TabsTrigger>
+          <TabsTrigger value="target" data-testid="tab-target">
+            目標値
           </TabsTrigger>
         </TabsList>
 
@@ -442,8 +640,8 @@ export default function BudgetPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle>販管費予算</CardTitle>
-                  <CardDescription>科目ごとの販管費予算を管理します</CardDescription>
+                  <CardTitle>原価・販管費予算</CardTitle>
+                  <CardDescription>科目ごとの原価・販管費予算を管理します</CardDescription>
                 </div>
                 <Button onClick={openExpenseCreateDialog} data-testid="button-create-expense">
                   <Plus className="w-4 h-4 mr-2" />
@@ -455,7 +653,7 @@ export default function BudgetPage() {
               {expenseLoading ? (
                 <div className="text-center py-8 text-muted-foreground">読み込み中...</div>
               ) : expenseBudgets.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">販管費予算が登録されていません</div>
+                <div className="text-center py-8 text-muted-foreground">原価・販管費予算が登録されていません</div>
               ) : (
                 <Table>
                   <TableHeader>
@@ -496,6 +694,84 @@ export default function BudgetPage() {
                                 setExpenseDeleteOpen(true);
                               }}
                               data-testid={`button-delete-expense-${budget.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Target Budget Tab */}
+        <TabsContent value="target" className="mt-6">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>目標値</CardTitle>
+                  <CardDescription>サービス区分×分析区分ごとの目標値を管理します</CardDescription>
+                </div>
+                <Button onClick={openTargetCreateDialog} data-testid="button-create-target">
+                  <Plus className="w-4 h-4 mr-2" />
+                  新規作成
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {targetLoading ? (
+                <div className="text-center py-8 text-muted-foreground">読み込み中...</div>
+              ) : targetBudgets.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">目標値が登録されていません</div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>年度</TableHead>
+                      <TableHead>サービス区分</TableHead>
+                      <TableHead>分析区分</TableHead>
+                      <TableHead className="text-right">目標値</TableHead>
+                      <TableHead>備考</TableHead>
+                      <TableHead className="w-[100px]">操作</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {targetBudgets.map((budget) => (
+                      <TableRow key={budget.id} data-testid={`row-target-${budget.id}`}>
+                        <TableCell>{budget.fiscalYear}年度</TableCell>
+                        <TableCell>{budget.serviceType}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{budget.analysisType}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {formatTargetValue(budget.targetValue, budget.analysisType)}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {budget.remarks || "-"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openTargetEditDialog(budget)}
+                              data-testid={`button-edit-target-${budget.id}`}
+                            >
+                              <Pencil className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSelectedTarget(budget);
+                                setTargetDeleteOpen(true);
+                              }}
+                              data-testid={`button-delete-target-${budget.id}`}
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
@@ -586,8 +862,8 @@ export default function BudgetPage() {
       <Dialog open={expenseDialogOpen} onOpenChange={setExpenseDialogOpen}>
         <DialogContent data-testid="dialog-expense">
           <DialogHeader>
-            <DialogTitle>{expenseEditMode ? "販管費予算編集" : "販管費予算新規作成"}</DialogTitle>
-            <DialogDescription>販管費予算情報を入力してください</DialogDescription>
+            <DialogTitle>{expenseEditMode ? "原価・販管費予算編集" : "原価・販管費予算新規作成"}</DialogTitle>
+            <DialogDescription>原価・販管費予算情報を入力してください</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -612,11 +888,15 @@ export default function BudgetPage() {
                   <SelectValue placeholder="科目を選択" />
                 </SelectTrigger>
                 <SelectContent>
-                  {EXPENSE_ITEMS.map((item) => (
-                    <SelectItem key={item} value={item}>
-                      {item}
-                    </SelectItem>
-                  ))}
+                  {accountingItemsLoading ? (
+                    <SelectItem value="" disabled>読み込み中...</SelectItem>
+                  ) : (
+                    accountingItems.items.map((item) => (
+                      <SelectItem key={item.id} value={item.name}>
+                        {item.code} - {item.name}
+                      </SelectItem>
+                    ))
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -653,6 +933,102 @@ export default function BudgetPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Target Budget Dialog */}
+      <Dialog open={targetDialogOpen} onOpenChange={setTargetDialogOpen}>
+        <DialogContent data-testid="dialog-target">
+          <DialogHeader>
+            <DialogTitle>{targetEditMode ? "目標値予算編集" : "目標値予算新規作成"}</DialogTitle>
+            <DialogDescription>目標値予算情報を入力してください</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="target-fiscal-year">年度</Label>
+              <Input
+                id="target-fiscal-year"
+                type="number"
+                value={targetFormData.fiscalYear}
+                onChange={(e) =>
+                  setTargetFormData({ ...targetFormData, fiscalYear: parseInt(e.target.value) })
+                }
+                data-testid="input-target-fiscal-year"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="target-service-type">サービス区分</Label>
+              <Select
+                value={targetFormData.serviceType}
+                onValueChange={(value) => setTargetFormData({ ...targetFormData, serviceType: value })}
+              >
+                <SelectTrigger id="target-service-type" data-testid="select-target-service-type">
+                  <SelectValue placeholder="サービス区分を選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SERVICE_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="target-analysis-type">分析区分</Label>
+              <Select
+                value={targetFormData.analysisType}
+                onValueChange={(value) => setTargetFormData({ ...targetFormData, analysisType: value as "生産性" | "粗利" })}
+              >
+                <SelectTrigger id="target-analysis-type" data-testid="select-target-analysis-type">
+                  <SelectValue placeholder="分析区分を選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  {ANALYSIS_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="target-value">目標値</Label>
+              <Input
+                id="target-value"
+                type="number"
+                step={targetFormData.analysisType === "生産性" ? "0.01" : "1"}
+                max={targetFormData.analysisType === "生産性" ? 999.99 : 999999999999}
+                value={targetFormData.targetValue}
+                onChange={(e) => setTargetFormData({ ...targetFormData, targetValue: e.target.value })}
+                placeholder={targetFormData.analysisType === "生産性" ? "100.50" : "5000"}
+                data-testid="input-target-value"
+              />
+              <p className="text-xs text-muted-foreground">
+                {targetFormData.analysisType === "生産性" 
+                  ? "生産性: 999.99以下、小数部分2桁まで（例: 100.50/人月）" 
+                  : "粗利: 999,999,999,999以下の整数（例: ¥5,000）"}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="target-remarks">備考</Label>
+              <Textarea
+                id="target-remarks"
+                value={targetFormData.remarks || ""}
+                onChange={(e) => setTargetFormData({ ...targetFormData, remarks: e.target.value })}
+                placeholder="備考を入力"
+                data-testid="textarea-target-remarks"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTargetDialogOpen(false)} data-testid="button-cancel-target">
+              キャンセル
+            </Button>
+            <Button onClick={handleTargetSave} data-testid="button-submit-target">
+              {targetEditMode ? "更新" : "作成"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Revenue Delete Dialog */}
       <AlertDialog open={revenueDeleteOpen} onOpenChange={setRevenueDeleteOpen}>
         <AlertDialogContent data-testid="dialog-delete-revenue">
@@ -675,14 +1051,32 @@ export default function BudgetPage() {
       <AlertDialog open={expenseDeleteOpen} onOpenChange={setExpenseDeleteOpen}>
         <AlertDialogContent data-testid="dialog-delete-expense">
           <AlertDialogHeader>
-            <AlertDialogTitle>販管費予算を削除しますか？</AlertDialogTitle>
+            <AlertDialogTitle>原価・販管費予算を削除しますか？</AlertDialogTitle>
             <AlertDialogDescription>
-              この操作は取り消せません。販管費予算を完全に削除します。
+              この操作は取り消せません。原価・販管費予算を完全に削除します。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel data-testid="button-cancel-delete-expense">キャンセル</AlertDialogCancel>
             <AlertDialogAction onClick={handleExpenseDelete} data-testid="button-confirm-delete-expense">
+              削除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Target Delete Dialog */}
+      <AlertDialog open={targetDeleteOpen} onOpenChange={setTargetDeleteOpen}>
+        <AlertDialogContent data-testid="dialog-delete-target">
+          <AlertDialogHeader>
+            <AlertDialogTitle>目標値予算を削除しますか？</AlertDialogTitle>
+            <AlertDialogDescription>
+              この操作は取り消せません。目標値予算を完全に削除します。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete-target">キャンセル</AlertDialogCancel>
+            <AlertDialogAction onClick={handleTargetDelete} data-testid="button-confirm-delete-target">
               削除
             </AlertDialogAction>
           </AlertDialogFooter>
