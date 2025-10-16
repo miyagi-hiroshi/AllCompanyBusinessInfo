@@ -8,7 +8,8 @@
  */
 
 import { departments, employees, sessions,users } from '@shared/schema/existing';
-import { eq } from 'drizzle-orm';
+import { jobTypes } from '@shared/schema/job/tables';
+import { and, eq } from 'drizzle-orm';
 
 import { db } from '../../db';
 
@@ -107,4 +108,23 @@ export async function getExistingDepartments() {
     id: departments.id,
     name: departments.name,
   }).from(departments);
+}
+
+// エンジニア職種のアクティブな従業員一覧を取得
+export async function getEngineerEmployees() {
+  return await db.select({
+    id: employees.id,
+    employeeId: employees.employeeId,
+    firstName: employees.firstName,
+    lastName: employees.lastName,
+    departmentId: employees.departmentId,
+    status: employees.status,
+  })
+  .from(employees)
+  .leftJoin(jobTypes, eq(employees.jobTypeId, jobTypes.id))
+  .where(and(
+    eq(employees.status, 'active'),
+    eq(jobTypes.code, 'ENGINEER')
+  ))
+  .orderBy(employees.employeeId);
 }

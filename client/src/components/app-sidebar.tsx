@@ -1,4 +1,4 @@
-import { BarChart3, Building2, DollarSign, FileText, FileUp, FolderKanban, GitMerge, Home, LogOut, TrendingUp, User,Users } from "lucide-react";
+import { BarChart3, Building2, ClipboardCheck, DollarSign, FileText, FileUp, FolderKanban, GitMerge, Home, LogOut, TrendingUp, User,Users } from "lucide-react";
 import { useLocation } from "wouter";
 
 import { Button } from "@/components/ui/button";
@@ -53,6 +53,11 @@ const menuItems = {
       title: "要員山積み登録",
       url: "/staffing",
       icon: Users,
+    },
+    {
+      title: "工数入力チェック",
+      url: "/staffing-check",
+      icon: ClipboardCheck,
     },
     {
       title: "角度B案件登録",

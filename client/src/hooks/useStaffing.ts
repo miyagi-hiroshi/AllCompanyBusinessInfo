@@ -137,3 +137,27 @@ export function useBulkDeleteStaffing() {
   });
 }
 
+export interface StaffingCheckData {
+  employees: Array<{
+    employeeId: string;
+    employeeName: string;
+    monthlyHours: Array<{
+      month: number;
+      totalHours: number;
+    }>;
+    availableHours: number;
+  }>;
+  totalAvailableHours: number;
+}
+
+export function useStaffingCheck(fiscalYear: number) {
+  return useQuery<StaffingCheckData>({
+    queryKey: ["/api/staffing/check", fiscalYear],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/staffing/check?fiscalYear=${fiscalYear}`, undefined);
+      const result = await res.json();
+      return result.data;
+    },
+  });
+}
+

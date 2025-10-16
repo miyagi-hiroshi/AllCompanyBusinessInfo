@@ -96,6 +96,36 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
 });
 
 /**
+ * 工数入力チェックデータ取得API
+ * GET /api/staffing/check
+ */
+router.get('/check', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { fiscalYear } = req.query;
+    
+    if (!fiscalYear || isNaN(Number(fiscalYear))) {
+      return res.status(400).json({
+        success: false,
+        message: '年度パラメータが必要です',
+      });
+    }
+    
+    const checkData = await staffingService.getStaffingCheckData(Number(fiscalYear));
+    
+    res.json({
+      success: true,
+      data: checkData,
+    });
+  } catch (error) {
+    console.error('工数入力チェックデータ取得エラー:', error);
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : '工数入力チェックデータの取得中にエラーが発生しました',
+    });
+  }
+});
+
+/**
  * 配員計画詳細取得API
  * GET /api/staffing/:id
  */

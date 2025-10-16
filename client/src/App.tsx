@@ -20,6 +20,7 @@ import OrderForecastPage from "@/pages/order-forecast";
 import ProjectAnalysisPage from "@/pages/project-analysis";
 import ProjectsPage from "@/pages/projects";
 import StaffingPage from "@/pages/staffing";
+import StaffingCheckPage from "@/pages/staffing-check";
 
 import { queryClient } from "./lib/queryClient";
 
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/gl-reconciliation" component={GLReconciliationPage} />
       <Route path="/order-forecast" component={OrderForecastPage} />
       <Route path="/staffing" component={StaffingPage} />
+      <Route path="/staffing-check" component={StaffingCheckPage} />
       <Route path="/angle-b" component={AngleBPage} />
       <Route path="/budget" component={BudgetPage} />
       <Route path="/projects" component={ProjectsPage} />

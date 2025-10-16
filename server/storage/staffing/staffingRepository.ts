@@ -75,6 +75,38 @@ export class StaffingRepository {
     return result.length > 0;
   }
 
+  /**
+   * 指定年度の月別工数集計を取得
+   * 
+   * @param fiscalYear - 年度
+   * @returns 従業員ID、月、工数の集計データ
+   */
+  async getMonthlyAggregation(fiscalYear: number): Promise<Array<{
+    employeeId: string;
+    employeeName: string;
+    month: number;
+    totalHours: number;
+  }>> {
+    const result = await db
+      .select({
+        employeeId: staffing.employeeId,
+        employeeName: staffing.employeeName,
+        month: staffing.month,
+        totalHours: sql<number>`COALESCE(SUM(${staffing.workHours}::numeric), 0)`,
+      })
+      .from(staffing)
+      .where(eq(staffing.fiscalYear, fiscalYear))
+      .groupBy(staffing.employeeId, staffing.employeeName, staffing.month)
+      .orderBy(staffing.employeeId, staffing.month);
+
+    return result.map(row => ({
+      employeeId: row.employeeId!,
+      employeeName: row.employeeName,
+      month: row.month,
+      totalHours: parseFloat(row.totalHours.toString())
+    }));
+  }
+
   private buildWhereConditions(filter?: StaffingFilter) {
     if (!filter) {
       return undefined;
