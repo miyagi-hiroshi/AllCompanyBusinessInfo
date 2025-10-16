@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect,useState } from "react";
 
 import { useToast } from "@/hooks/useToast";
+import { authErrorHandler } from "@/lib/authErrorHandler";
 import { handleError,showErrorToast, showSuccessToast } from "@/lib/errorHandler";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -114,13 +115,7 @@ export function useAuth() {
   const { toast: _toast } = useToast(); // 未使用のためプレフィックス追加
   const queryClient = useQueryClient();
 
-  // 認証状態確認クエリ
-  const { data: currentUser, isLoading: isCheckingAuth } = useQuery({
-    queryKey: ["/api/auth/me"],
-    queryFn: authApi.getCurrentUser,
-    retry: false,
-    enabled: false, // 初回は認証チェックを実行しない
-  });
+  // 認証状態確認クエリは初回認証チェックで直接fetchを使用するため削除
 
   // ログインMutation
   const loginMutation = useMutation({
@@ -150,25 +145,36 @@ export function useAuth() {
     },
   });
 
+  // ログアウト処理の定義
+  const performLogout = () => {
+    setAuthState({
+      user: null,
+      employee: null,
+      isAuthenticated: false,
+      isLoading: false,
+      error: null,
+    });
+    // クエリキャッシュをクリアして認証状態をリセット
+    void queryClient.clear();
+    // ログアウト通知はauthErrorHandlerで表示されるため、ここでは表示しない
+  };
+
   // ログアウトMutation
   const logoutMutation = useMutation({
     mutationFn: authApi.logout,
     onSuccess: () => {
-      setAuthState({
-        user: null,
-        employee: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: null,
-      });
-      showSuccessToast("ログアウト完了", "正常にログアウトしました");
-      void queryClient.clear();
+      performLogout();
     },
     onError: (error) => {
       const appError = handleError(error, false);
       showErrorToast(appError);
     },
   });
+
+  // 認証エラーハンドラーにログアウトコールバックを設定
+  useEffect(() => {
+    authErrorHandler.setLogoutCallback(performLogout);
+  }, []);
 
   // 初回アクセス時の処理
   useEffect(() => {
@@ -214,26 +220,7 @@ export function useAuth() {
     void checkAuth();
   }, []);
 
-  // 認証状態の更新
-  useEffect(() => {
-    if (currentUser) {
-      setAuthState({
-        user: currentUser.user,
-        employee: currentUser.employee,
-        isAuthenticated: true,
-        isLoading: false,
-        error: null,
-      });
-    } else if (!isCheckingAuth) {
-      setAuthState({
-        user: null,
-        employee: null,
-        isAuthenticated: false,
-        isLoading: false,
-        error: null,
-      });
-    }
-  }, [currentUser, isCheckingAuth]);
+  // 認証状態の更新は初回認証チェックで直接処理するため削除
 
   // ログイン
   const login = (email: string, password: string) => {

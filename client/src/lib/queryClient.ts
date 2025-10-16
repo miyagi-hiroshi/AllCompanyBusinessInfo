@@ -1,7 +1,14 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+import { authErrorHandler } from "./authErrorHandler";
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
+    // 401エラーの場合は認証エラーハンドラーで処理
+    if (res.status === 401) {
+      authErrorHandler.handleResponseError(res);
+    }
+
     let errorMessage = res.statusText;
     try {
       const errorData = await res.json();
