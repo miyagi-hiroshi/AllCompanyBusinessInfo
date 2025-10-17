@@ -199,3 +199,6 @@ firebase-debug.*.log
 config/local.json
 config/local.yml
 config/local.yaml
+
+# Test data files
+testData.txt
