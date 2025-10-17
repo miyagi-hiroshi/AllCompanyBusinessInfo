@@ -1,4 +1,4 @@
-import { ErrorType, AppError } from "./errorHandler";
+import { AppError,ErrorType } from "./errorHandler";
 import { showErrorToast } from "./errorHandler";
 
 /**
@@ -47,7 +47,7 @@ export class AuthErrorHandler {
   private checkUnauthorizedError(error: unknown): boolean {
     // AppErrorの場合
     if (error && typeof error === 'object' && 'type' in error) {
-      const appError = error as { type: string; status?: number };
+      const appError = error as { type: ErrorType; status?: number };
       return appError.type === ErrorType.UNAUTHORIZED || appError.status === 401;
     }
 

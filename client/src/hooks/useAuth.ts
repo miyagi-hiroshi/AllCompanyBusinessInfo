@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect,useState } from "react";
 
 import { useToast } from "@/hooks/useToast";
@@ -161,7 +161,7 @@ export function useAuth() {
 
   // ログアウトMutation
   const logoutMutation = useMutation({
-    mutationFn: authApi.logout,
+    mutationFn: () => authApi.logout(),
     onSuccess: () => {
       performLogout();
     },
