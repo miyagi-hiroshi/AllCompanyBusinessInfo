@@ -67,8 +67,21 @@ export class DashboardService {
       const profitBudget = revenueBudget - expenseBudget;
       const profitActual = revenueActual - expenseActual;
 
+      // デバッグログ
+      console.log('ダッシュボードデータ計算:', {
+        fiscalYear,
+        revenueBudget,
+        revenueActual,
+        expenseBudget,
+        expenseActual,
+        profitBudget,
+        profitActual,
+        profitAchievementRate: profitBudget > 0 ? (profitActual / profitBudget) * 100 : 0
+      });
+
       // KPI指標計算
       const revenueAchievementRate = revenueBudget > 0 ? (revenueActual / revenueBudget) * 100 : 0;
+      const profitAchievementRate = profitBudget > 0 ? (profitActual / profitBudget) * 100 : 0;
       const profitMarginBudget = revenueBudget > 0 ? (profitBudget / revenueBudget) * 100 : 0;
       const profitMarginActual = revenueActual > 0 ? (profitActual / revenueActual) * 100 : 0;
       const varianceAmount = profitActual - profitBudget;
@@ -82,6 +95,7 @@ export class DashboardService {
         profitBudget,
         profitActual,
         revenueAchievementRate,
+        profitAchievementRate,
         profitMarginBudget,
         profitMarginActual,
         varianceAmount

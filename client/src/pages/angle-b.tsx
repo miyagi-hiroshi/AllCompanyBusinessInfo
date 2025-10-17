@@ -457,7 +457,7 @@ export default function AngleBPage() {
       </header>
 
       {/* Main Content - Data Grid */}
-      <main className="flex-1 overflow-hidden">
+      <main className="flex-1 overflow-hidden pb-16">
         <ExcelDataGrid
           columns={columns}
           rows={localRows}

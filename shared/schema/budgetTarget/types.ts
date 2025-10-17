@@ -36,6 +36,7 @@ export interface DashboardData {
   profitBudget: number;        // 利益（予算）
   profitActual: number;        // 利益（実績）
   revenueAchievementRate: number; // 売上達成率
+  profitAchievementRate: number;  // 利益達成率
   profitMarginBudget: number;  // 利益率（予算）
   profitMarginActual: number;  // 利益率（実績）
   varianceAmount: number;      // 差異金額

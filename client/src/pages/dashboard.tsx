@@ -23,11 +23,17 @@ export default function DashboardPage() {
   const { data: dashboardData, isLoading } = useDashboard(selectedYear);
 
   // 数値フォーマット関数
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: number | undefined) => {
+    if (value === undefined || isNaN(value)) {
+      return '¥0';
+    }
     return `¥${value.toLocaleString()}`;
   };
 
-  const formatPercentage = (value: number) => {
+  const formatPercentage = (value: number | undefined) => {
+    if (value === undefined || isNaN(value)) {
+      return '0.0%';
+    }
     return `${value.toFixed(1)}%`;
   };
 
@@ -42,8 +48,8 @@ export default function DashboardPage() {
           <Skeleton className="h-10 w-32" />
         </div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {Array.from({ length: 4 }).map((_, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-32" />
           ))}
         </div>
@@ -73,6 +79,14 @@ export default function DashboardPage() {
   }
 
   const data = dashboardData.data;
+
+  // デバッグログ
+  console.log('ダッシュボードデータ:', {
+    profitBudget: data.profitBudget,
+    profitActual: data.profitActual,
+    profitAchievementRate: data.profitAchievementRate,
+    calculatedRate: data.profitBudget > 0 ? (data.profitActual / data.profitBudget) * 100 : 0
+  });
 
   // グラフ用データ
   const chartData = [
@@ -116,7 +130,7 @@ export default function DashboardPage() {
       </div>
 
       {/* サマリーカード */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <DashboardSummaryCard
           title="売上"
           budgetAmount={data.revenueBudget}
@@ -130,14 +144,8 @@ export default function DashboardPage() {
           icon={<Users className="h-4 w-4 text-muted-foreground" />}
         />
         <DashboardSummaryCard
-          title="利益（予算）"
-          budgetAmount={0}
-          actualAmount={data.profitBudget}
-          icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
-        />
-        <DashboardSummaryCard
-          title="利益（実績）"
-          budgetAmount={0}
+          title="利益"
+          budgetAmount={data.profitBudget}
           actualAmount={data.profitActual}
           icon={<TrendingUp className="h-4 w-4 text-muted-foreground" />}
         />
@@ -159,22 +167,27 @@ export default function DashboardPage() {
                 </p>
               </div>
               <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">利益率（予算）</p>
+                <p className="text-sm font-medium text-muted-foreground">利益達成率</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  {formatPercentage(data.profitMarginBudget)}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">利益率（実績）</p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {formatPercentage(data.profitMarginActual)}
+                  {formatPercentage(data.profitAchievementRate)}
                 </p>
               </div>
               <div className="space-y-1">
                 <p className="text-sm font-medium text-muted-foreground">差異金額</p>
-                <p className={`text-2xl font-bold ${data.varianceAmount >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                <p className={`text-2xl font-bold ${(data.varianceAmount || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                   {formatCurrency(data.varianceAmount)}
                 </p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-muted-foreground">利益率</p>
+                <div className="space-y-1">
+                  <p className="text-lg font-bold text-blue-600">
+                    予算: {formatPercentage(data.profitMarginBudget)}
+                  </p>
+                  <p className="text-lg font-bold text-purple-600">
+                    実績: {formatPercentage(data.profitMarginActual)}
+                  </p>
+                </div>
               </div>
             </div>
           </CardContent>
@@ -189,3 +202,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+
