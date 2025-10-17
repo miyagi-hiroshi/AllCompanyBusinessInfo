@@ -7,6 +7,9 @@ async function throwIfResNotOk(res: Response) {
     // 401エラーの場合は認証エラーハンドラーで処理
     if (res.status === 401) {
       authErrorHandler.handleResponseError(res);
+      // 401エラーの場合は、エラーをthrowせずにreturnする
+      // authErrorHandlerがログアウト処理とリダイレクトを行う
+      return;
     }
 
     let errorMessage = res.statusText;
@@ -69,7 +72,14 @@ export const getQueryFn: <T>(options: {
       credentials: "include", // Cookieを送信
     });
 
-    if (unauthorizedBehavior === "returnNull" && res.status === 401) {
+    if (res.status === 401) {
+      // 401エラーの場合は認証エラーハンドラーで処理
+      authErrorHandler.handleResponseError(res);
+      
+      if (unauthorizedBehavior === "returnNull") {
+        return null;
+      }
+      // throwしない - authErrorHandlerがログアウト処理を行う
       return null;
     }
 
