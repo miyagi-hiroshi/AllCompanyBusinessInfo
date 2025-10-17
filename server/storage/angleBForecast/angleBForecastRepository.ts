@@ -208,6 +208,17 @@ export class AngleBForecastRepository {
       conditions.push(eq(angleBForecasts.customerCode, filter.customerCode));
     }
 
+    if (filter.fiscalYear) {
+      const startPeriod = `${filter.fiscalYear}-04`;
+      const endPeriod = `${filter.fiscalYear + 1}-03`;
+      conditions.push(
+        and(
+          sql`${angleBForecasts.accountingPeriod} >= ${startPeriod}`,
+          sql`${angleBForecasts.accountingPeriod} <= ${endPeriod}`
+        )
+      );
+    }
+
     if (filter.accountingPeriod) {
       conditions.push(eq(angleBForecasts.accountingPeriod, filter.accountingPeriod));
     }

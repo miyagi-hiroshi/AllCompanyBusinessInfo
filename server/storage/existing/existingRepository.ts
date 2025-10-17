@@ -9,7 +9,7 @@
 
 import { departments, employees, sessions,users } from '@shared/schema/existing';
 import { jobTypes } from '@shared/schema/job/tables';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, like } from 'drizzle-orm';
 
 import { db } from '../../db';
 
@@ -124,7 +124,7 @@ export async function getEngineerEmployees() {
   .leftJoin(jobTypes, eq(employees.jobTypeId, jobTypes.id))
   .where(and(
     eq(employees.status, 'active'),
-    eq(jobTypes.code, 'ENGINEER')
+    like(jobTypes.code, '%ENGINEER%')
   ))
   .orderBy(employees.employeeId);
 }

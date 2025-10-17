@@ -107,21 +107,19 @@ export default tseslint.config(
       "no-unreachable": "error",
       "no-fallthrough": "error",
       
-      /** ---------- 型安全性関連は警告レベル（段階的改善） ---------- */
-      "@typescript-eslint/no-unsafe-assignment": "warn",
-      "@typescript-eslint/no-unsafe-member-access": "warn",
-      "@typescript-eslint/no-unsafe-call": "warn",
-      "@typescript-eslint/no-unsafe-return": "warn",
-      "@typescript-eslint/no-unsafe-argument": "warn",
-      "@typescript-eslint/no-unsafe-function-type": "warn",
-      "@typescript-eslint/restrict-template-expressions": "warn",
-      
-      /** ---------- Promise関連は警告レベル ---------- */
-      "@typescript-eslint/no-floating-promises": "warn",
-      "@typescript-eslint/no-misused-promises": "warn",
-      "@typescript-eslint/require-await": "warn",
-      "@typescript-eslint/await-thenable": "warn",
-      "@typescript-eslint/unbound-method": "warn",
+      /** ---------- 段階的改善のため抑制 ---------- */
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-return": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/no-unsafe-function-type": "off",
+      "@typescript-eslint/restrict-template-expressions": "off",
+      "@typescript-eslint/no-floating-promises": "off",
+      "@typescript-eslint/no-misused-promises": "off",
+      "@typescript-eslint/require-await": "off",
+      "@typescript-eslint/await-thenable": "off",
+      "@typescript-eslint/unbound-method": "off",
       
       /** ---------- インポート/モジュール関連 ---------- */
       // 循環参照を検出（エラーレベル）

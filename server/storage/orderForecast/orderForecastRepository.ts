@@ -15,6 +15,7 @@ import { and, asc, count,desc, eq, inArray, like, or, sql } from 'drizzle-orm';
 import { db } from '../../db';
 
 export interface OrderForecastFilter {
+  fiscalYear?: number;
   search?: string;
   projectId?: string;
   projectCode?: string;
@@ -123,6 +124,17 @@ export class OrderForecastRepository {
       
       if (filter.customerName) {
         conditions.push(like(orderForecasts.customerName, `%${filter.customerName}%`));
+      }
+      
+      if (filter.fiscalYear) {
+        const startPeriod = `${filter.fiscalYear}-04`;
+        const endPeriod = `${filter.fiscalYear + 1}-03`;
+        conditions.push(
+          and(
+            sql`${orderForecasts.accountingPeriod} >= ${startPeriod}`,
+            sql`${orderForecasts.accountingPeriod} <= ${endPeriod}`
+          )
+        );
       }
       
       if (filter.accountingPeriod) {
@@ -329,6 +341,17 @@ export class OrderForecastRepository {
       
       if (filter.customerId) {
         conditions.push(eq(orderForecasts.customerId, filter.customerId));
+      }
+      
+      if (filter.fiscalYear) {
+        const startPeriod = `${filter.fiscalYear}-04`;
+        const endPeriod = `${filter.fiscalYear + 1}-03`;
+        conditions.push(
+          and(
+            sql`${orderForecasts.accountingPeriod} >= ${startPeriod}`,
+            sql`${orderForecasts.accountingPeriod} <= ${endPeriod}`
+          )
+        );
       }
       
       if (filter.accountingPeriod) {

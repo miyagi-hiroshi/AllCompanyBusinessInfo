@@ -223,6 +223,7 @@ export type GLEntryFilter = {
 };
 
 export type AngleBForecastFilter = {
+  fiscalYear?: number;
   search?: string;
   projectId?: string;
   projectCode?: string;

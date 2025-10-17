@@ -41,7 +41,7 @@ export default function AngleBPage() {
     ...searchFilter,
   });
   const { data: customers = [], isLoading: customersLoading } = useCustomers();
-  const { data: projects = [], isLoading: projectsLoading } = useProjects();
+  const { data: projects = [], isLoading: projectsLoading } = useProjects(filter.fiscalYear);
   const { data: accountingItems = [], isLoading: accountingItemsLoading } = useAccountingItems();
 
   // Mutations

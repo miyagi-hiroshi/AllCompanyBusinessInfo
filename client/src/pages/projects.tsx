@@ -22,7 +22,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,6 +66,10 @@ export default function ProjectsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [copyDialogOpen, setCopyDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
 
   // Form states
   const [formData, setFormData] = useState<Partial<NewProject>>({
@@ -80,16 +83,23 @@ export default function ProjectsPage() {
     analysisType: "生産性",
   });
 
-  // Fetch projects
-  const { data: projects = [], isLoading } = useQuery<Project[]>({
-    queryKey: ["/api/projects", selectedYear],
+  // Fetch projects with pagination
+  const { data: projectsData, isLoading } = useQuery({
+    queryKey: ["/api/projects", selectedYear, currentPage, pageSize],
     queryFn: async () => {
-      const response = await apiRequest("GET", `/api/projects?fiscalYear=${selectedYear}`, undefined);
-      const result = await response.json();
-      // APIレスポンス: { success: true, data: { items: [...], total, page, limit } }
-      return result.data?.items || [];
+      const params = new URLSearchParams({
+        fiscalYear: selectedYear.toString(),
+        page: currentPage.toString(),
+        limit: pageSize.toString(),
+      });
+      const response = await apiRequest("GET", `/api/projects?${params}`, undefined);
+      return await response.json();
     },
   });
+
+  const projects = projectsData?.data?.items || [];
+  const totalCount = projectsData?.data?.total || 0;
+  const totalPages = projectsData?.data?.totalPages || 1;
 
   // Fetch customers for dropdown
   const { data: customers = [] } = useQuery<Customer[]>({
@@ -298,314 +308,373 @@ export default function ProjectsPage() {
   };
 
   return (
-    <div className="h-full p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold" data-testid="text-page-title">
-          年度別プロジェクトマスタ
-        </h1>
-        <p className="text-muted-foreground mt-1">
-          年度ごとのプロジェクト情報を管理します
-        </p>
-      </div>
-
-      {/* Filter and Actions */}
-      <div className="flex items-center gap-4 mb-6">
-        <div className="flex items-center gap-2">
-          <Label htmlFor="fiscal-year-filter">年度:</Label>
-          <Select
-            value={selectedYear.toString()}
-            onValueChange={(value) => setSelectedYear(parseInt(value))}
-          >
-            <SelectTrigger
-              id="fiscal-year-filter"
-              className="w-[150px]"
-              data-testid="select-fiscal-year"
-            >
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {FISCAL_YEARS.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}年度
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex-1" />
-
-        <Button
-          onClick={() => setCopyDialogOpen(true)}
-          variant="outline"
-          data-testid="button-copy-previous-year"
-        >
-          <Copy className="w-4 h-4 mr-2" />
-          前年度からコピー
-        </Button>
-
-        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button
-              onClick={() => {
-                resetForm();
-                setFormData((prev: Partial<NewProject>) => ({ ...prev, fiscalYear: selectedYear }));
+    <div className="flex flex-col h-screen">
+      {/* Header */}
+      <header className="flex items-center justify-between px-6 py-4 border-b bg-card/50 backdrop-blur-md sticky top-0 z-20">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl font-semibold" data-testid="text-page-title">
+              年度別プロジェクトマスタ
+            </h1>
+          </div>
+          <div className="h-6 w-px bg-border" />
+          <div className="flex items-center gap-2">
+            <Label htmlFor="fiscal-year-filter">年度:</Label>
+            <Select
+              value={selectedYear.toString()}
+              onValueChange={(value) => {
+                setSelectedYear(parseInt(value));
+                setCurrentPage(1); // ページをリセット
               }}
-              data-testid="button-create-project"
             >
-              <Plus className="w-4 h-4 mr-2" />
-              新規作成
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>プロジェクト新規作成</DialogTitle>
-              <DialogDescription>
-                新しいプロジェクトの情報を入力してください
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="create-fiscal-year" className="text-right">
-                  年度
-                </Label>
-                <Input
-                  id="create-fiscal-year"
-                  type="number"
-                  value={formData.fiscalYear}
-                  onChange={(e) =>
-                    setFormData({ ...formData, fiscalYear: parseInt(e.target.value) })
-                  }
-                  className="col-span-3"
-                  data-testid="input-fiscal-year"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="create-code" className="text-right">
-                  プロジェクトコード
-                </Label>
-                <Input
-                  id="create-code"
-                  value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value })}
-                  placeholder="P001"
-                  className="col-span-3"
-                  data-testid="input-code"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="create-name" className="text-right">
-                  プロジェクト名
-                </Label>
-                <Input
-                  id="create-name"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="プロジェクトA"
-                  className="col-span-3"
-                  data-testid="input-name"
-                />
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="create-customer" className="text-right">
-                  取引先
-                </Label>
-                <Select
-                  value={formData.customerId}
-                  onValueChange={handleCustomerChange}
-                >
-                  <SelectTrigger
-                    id="create-customer"
-                    className="col-span-3"
-                    data-testid="select-customer"
-                  >
-                    <SelectValue placeholder="取引先を選択" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {customers.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="create-sales-person" className="text-right">
-                  営業担当者
-                </Label>
-                <Select
-                  value={formData.salesPerson}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, salesPerson: value })
-                  }
-                >
-                  <SelectTrigger
-                    id="create-sales-person"
-                    className="col-span-3"
-                    data-testid="select-sales-person"
-                  >
-                    <SelectValue placeholder="営業担当者を選択" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {employees.map((employee) => (
-                      <SelectItem 
-                        key={employee.id} 
-                        value={`${employee.lastName}${employee.firstName}`}
-                      >
-                        {employee.lastName}{employee.firstName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="create-service-type" className="text-right">
-                  サービス
-                </Label>
-                <Select
-                  value={formData.serviceType}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, serviceType: value as ServiceType })
-                  }
-                >
-                  <SelectTrigger
-                    id="create-service-type"
-                    className="col-span-3"
-                    data-testid="select-service-type"
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SERVICE_TYPES.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="create-analysis-type" className="text-right">
-                  分析区分
-                </Label>
-                <Select
-                  value={formData.analysisType}
-                  onValueChange={(value) =>
-                    setFormData({ ...formData, analysisType: value as AnalysisType })
-                  }
-                >
-                  <SelectTrigger
-                    id="create-analysis-type"
-                    className="col-span-3"
-                    data-testid="select-analysis-type"
-                  >
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ANALYSIS_TYPES.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setCreateDialogOpen(false);
-                  resetForm();
-                }}
-                data-testid="button-cancel-create"
+              <SelectTrigger
+                id="fiscal-year-filter"
+                className="w-[150px]"
+                data-testid="select-fiscal-year"
               >
-                キャンセル
-              </Button>
-              <Button
-                onClick={handleCreate}
-                disabled={createMutation.isPending}
-                data-testid="button-submit-create"
-              >
-                {createMutation.isPending && (
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                )}
-                作成
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </div>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {FISCAL_YEARS.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}年度
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
 
-      {/* Projects Table */}
-      {isLoading ? (
-        <div className="flex items-center justify-center h-64">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={() => setCopyDialogOpen(true)}
+            variant="outline"
+            data-testid="button-copy-previous-year"
+          >
+            <Copy className="w-4 h-4 mr-2" />
+            前年度からコピー
+          </Button>
+
+          <Button
+            onClick={() => {
+              resetForm();
+              setFormData((prev: Partial<NewProject>) => ({ ...prev, fiscalYear: selectedYear }));
+              setCreateDialogOpen(true);
+            }}
+            data-testid="button-create-project"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            新規作成
+          </Button>
         </div>
-      ) : (
-        <div className="border rounded-md">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>年度</TableHead>
-                <TableHead>コード</TableHead>
-                <TableHead>プロジェクト名</TableHead>
-                <TableHead>取引先</TableHead>
-                <TableHead>営業担当者</TableHead>
-                <TableHead>サービス</TableHead>
-                <TableHead>分析区分</TableHead>
-                <TableHead className="w-[100px]">操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {projects.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center text-muted-foreground">
-                    プロジェクトがありません
-                  </TableCell>
-                </TableRow>
-              ) : (
-                projects.map((project) => (
-                  <TableRow key={project.id} data-testid={`row-project-${project.id}`}>
-                    <TableCell>{project.fiscalYear}年度</TableCell>
-                    <TableCell className="font-mono">{project.code}</TableCell>
-                    <TableCell>{project.name}</TableCell>
-                    <TableCell>{project.customerName}</TableCell>
-                    <TableCell>{project.salesPerson}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{project.serviceType}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">{project.analysisType}</Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openEditDialog(project)}
-                          data-testid={`button-edit-${project.id}`}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openDeleteDialog(project)}
-                          data-testid={`button-delete-${project.id}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+      </header>
+
+      {/* Main Content - Projects Table */}
+      <main className="flex-1 overflow-hidden min-h-[500px] pb-16">
+        {isLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+          </div>
+        ) : (
+          <div className="h-full overflow-auto">
+            <div className="border rounded-md">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10">
+                  <TableRow>
+                    <TableHead>年度</TableHead>
+                    <TableHead>コード</TableHead>
+                    <TableHead>プロジェクト名</TableHead>
+                    <TableHead>取引先</TableHead>
+                    <TableHead>営業担当者</TableHead>
+                    <TableHead>サービス</TableHead>
+                    <TableHead>分析区分</TableHead>
+                    <TableHead className="w-[100px]">操作</TableHead>
                   </TableRow>
-                ))
+                </TableHeader>
+                <TableBody>
+                  {projects.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center text-muted-foreground">
+                        プロジェクトがありません
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    projects.map((project: Project) => (
+                      <TableRow key={project.id} data-testid={`row-project-${project.id}`}>
+                        <TableCell>{project.fiscalYear}年度</TableCell>
+                        <TableCell className="font-mono">{project.code}</TableCell>
+                        <TableCell>{project.name}</TableCell>
+                        <TableCell>{project.customerName}</TableCell>
+                        <TableCell>{project.salesPerson}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{project.serviceType}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">{project.analysisType}</Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openEditDialog(project)}
+                              data-testid={`button-edit-${project.id}`}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openDeleteDialog(project)}
+                              data-testid={`button-delete-${project.id}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
+      </main>
+
+      {/* Create Dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>プロジェクト新規作成</DialogTitle>
+            <DialogDescription>
+              新しいプロジェクトの情報を入力してください
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="create-fiscal-year" className="text-right">
+                年度
+              </Label>
+              <Input
+                id="create-fiscal-year"
+                type="number"
+                value={formData.fiscalYear}
+                onChange={(e) =>
+                  setFormData({ ...formData, fiscalYear: parseInt(e.target.value) })
+                }
+                className="col-span-3"
+                data-testid="input-fiscal-year"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="create-code" className="text-right">
+                プロジェクトコード
+              </Label>
+              <Input
+                id="create-code"
+                value={formData.code}
+                onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+                placeholder="P001"
+                className="col-span-3"
+                data-testid="input-code"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="create-name" className="text-right">
+                プロジェクト名
+              </Label>
+              <Input
+                id="create-name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                placeholder="プロジェクトA"
+                className="col-span-3"
+                data-testid="input-name"
+              />
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="create-customer" className="text-right">
+                取引先
+              </Label>
+              <Select
+                value={formData.customerId}
+                onValueChange={handleCustomerChange}
+              >
+                <SelectTrigger
+                  id="create-customer"
+                  className="col-span-3"
+                  data-testid="select-customer"
+                >
+                  <SelectValue placeholder="取引先を選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  {customers.map((customer) => (
+                    <SelectItem key={customer.id} value={customer.id}>
+                      {customer.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="create-sales-person" className="text-right">
+                営業担当者
+              </Label>
+              <Select
+                value={formData.salesPerson}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, salesPerson: value })
+                }
+              >
+                <SelectTrigger
+                  id="create-sales-person"
+                  className="col-span-3"
+                  data-testid="select-sales-person"
+                >
+                  <SelectValue placeholder="営業担当者を選択" />
+                </SelectTrigger>
+                <SelectContent>
+                  {employees.map((employee) => (
+                    <SelectItem 
+                      key={employee.id} 
+                      value={`${employee.lastName}${employee.firstName}`}
+                    >
+                      {employee.lastName}{employee.firstName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="create-service-type" className="text-right">
+                サービス
+              </Label>
+              <Select
+                value={formData.serviceType}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, serviceType: value as ServiceType })
+                }
+              >
+                <SelectTrigger
+                  id="create-service-type"
+                  className="col-span-3"
+                  data-testid="select-service-type"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {SERVICE_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="create-analysis-type" className="text-right">
+                分析区分
+              </Label>
+              <Select
+                value={formData.analysisType}
+                onValueChange={(value) =>
+                  setFormData({ ...formData, analysisType: value as AnalysisType })
+                }
+              >
+                <SelectTrigger
+                  id="create-analysis-type"
+                  className="col-span-3"
+                  data-testid="select-analysis-type"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ANALYSIS_TYPES.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setCreateDialogOpen(false);
+                resetForm();
+              }}
+              data-testid="button-cancel-create"
+            >
+              キャンセル
+            </Button>
+            <Button
+              onClick={handleCreate}
+              disabled={createMutation.isPending}
+              data-testid="button-submit-create"
+            >
+              {createMutation.isPending && (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               )}
-            </TableBody>
-          </Table>
+              作成
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Footer Status Bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t border-border px-6 py-2 flex items-center justify-between z-30">
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-muted-foreground">
+            全{totalCount}件中 {(currentPage - 1) * pageSize + 1}～{Math.min(currentPage * pageSize, totalCount)}件を表示
+          </span>
+          
+          {totalPages > 1 && (
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="h-7 px-2"
+              >
+                前へ
+              </Button>
+              
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="h-7 px-2"
+              >
+                次へ
+              </Button>
+              
+              <span className="ml-2 text-sm">{currentPage} / {totalPages}ページ</span>
+            </div>
+          )}
         </div>
-      )}
+        
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">表示件数:</span>
+          <select
+            value={pageSize}
+            onChange={(e) => {
+              setPageSize(Number(e.target.value));
+              setCurrentPage(1);
+            }}
+            className="h-7 text-sm border border-input bg-background px-2 rounded"
+          >
+            <option value="10">10件</option>
+            <option value="20">20件</option>
+            <option value="50">50件</option>
+            <option value="100">100件</option>
+          </select>
+        </div>
+      </div>
 
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>

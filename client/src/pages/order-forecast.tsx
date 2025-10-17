@@ -47,7 +47,7 @@ export default function OrderForecastPage() {
     month: filter.month,
   });
   const { data: customers = [], isLoading: customersLoading } = useCustomers();
-  const { data: projects = [], isLoading: projectsLoading } = useProjects();
+  const { data: projects = [], isLoading: projectsLoading } = useProjects(filter.fiscalYear);
   const { data: accountingItems = [], isLoading: accountingItemsLoading } = useAccountingItems();
 
   // Mutations

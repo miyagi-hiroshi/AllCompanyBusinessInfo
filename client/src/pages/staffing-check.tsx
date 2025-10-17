@@ -47,11 +47,30 @@ export default function StaffingCheckPage() {
 
   // セル色分けロジック
   const getCellColor = (hours: number, month: number): string => {
-    // 翌月以降のチェック（年度考慮: 4月=1, 5月=2, ... 3月=12）
-    const isFuture = month >= currentFiscalMonth + 1;
+    const currentYear = new Date().getFullYear();
+    const currentMonth = new Date().getMonth() + 1;
+    
+    // 選択された年度の判定
+    const currentFiscalYear = currentMonth >= 4 ? currentYear : currentYear - 1;
+    const isPastFiscalYear = selectedYear < currentFiscalYear;
+    const isCurrentFiscalYear = selectedYear === currentFiscalYear;
+    const isFutureFiscalYear = selectedYear > currentFiscalYear;
+    
+    let isFuture = false;
+    
+    if (isPastFiscalYear) {
+      // 過去年度: 全ての月は過去
+      isFuture = false;
+    } else if (isFutureFiscalYear) {
+      // 未来年度: 全ての月は未来
+      isFuture = true;
+    } else if (isCurrentFiscalYear) {
+      // 現在年度: 現在の月より未来の月のみ
+      isFuture = month >= currentFiscalMonth + 1;
+    }
 
     if (!isFuture) {
-      return ''; // 当月以前は色分けなし
+      return ''; // 過去月は色分けなし
     }
 
     if (hours === 0) {

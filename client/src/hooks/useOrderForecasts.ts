@@ -17,6 +17,9 @@ export interface OrderForecastFilter {
 export function useOrderForecasts(filter: OrderForecastFilter) {
   const params = new URLSearchParams();
   
+  // 年度フィルタを追加（年度全体のデータを取得）
+  params.append("fiscalYear", filter.fiscalYear.toString());
+  
   // 会計年度と月から計上年月を生成してフィルタリング
   if (filter.month) {
     // 月が指定されている場合は、その月の計上年月で絞り込み

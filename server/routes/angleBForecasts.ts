@@ -53,6 +53,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     const [angleBForecasts, totalCount] = await Promise.all([
       angleBForecastRepository.findAll({
         filter: {
+          fiscalYear: query.fiscalYear,
           search: query.search,
           projectId: query.projectId,
           projectCode: query.projectCode,
@@ -73,6 +74,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
         sortOrder: query.sortOrder,
       }),
       angleBForecastRepository.count({
+        fiscalYear: query.fiscalYear,
         search: query.search,
         projectId: query.projectId,
         projectCode: query.projectCode,

@@ -36,11 +36,13 @@ export function useItems() {
   });
 }
 
-export function useProjects() {
+export function useProjects(fiscalYear?: number) {
   return useQuery<Project[]>({
-    queryKey: ["/api/projects"],
+    queryKey: ["/api/projects", fiscalYear],
     queryFn: async () => {
-      const res = await apiRequest("GET", "/api/projects", undefined);
+      // 件数制限を1000に設定して全件取得
+      const url = fiscalYear ? `/api/projects?fiscalYear=${fiscalYear}&limit=1000` : "/api/projects?limit=1000";
+      const res = await apiRequest("GET", url, undefined);
       const result = await res.json();
       return result.data?.items || [];
     },

@@ -26,6 +26,7 @@ const updateOrderForecastSchema = insertOrderForecastSchema.partial();
 
 // 受発注データ検索スキーマ
 const searchOrderForecastSchema = z.object({
+  fiscalYear: z.string().transform(Number).optional(),
   search: z.string().optional(),
   projectId: z.string().optional(),
   projectCode: z.string().optional(),
@@ -99,6 +100,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     const [orderForecasts, totalCount] = await Promise.all([
       orderForecastRepository.findAll({
         filter: {
+          fiscalYear: query.fiscalYear,
           search: query.search,
           projectId: query.projectId,
           projectCode: query.projectCode,
@@ -119,6 +121,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
         sortOrder: query.sortOrder,
       }),
       orderForecastRepository.count({
+        fiscalYear: query.fiscalYear,
         search: query.search,
         projectId: query.projectId,
         projectCode: query.projectCode,

@@ -80,7 +80,7 @@ export default function StaffingPage() {
   });
 
   // Fetch data
-  const { data: projects = [] } = useProjects();
+  const { data: projects = [] } = useProjects(selectedYear);
   const { data: employees = [] } = useEmployees();
   const { data: staffingData = [], isLoading } = useStaffing({
     projectId: selectedProjectIds.length > 0 ? selectedProjectIds : undefined,

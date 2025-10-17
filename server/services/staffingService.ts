@@ -78,10 +78,10 @@ export class StaffingService {
     // 指定年度の工数集計データを取得
     const aggregationData = await this.staffingRepository.getMonthlyAggregation(fiscalYear);
     
-    // 現在の月を取得（年度の月順序: 4月=1, 5月=2, ..., 3月=12）
+    // 現在の年月を取得
     const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
     const currentMonth = currentDate.getMonth() + 1; // 1-12
-    const currentFiscalMonth = currentMonth >= 4 ? currentMonth - 3 : currentMonth + 9; // 年度月に変換
     
     // 従業員ごとのデータを構築
     const employees = engineers.map(engineer => {
@@ -99,11 +99,33 @@ export class StaffingService {
         };
       });
       
-        // 空き工数を計算（翌月以降の月数 - 翌月以降の配置工数のサマリ）
+      // 選択された年度が現在年度か判定
+      // 現在が4月〜12月の場合: 現在年度 = currentYear, 過去年度 = < currentYear
+      // 現在が1月〜3月の場合: 現在年度 = currentYear - 1, 過去年度 = < currentYear - 1
+      const currentFiscalYear = currentMonth >= 4 ? currentYear : currentYear - 1;
+      const isCurrentFiscalYear = fiscalYear === currentFiscalYear;
+      const isPastFiscalYear = fiscalYear < currentFiscalYear;
+      const isFutureFiscalYear = fiscalYear > currentFiscalYear;
+      
+      
+      let availableHours = 0;
+      
+      if (isPastFiscalYear) {
+        // 過去年度: 空き工数は0
+        availableHours = 0;
+      } else if (isFutureFiscalYear) {
+        // 未来年度: 全ての月を空き工数として計算
+        const futureMonthsCount = 12;
+        const futureHoursSum = monthlyHours.reduce((sum, m) => sum + m.totalHours, 0);
+        availableHours = futureMonthsCount - futureHoursSum;
+      } else if (isCurrentFiscalYear) {
+        // 現在年度: 現在の月より未来の月のみを空き工数として計算
+        const currentFiscalMonth = currentMonth >= 4 ? currentMonth - 3 : currentMonth + 9;
         const futureMonths = monthlyHours.filter(m => m.month >= currentFiscalMonth + 1);
         const futureMonthsCount = futureMonths.length;
         const futureHoursSum = futureMonths.reduce((sum, m) => sum + m.totalHours, 0);
-        const availableHours = futureMonthsCount - futureHoursSum;
+        availableHours = futureMonthsCount - futureHoursSum;
+      }
       
       return {
         employeeId: engineer.employeeId,

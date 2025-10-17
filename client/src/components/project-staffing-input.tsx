@@ -60,7 +60,7 @@ export function ProjectStaffingInput() {
   const [staffingRows, setStaffingRows] = useState<StaffingRow[]>([]);
 
   // Fetch data
-  const { data: projects = [] } = useProjects();
+  const { data: projects = [] } = useProjects(selectedYear);
   const { data: employees = [] } = useEmployees();
   
   // 生産性プロジェクトのみをフィルタリング
