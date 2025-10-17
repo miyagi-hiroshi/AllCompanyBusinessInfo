@@ -107,6 +107,45 @@ export class StaffingRepository {
     }));
   }
 
+  /**
+   * プロジェクト分析サマリー用の配員計画データ一括集計
+   * 
+   * @param fiscalYear - 年度
+   * @param projectIds - プロジェクトIDリスト
+   * @returns プロジェクトID別の工数集計Map
+   */
+  async getProjectWorkHoursSummary(fiscalYear: number, projectIds: string[]): Promise<Map<string, number>> {
+    if (projectIds.length === 0) {
+      return new Map();
+    }
+
+    // 年度内の全プロジェクトの配員計画データを一括取得・集計
+    const result = await db
+      .select({
+        projectId: staffing.projectId,
+        totalWorkHours: sql<number>`COALESCE(SUM(${staffing.workHours}::numeric), 0)`
+      })
+      .from(staffing)
+      .where(
+        and(
+          inArray(staffing.projectId, projectIds),
+          eq(staffing.fiscalYear, fiscalYear)
+        )
+      )
+      .groupBy(staffing.projectId);
+
+    // プロジェクトID別の工数集計Mapを作成
+    const workHoursMap = new Map<string, number>();
+    
+    for (const row of result) {
+      if (row.projectId) {
+        workHoursMap.set(row.projectId, parseFloat(row.totalWorkHours.toString()));
+      }
+    }
+    
+    return workHoursMap;
+  }
+
   private buildWhereConditions(filter?: StaffingFilter) {
     if (!filter) {
       return undefined;

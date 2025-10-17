@@ -202,3 +202,4 @@ config/local.yaml
 
 # Test data files
 testData.txt
+testData-Yama.txt

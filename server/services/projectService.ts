@@ -310,14 +310,28 @@ export class ProjectService {
       // 年度のプロジェクト一覧取得
       const projects = await this.projectRepository.findByFiscalYear(fiscalYear);
       
-      // 目標値を取得
-      const budgetTargets = await this.budgetTargetRepository.findAll({
-        filter: { fiscalYear },
-        limit: undefined,
-        offset: 0,
-        sortBy: 'serviceType',
-        sortOrder: 'asc'
-      });
+      if (projects.length === 0) {
+        return [];
+      }
+
+      // プロジェクトIDリストを作成
+      const projectIds = projects.map(p => p.id);
+      
+      // 並列でデータを一括取得
+      const [budgetTargets, orderForecastSummary, workHoursSummary] = await Promise.all([
+        // 目標値を取得
+        this.budgetTargetRepository.findAll({
+          filter: { fiscalYear },
+          limit: undefined,
+          offset: 0,
+          sortBy: 'serviceType',
+          sortOrder: 'asc'
+        }),
+        // 受発注データ一括集計
+        this.orderForecastRepository.getProjectAnalysisSummary(fiscalYear, projectIds),
+        // 配員計画データ一括集計
+        this.staffingRepository.getProjectWorkHoursSummary(fiscalYear, projectIds)
+      ]);
       
       // Map作成: "サービス区分_分析区分" => 目標値
       const targetMap = new Map<string, number>();
@@ -328,51 +342,20 @@ export class ProjectService {
       
       const analysisSummaries: ProjectAnalysisSummary[] = [];
 
+      // プロジェクトごとにデータをマージ（DBアクセスなし）
       for (const project of projects) {
-        // 各プロジェクトの受発注データを集計
-        const orderForecasts = await this.orderForecastRepository.findAll({
-          filter: { projectId: project.id },
-          limit: undefined,
-          offset: 0,
-          sortBy: 'accountingPeriod',
-          sortOrder: 'asc'
-        });
-
-        // 計上科目名別に集計
-        let revenue = 0;      // 売上（保守売上、ソフト売上、商品売上、消耗品売上、その他売上）
-        let costOfSales = 0;  // 仕入高
-        let sgaExpenses = 0;  // 販管費（通信費、消耗品費、支払保守料、外注加工費、その他調整経費）
-
-        for (const order of orderForecasts) {
-          const amount = parseFloat(order.amount || '0');
-          const accountingItem = order.accountingItem;
-
-          if (accountingItem === '保守売上' || accountingItem === 'ソフト売上' || 
-              accountingItem === '商品売上' || accountingItem === '消耗品売上' || 
-              accountingItem === 'その他売上') {
-            revenue += amount;
-          } else if (accountingItem === '仕入高') {
-            costOfSales += amount;
-          } else if (accountingItem === '通信費' || accountingItem === '消耗品費' || 
-                     accountingItem === '支払保守料' || accountingItem === '外注加工費' || 
-                     accountingItem === 'その他調整経費') {
-            sgaExpenses += amount;
-          }
-        }
-
-        // 各プロジェクトの配員計画データ（山積み工数）を集計
-        const staffingData = await this.staffingRepository.findAll({
-          filter: { projectId: project.id, fiscalYear },
-          limit: undefined,
-          offset: 0,
-          sortBy: 'month',
-          sortOrder: 'asc'
-        });
-
-        const workHours = staffingData.reduce((sum, staff) => sum + parseFloat(staff.workHours || '0'), 0);
+        // 受発注データの集計結果を取得
+        const orderSummary = orderForecastSummary.get(project.id) || {
+          revenue: 0,
+          costOfSales: 0,
+          sgaExpenses: 0
+        };
+        
+        // 配員計画データの工数を取得
+        const workHours = workHoursSummary.get(project.id) || 0;
 
         // 分析区分別の計算
-        const grossProfit = revenue - costOfSales - sgaExpenses;
+        const grossProfit = orderSummary.revenue - orderSummary.costOfSales - orderSummary.sgaExpenses;
         const productivity = workHours > 0 ? grossProfit / workHours : 0;
 
         const summary: ProjectAnalysisSummary = {
@@ -381,9 +364,9 @@ export class ProjectService {
           name: project.name,
           serviceType: project.serviceType,
           analysisType: project.analysisType,
-          revenue,
-          costOfSales,
-          sgaExpenses,
+          revenue: orderSummary.revenue,
+          costOfSales: orderSummary.costOfSales,
+          sgaExpenses: orderSummary.sgaExpenses,
           workHours,
           ...(project.analysisType === '生産性' ? { productivity } : { grossProfit }),
           targetValue: targetMap.get(`${project.serviceType}_${project.analysisType}`)

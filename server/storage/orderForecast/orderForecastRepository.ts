@@ -10,7 +10,7 @@
 import type { NewOrderForecast,OrderForecast } from '@shared/schema/integrated';
 import { orderForecasts } from '@shared/schema/orderForecast';
 import { projects } from '@shared/schema/project';
-import { and, asc, count,desc, eq, like, or, sql } from 'drizzle-orm';
+import { and, asc, count,desc, eq, inArray, like, or, sql } from 'drizzle-orm';
 
 import { db } from '../../db';
 
@@ -405,5 +405,80 @@ export class OrderForecastRepository {
       .orderBy(orderForecasts.accountingPeriod, orderForecasts.accountingItem);
     
     return result;
+  }
+
+  /**
+   * プロジェクト分析サマリー用の受発注データ一括集計
+   * 
+   * @param fiscalYear - 年度
+   * @param projectIds - プロジェクトIDリスト
+   * @returns プロジェクトID別の集計データMap
+   */
+  async getProjectAnalysisSummary(fiscalYear: number, projectIds: string[]): Promise<Map<string, {
+    revenue: number;
+    costOfSales: number;
+    sgaExpenses: number;
+  }>> {
+    if (projectIds.length === 0) {
+      return new Map();
+    }
+
+    const startPeriod = `${fiscalYear}-04`;
+    const endPeriod = `${fiscalYear + 1}-03`;
+    
+    // 年度内の全プロジェクトの受発注データを一括取得・集計
+    const result = await db
+      .select({
+        projectId: orderForecasts.projectId,
+        accountingItem: orderForecasts.accountingItem,
+        totalAmount: sql<string>`COALESCE(SUM(${orderForecasts.amount}::numeric), 0)`
+      })
+      .from(orderForecasts)
+      .where(
+        and(
+          inArray(orderForecasts.projectId, projectIds),
+          sql`${orderForecasts.accountingPeriod} >= ${startPeriod}`,
+          sql`${orderForecasts.accountingPeriod} <= ${endPeriod}`
+        )
+      )
+      .groupBy(orderForecasts.projectId, orderForecasts.accountingItem);
+
+    // プロジェクトID別に集計
+    const summaryMap = new Map<string, { revenue: number; costOfSales: number; sgaExpenses: number }>();
+    
+    for (const row of result) {
+      if (!row.projectId) continue;
+      
+      if (!summaryMap.has(row.projectId)) {
+        summaryMap.set(row.projectId, {
+          revenue: 0,
+          costOfSales: 0,
+          sgaExpenses: 0
+        });
+      }
+      
+      const summary = summaryMap.get(row.projectId)!;
+      const amount = parseFloat(row.totalAmount);
+      const accountingItem = row.accountingItem;
+      
+      // 売上系（保守売上、ソフト売上、商品売上、消耗品売上、その他売上）
+      if (accountingItem === '保守売上' || accountingItem === 'ソフト売上' || 
+          accountingItem === '商品売上' || accountingItem === '消耗品売上' || 
+          accountingItem === 'その他売上') {
+        summary.revenue += amount;
+      }
+      // 仕入高
+      else if (accountingItem === '仕入高') {
+        summary.costOfSales += amount;
+      }
+      // 販管費（通信費、消耗品費、支払保守料、外注加工費、その他調整経費）
+      else if (accountingItem === '通信費' || accountingItem === '消耗品費' || 
+               accountingItem === '支払保守料' || accountingItem === '外注加工費' || 
+               accountingItem === 'その他調整経費') {
+        summary.sgaExpenses += amount;
+      }
+    }
+    
+    return summaryMap;
   }
 }
