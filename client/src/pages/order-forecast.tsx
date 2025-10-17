@@ -179,8 +179,8 @@ export default function OrderForecastPage() {
       required: true,
       autocompleteOptions: projects.map((p) => ({
         value: p.id,
-        label: p.name,
-        code: p.code,
+        label: p.code,
+        code: undefined, // codeをundefinedにして重複表示を防ぐ
       })),
     },
     {

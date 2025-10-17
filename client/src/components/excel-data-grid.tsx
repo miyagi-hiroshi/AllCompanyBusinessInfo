@@ -514,6 +514,8 @@ export function ExcelDataGrid({
       if (column.type === "autocomplete") {
         if (column.key.includes("customer") && row.customerName) {
           displayValue = row.customerName;
+        } else if (column.key === "projectId" && row.projectCode) {
+          displayValue = row.projectCode;
         } else if (column.key.includes("project") && row.projectName) {
           displayValue = row.projectName;
         } else if (column.key.includes("item") && row.itemName) {
@@ -682,6 +684,9 @@ export function ExcelDataGrid({
                 if (column.key.includes("customer")) {
                   updates.customerCode = option.code || "";
                   updates.customerName = option.label || "";
+                } else if (column.key === "projectId") {
+                  updates.projectCode = option.code || "";
+                  updates.projectName = option.label || "";
                 } else if (column.key.includes("project")) {
                   updates.projectCode = option.code || "";
                   updates.projectName = option.label || "";
@@ -705,7 +710,9 @@ export function ExcelDataGrid({
             />
           ) : (
             <div className="truncate">
-              {column.autocompleteOptions.find((opt) => opt.value === value)?.label || value}
+              {column.key === "projectId" && row.projectCode 
+                ? row.projectCode 
+                : column.autocompleteOptions.find((opt) => opt.value === value)?.label || value}
             </div>
           )}
         </td>
