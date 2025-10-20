@@ -54,7 +54,7 @@ import {
 import { useToast } from "@/hooks/useToast";
 
 const FISCAL_YEARS = [2023, 2024, 2025, 2026];
-const MONTHS = Array.from({ length: 12 }, (_, i) => i + 1);
+const MONTHS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3]; // 会計年度順（4月～3月）
 
 export default function StaffingPage() {
   const { toast } = useToast();
@@ -280,7 +280,7 @@ export default function StaffingPage() {
             employees={employees}
             staffingData={staffingData}
             isLoading={isLoading}
-            employeeTotals={employeeTotals}
+            _employeeTotals={employeeTotals}
             dialogOpen={dialogOpen}
             setDialogOpen={setDialogOpen}
             editMode={editMode}
@@ -322,7 +322,7 @@ function MonthlyStaffingInput({
   employees,
   staffingData,
   isLoading,
-  employeeTotals,
+  _employeeTotals,
   dialogOpen,
   setDialogOpen,
   editMode,
@@ -353,7 +353,7 @@ function MonthlyStaffingInput({
   employees: any[];
   staffingData: Staffing[];
   isLoading: boolean;
-  employeeTotals: Record<string, number>;
+  _employeeTotals: Record<string, number>;
   dialogOpen: boolean;
   setDialogOpen: (open: boolean) => void;
   editMode: boolean;
@@ -447,69 +447,57 @@ function MonthlyStaffingInput({
           ) : staffingData.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">配員計画が登録されていません</div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>プロジェクト</TableHead>
-                  <TableHead>従業員名</TableHead>
-                  <TableHead className="text-right">工数（人月）</TableHead>
-                  <TableHead>備考</TableHead>
-                  <TableHead className="w-[100px]">操作</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {staffingData.map((staff) => (
-                  <TableRow key={staff.id} data-testid={`row-staffing-${staff.id}`}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{staff.projectName}</div>
-                        <div className="text-sm text-muted-foreground">{staff.projectCode}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>{staff.employeeName}</TableCell>
-                    <TableCell className="text-right font-mono">{Number(staff.workHours).toFixed(2)}人月</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">{staff.remarks || "-"}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => openEditDialog(staff)}
-                          data-testid={`button-edit-${staff.id}`}
-                        >
-                          <Pencil className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            setSelectedStaffing(staff);
-                            setDeleteOpen(true);
-                          }}
-                          data-testid={`button-delete-${staff.id}`}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </TableCell>
+            <div className="max-h-[600px] overflow-y-auto">
+              <Table>
+                <TableHeader className="sticky top-0 bg-background z-10">
+                  <TableRow>
+                    <TableHead>プロジェクト</TableHead>
+                    <TableHead>従業員名</TableHead>
+                    <TableHead className="text-right">工数（人月）</TableHead>
+                    <TableHead>備考</TableHead>
+                    <TableHead className="w-[100px]">操作</TableHead>
                   </TableRow>
-                ))}
-                {Object.keys(employeeTotals).length > 0 && (
-                  <TableRow className="font-bold bg-muted/50">
-                    <TableCell>合計</TableCell>
-                    <TableCell colSpan={4}>
-                      <div className="flex gap-4">
-                        {Object.entries(employeeTotals).map(([name, hours]) => (
-                          <span key={name} className="text-sm">
-                            {name}: {hours.toFixed(2)}人月
-                          </span>
-                        ))}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {staffingData.map((staff) => (
+                    <TableRow key={staff.id} data-testid={`row-staffing-${staff.id}`}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{staff.projectName}</div>
+                          <div className="text-sm text-muted-foreground">{staff.projectCode}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>{staff.employeeName}</TableCell>
+                      <TableCell className="text-right font-mono">{Number(staff.workHours).toFixed(2)}人月</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{staff.remarks || "-"}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openEditDialog(staff)}
+                            data-testid={`button-edit-${staff.id}`}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setSelectedStaffing(staff);
+                              setDeleteOpen(true);
+                            }}
+                            data-testid={`button-delete-${staff.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

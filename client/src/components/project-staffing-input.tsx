@@ -398,9 +398,9 @@ export function ProjectStaffingInput() {
               データがありません。「行追加」ボタンで従業員を追加してください。
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="max-h-[600px] overflow-y-auto overflow-x-auto">
               <Table>
-                <TableHeader>
+                <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
                     <TableHead className="w-[150px]">従業員名</TableHead>
                     <TableHead className="w-[200px]">プロジェクト名</TableHead>
