@@ -82,14 +82,14 @@ export function ProjectStaffingInput() {
       // フィルタリング処理を追加
       let filteredStaffing = existingStaffing;
       
-      // 従業員でフィルタリング
+      // 従業員でフィルタリング（"all"の場合はフィルタリングしない）
       if (selectedEmployeeId && selectedEmployeeId !== "all") {
         filteredStaffing = filteredStaffing.filter(
           staff => staff.employeeId?.toString() === selectedEmployeeId
         );
       }
       
-      // プロジェクトでフィルタリング
+      // プロジェクトでフィルタリング（選択されていない場合はフィルタリングしない）
       if (selectedProjectIds.length > 0) {
         filteredStaffing = filteredStaffing.filter(
           staff => selectedProjectIds.includes(staff.projectId)

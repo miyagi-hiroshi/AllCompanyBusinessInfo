@@ -85,14 +85,13 @@ export class StaffingService {
     
     // 従業員ごとのデータを構築
     const employees = engineers.map(engineer => {
-      const employeeData = aggregationData.filter(data => data.employeeId === engineer.employeeId);
+      const employeeData = aggregationData.filter(data => data.employeeId === engineer.employeeId.toString());
       
       // 12ヶ月分のデータを初期化（4月=1, 5月=2, ..., 3月=12）
       const monthlyHours = Array.from({ length: 12 }, (_, index) => {
         const fiscalMonth = index + 1; // 年度月: 4月=1, 5月=2, ..., 3月=12
-        // 年度月を通常の月に変換: 4月（1月）→4, 5月（2月）→5, ..., 3月（12月）→3
-        const calendarMonth = fiscalMonth <= 9 ? fiscalMonth + 3 : fiscalMonth - 9;
-        const monthData = employeeData.find(data => data.month === calendarMonth);
+        // データベースには既に年度月で保存されているので、そのまま使用
+        const monthData = employeeData.find(data => data.month === fiscalMonth);
         return {
           month: fiscalMonth,
           totalHours: monthData ? parseFloat(monthData.totalHours.toString()) : 0
