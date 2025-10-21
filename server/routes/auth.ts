@@ -230,19 +230,5 @@ router.get('/csrf-token', isAuthenticated, async (req: Request, res: Response) =
   }
 });
 
-// テスト用: 強制的に401エラーを発生させるエンドポイント
-router.get('/test-401', (req: Request, res: Response) => {
-  console.log('🔍 Test 401 endpoint called');
-  res.status(401).json({ success: false, message: 'Test 401 error' });
-});
-
-// テスト用: セッションを無効化するエンドポイント
-router.post('/invalidate-session', (req: Request, res: Response) => {
-  console.log('🔍 Invalidate session endpoint called');
-  // セッションCookieを削除
-  res.clearCookie('sessionId');
-  res.json({ success: true, message: 'Session invalidated' });
-});
-
 export default router;
 
