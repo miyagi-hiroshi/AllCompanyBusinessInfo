@@ -79,8 +79,11 @@ export const getQueryFn: <T>(options: {
       if (unauthorizedBehavior === "returnNull") {
         return null;
       }
-      // throwしない - authErrorHandlerがログアウト処理を行う
-      return null;
+      // エラーをthrowしてReact Queryのエラーハンドリングを正常に動作させる
+      const error = new Error("認証が必要です") as Error & { status?: number; response?: Response };
+      error.status = 401;
+      error.response = res;
+      throw error;
     }
 
     await throwIfResNotOk(res);

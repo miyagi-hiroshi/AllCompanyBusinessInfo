@@ -1,21 +1,4 @@
-// 一時的な代替実装（sonnerが利用可能になるまで）
-// import { toast } from "sonner";
-const toast = {
-  error: (message: string, _options?: any) => {
-    // Toast Error: message (実際のUI表示はsonner導入後に実装)
-    console.error("Toast Error:", message);
-  },
-  success: (_message: string, _options?: any) => {
-    // Toast Success: message (実際のUI表示はsonner導入後に実装)
-  },
-  warning: (message: string, _options?: any) => {
-    // Toast Warning: message (実際のUI表示はsonner導入後に実装)
-    console.warn("Toast Warning:", message);
-  },
-  info: (_message: string, _options?: any) => {
-    // Toast Info: message (実際のUI表示はsonner導入後に実装)
-  },
-};
+import { toast } from "@/hooks/useToast";
 
 /**
  * エラータイプの定義
@@ -148,10 +131,29 @@ export function convertToAppError(error: unknown): AppError {
 }
 
 /**
- * エラーハンドリング関数
+ * エラーハンドリング関数（Responseオブジェクト対応）
  */
-export function handleError(error: unknown, showToast: boolean = true): AppError {
-  const appError = convertToAppError(error);
+export async function handleError(error: unknown, showToast: boolean = true): Promise<AppError> {
+  let appError: AppError;
+
+  // Responseオブジェクトの場合
+  if (error instanceof Response) {
+    // 429エラー（レート制限）の場合
+    if (error.status === 429) {
+      appError = new AppError(
+        ERROR_MESSAGES[ErrorType.RATE_LIMIT_EXCEEDED],
+        ErrorType.RATE_LIMIT_EXCEEDED,
+        "RATE_LIMIT_EXCEEDED",
+        "ログイン試行回数が上限に達しました。しばらく時間をおいてから再試行してください。"
+      );
+    } else {
+      // その他のHTTPエラー
+      appError = await parseErrorResponse(error);
+    }
+  } else {
+    // その他のエラー
+    appError = convertToAppError(error);
+  }
 
   if (showToast) {
     showErrorToast(appError);
@@ -165,11 +167,12 @@ export function handleError(error: unknown, showToast: boolean = true): AppError
  */
 export function showErrorToast(error: AppError): void {
   const title = getErrorTitle(error.type);
-  const description = error.message;
+  const description = error.details || error.message;
 
-  toast.error(title, {
+  toast({
+    variant: "destructive",
+    title,
     description,
-    duration: 5000,
   });
 }
 
@@ -177,9 +180,9 @@ export function showErrorToast(error: AppError): void {
  * 成功トーストを表示
  */
 export function showSuccessToast(message: string, description?: string): void {
-  toast.success(message, {
+  toast({
+    title: message,
     description,
-    duration: 3000,
   });
 }
 
@@ -187,9 +190,10 @@ export function showSuccessToast(message: string, description?: string): void {
  * 警告トーストを表示
  */
 export function showWarningToast(message: string, description?: string): void {
-  toast.warning(message, {
+  toast({
+    variant: "destructive",
+    title: message,
     description,
-    duration: 4000,
   });
 }
 
@@ -197,9 +201,9 @@ export function showWarningToast(message: string, description?: string): void {
  * 情報トーストを表示
  */
 export function showInfoToast(message: string, description?: string): void {
-  toast.info(message, {
+  toast({
+    title: message,
     description,
-    duration: 3000,
   });
 }
 

@@ -7,6 +7,8 @@ import { showErrorToast } from "./errorHandler";
 export class AuthErrorHandler {
   private static instance: AuthErrorHandler;
   private logoutCallback: (() => void) | null = null;
+  private isInitialCheck: boolean = true; // 初回認証チェックかどうか
+  private isLoggedOut: boolean = false; // ログアウト処理後かどうか
 
   private constructor() {}
 
@@ -81,15 +83,36 @@ export class AuthErrorHandler {
   /**
    * レスポンスから401エラーをチェック
    */
-  handleResponseError(response: Response): boolean {
+  handleResponseError(response: Response, suppressToast: boolean = false): boolean {
     if (response.status === 401) {
-      // 認証エラーの通知を表示
-      showErrorToast(new AppError("認証が必要です", ErrorType.UNAUTHORIZED, undefined, "セッションが期限切れです。再ログインしてください。"));
+      // 初回チェックまたはログアウト後でない場合のみトースト通知を表示
+      if (!this.isInitialCheck && !this.isLoggedOut && !suppressToast) {
+        // 認証エラーの通知を表示
+        showErrorToast(new AppError("認証が必要です", ErrorType.UNAUTHORIZED, undefined, "セッションが期限切れです。再ログインしてください。"));
+      }
+      
+      // 初回チェックフラグをクリア
+      this.isInitialCheck = false;
       
       this.performLogout();
       return true;
     }
     return false;
+  }
+  
+  /**
+   * ログイン成功時に呼び出す（初回チェックフラグとログアウトフラグをリセット）
+   */
+  setAuthenticated(): void {
+    this.isInitialCheck = false;
+    this.isLoggedOut = false;
+  }
+  
+  /**
+   * ログアウト処理開始時に呼び出す（ログアウトフラグを設定）
+   */
+  setLoggedOut(): void {
+    this.isLoggedOut = true;
   }
 }
 

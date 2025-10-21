@@ -1,4 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 import { Route,Switch } from "wouter";
 
 import { AppSidebar } from "@/components/app-sidebar";
@@ -69,6 +70,28 @@ function AuthenticatedApp() {
 
 function AppContent() {
   const { isAuthenticated, isLoading, login, isLoggingIn } = useAuth();
+  const [forceRender, setForceRender] = useState(0);
+  const [renderKey, setRenderKey] = useState(0);
+
+  // isAuthenticatedの変化を監視
+  useEffect(() => {
+    setForceRender(prev => prev + 1);
+    setRenderKey(prev => prev + 1);
+    
+    // 強制的に再レンダリングを発生させるためのタイマー
+    if (!isAuthenticated) {
+      // 複数回の再レンダリングを実行
+      setTimeout(() => {
+        setRenderKey(prev => prev + 1);
+      }, 50);
+      setTimeout(() => {
+        setRenderKey(prev => prev + 1);
+      }, 100);
+      setTimeout(() => {
+        setRenderKey(prev => prev + 1);
+      }, 200);
+    }
+  }, [isAuthenticated]);
 
   // ローディング中は何も表示しない
   if (isLoading) {
@@ -82,11 +105,11 @@ function AppContent() {
     );
   }
   
-  return (
-    <>
-      {isAuthenticated ? <AuthenticatedApp /> : <LoginForm onLogin={login} isLoggingIn={isLoggingIn} />}
-    </>
-  );
+  if (isAuthenticated) {
+    return <AuthenticatedApp key={`authenticated-${renderKey}-${forceRender}`} />;
+  } else {
+    return <LoginForm key={`unauthenticated-${renderKey}-${forceRender}`} onLogin={login} isLoggingIn={isLoggingIn} />;
+  }
 }
 
 function App() {

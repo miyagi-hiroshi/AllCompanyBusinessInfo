@@ -185,7 +185,9 @@ export function AppSidebar() {
                     variant="ghost"
                     size="sm"
                     className="w-full justify-start"
-                    onClick={logout}
+                    onClick={() => {
+                      logout();
+                    }}
                     disabled={isLoggingOut}
                   >
                     <LogOut className="h-4 w-4" />

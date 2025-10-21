@@ -129,7 +129,7 @@ export async function parseExcel<T = any>(
       validRows: dataObjects.length,
     };
   } catch (error) {
-    const appError = handleError(error, false);
+    const appError = await handleError(error, false);
     return {
       success: false,
       data: [],
@@ -144,10 +144,10 @@ export async function parseExcel<T = any>(
 /**
  * データをCSV形式でエクスポート
  */
-export function exportToCSV<T extends Record<string, any>>(
+export async function exportToCSV<T extends Record<string, any>>(
   data: T[],
   config: ExportConfig
-): void {
+): Promise<void> {
   try {
     if (data.length === 0) {
       showErrorToast(toAppError(new Error("エクスポートするデータがありません")));
@@ -165,7 +165,7 @@ export function exportToCSV<T extends Record<string, any>>(
     
     showSuccessToast("エクスポート完了", `${data.length}件のデータをCSVファイルでエクスポートしました`);
   } catch (error) {
-    const appError = handleError(error, false);
+    const appError = await handleError(error, false);
     showErrorToast(appError);
   }
 }
@@ -173,10 +173,10 @@ export function exportToCSV<T extends Record<string, any>>(
 /**
  * データをExcel形式でエクスポート
  */
-export function exportToExcel<T extends Record<string, any>>(
+export async function exportToExcel<T extends Record<string, any>>(
   data: T[],
   config: ExportConfig
-): void {
+): Promise<void> {
   try {
     if (data.length === 0) {
       showErrorToast(toAppError(new Error("エクスポートするデータがありません")));
@@ -201,7 +201,7 @@ export function exportToExcel<T extends Record<string, any>>(
     
     showSuccessToast("エクスポート完了", `${data.length}件のデータをExcelファイルでエクスポートしました`);
   } catch (error) {
-    const appError = handleError(error, false);
+    const appError = await handleError(error, false);
     showErrorToast(appError);
   }
 }
@@ -209,10 +209,10 @@ export function exportToExcel<T extends Record<string, any>>(
 /**
  * データをJSON形式でエクスポート
  */
-export function exportToJSON<T extends Record<string, any>>(
+export async function exportToJSON<T extends Record<string, any>>(
   data: T[],
   config: ExportConfig
-): void {
+): Promise<void> {
   try {
     if (data.length === 0) {
       showErrorToast(toAppError(new Error("エクスポートするデータがありません")));
@@ -225,7 +225,7 @@ export function exportToJSON<T extends Record<string, any>>(
     
     showSuccessToast("エクスポート完了", `${data.length}件のデータをJSONファイルでエクスポートしました`);
   } catch (error) {
-    const appError = handleError(error, false);
+    const appError = await handleError(error, false);
     showErrorToast(appError);
   }
 }
@@ -300,7 +300,7 @@ export async function parseFile<T = any>(
         throw new Error("サポートされていないファイル形式です");
     }
   } catch (error) {
-    const appError = handleError(error, false);
+    const appError = await handleError(error, false);
     return {
       success: false,
       data: [],
@@ -315,10 +315,10 @@ export async function parseFile<T = any>(
 /**
  * テンプレートファイルを生成
  */
-export function generateTemplate<T extends Record<string, any>>(
+export async function generateTemplate<T extends Record<string, any>>(
   sampleData: T[],
   config: ExportConfig
-): void {
+): Promise<void> {
   try {
     // サンプルデータからヘッダーを抽出
     const headers = Object.keys(sampleData[0] || {});
@@ -338,7 +338,7 @@ export function generateTemplate<T extends Record<string, any>>(
     
     showSuccessToast("テンプレート生成完了", "テンプレートファイルをダウンロードしました");
   } catch (error) {
-    const appError = handleError(error, false);
+    const appError = await handleError(error, false);
     showErrorToast(appError);
   }
 }

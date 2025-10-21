@@ -68,7 +68,8 @@ export function setupSecurityMiddleware(app: Express): void {
     max: isDevelopment ? 1000 : 100, // 開発: 1000、本番: 100リクエスト
     message: {
       success: false,
-      message: 'リクエストが多すぎます。しばらく時間をおいてから再試行してください。'
+      message: 'リクエストが多すぎます。しばらく時間をおいてから再試行してください。',
+      code: 'RATE_LIMIT_EXCEEDED'
     },
     standardHeaders: true,
     legacyHeaders: false,
@@ -79,7 +80,8 @@ export function setupSecurityMiddleware(app: Express): void {
     max: 5, // 最大5リクエスト
     message: {
       success: false,
-      message: 'ログイン試行回数が上限に達しました。しばらく時間をおいてから再試行してください。'
+      message: 'ログイン試行回数が上限に達しました。しばらく時間をおいてから再試行してください。',
+      code: 'RATE_LIMIT_EXCEEDED'
     },
     standardHeaders: true,
     legacyHeaders: false,
@@ -90,7 +92,8 @@ export function setupSecurityMiddleware(app: Express): void {
     max: 10, // 最大10リクエスト
     message: {
       success: false,
-      message: 'ファイルアップロードの制限に達しました。しばらく時間をおいてから再試行してください。'
+      message: 'ファイルアップロードの制限に達しました。しばらく時間をおいてから再試行してください。',
+      code: 'RATE_LIMIT_EXCEEDED'
     },
     standardHeaders: true,
     legacyHeaders: false,

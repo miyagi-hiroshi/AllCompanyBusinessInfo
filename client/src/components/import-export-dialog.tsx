@@ -63,7 +63,7 @@ export function ImportExportDialog<T extends Record<string, any>>({
   };
 
   // エクスポート処理
-  const handleExport = () => {
+  const handleExport = async () => {
     const config = {
       filename: exportFilename,
       format: exportFormat,
@@ -71,19 +71,19 @@ export function ImportExportDialog<T extends Record<string, any>>({
 
     switch (exportFormat) {
       case FileFormat.CSV:
-        exportToCSV(data, config);
+        await exportToCSV(data, config);
         break;
       case FileFormat.EXCEL:
-        exportToExcel(data, config);
+        await exportToExcel(data, config);
         break;
       case FileFormat.JSON:
-        exportToJSON(data, config);
+        await exportToJSON(data, config);
         break;
     }
   };
 
   // テンプレート生成処理
-  const handleGenerateTemplate = () => {
+  const handleGenerateTemplate = async () => {
     if (!sampleData || sampleData.length === 0) {return;}
 
     const config = {
@@ -91,7 +91,7 @@ export function ImportExportDialog<T extends Record<string, any>>({
       format: exportFormat,
     };
 
-    generateTemplate(sampleData, config);
+    await generateTemplate(sampleData, config);
   };
 
   return (

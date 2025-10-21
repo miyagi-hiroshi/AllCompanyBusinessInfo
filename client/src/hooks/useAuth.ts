@@ -49,7 +49,7 @@ const authApi = {
     });
 
     if (!response.ok) {
-      throw handleError(response, false);
+      throw await handleError(response, false);
     }
 
     const data = await response.json() as {
@@ -71,7 +71,7 @@ const authApi = {
     const response = await apiRequest("POST", "/api/auth/logout", undefined);
     
     if (!response.ok) {
-      throw handleError(response, false);
+      throw await handleError(response, false);
     }
     // Cookieはサーバー側で削除される
   },
@@ -85,7 +85,7 @@ const authApi = {
     const response = await apiRequest("GET", "/api/auth/me", undefined);
 
     if (!response.ok) {
-      throw handleError(response, false);
+      throw await handleError(response, false);
     }
 
     const data = await response.json() as {
@@ -130,10 +130,14 @@ export function useAuth() {
         isLoading: false,
         error: null,
       });
+      
+      // ログイン成功時にauthErrorHandlerのフラグをリセット
+      authErrorHandler.setAuthenticated();
+      
       showSuccessToast("ログイン成功", "認証が完了しました");
     },
-    onError: (error) => {
-      const appError = handleError(error, false);
+    onError: async (error) => {
+      const appError = await handleError(error, false);
       setAuthState({
         user: null,
         employee: null,
@@ -147,6 +151,13 @@ export function useAuth() {
 
   // ログアウト処理の定義をuseCallbackでメモ化
   const performLogout = useCallback(() => {
+    // ログアウトフラグを設定（トースト通知を抑制するため）
+    authErrorHandler.setLoggedOut();
+    
+    // ログアウト完了フラグを設定（無限ループ防止）
+    sessionStorage.setItem('logout_completed', 'true');
+    
+    // 強制的に状態をリセット
     setAuthState({
       user: null,
       employee: null,
@@ -154,9 +165,14 @@ export function useAuth() {
       isLoading: false,
       error: null,
     });
+    
     // クエリキャッシュをクリアして認証状態をリセット
     void queryClient.clear();
-    // ログアウト通知はauthErrorHandlerで表示されるため、ここでは表示しない
+    
+    // 強制的にページをリロードしてログイン画面に遷移
+    setTimeout(() => {
+      window.location.href = '/';
+    }, 100);
   }, [queryClient]);
 
   // ログアウトMutation
@@ -165,8 +181,8 @@ export function useAuth() {
     onSuccess: () => {
       performLogout();
     },
-    onError: (error) => {
-      const appError = handleError(error, false);
+    onError: async (error) => {
+      const appError = await handleError(error, false);
       showErrorToast(appError);
     },
   });
@@ -176,11 +192,23 @@ export function useAuth() {
     authErrorHandler.setLogoutCallback(performLogout);
   }, [performLogout]);
 
+
   // 初回アクセス時の処理
   useEffect(() => {
     // Cookieベースの認証: サーバーに認証状態を確認
     const checkAuth = async () => {
       try {
+        // ログアウト完了フラグをチェック（無限ループ防止）
+        const logoutCompleted = sessionStorage.getItem('logout_completed');
+        if (logoutCompleted === 'true') {
+          sessionStorage.removeItem('logout_completed');
+          setAuthState(prev => ({
+            ...prev,
+            isLoading: false,
+          }));
+          return;
+        }
+        
         const response = await fetch("/api/auth/me", {
           credentials: "include", // Cookieを送信
         });
@@ -199,6 +227,10 @@ export function useAuth() {
               isLoading: false,
               error: null,
             });
+            
+            // 認証成功時にauthErrorHandlerのフラグをリセット
+            authErrorHandler.setAuthenticated();
+            
             return;
           }
         }

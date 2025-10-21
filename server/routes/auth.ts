@@ -148,7 +148,7 @@ router.post('/login', async (req: Request, res: Response) => {
  * ログアウトAPI
  * POST /api/auth/logout
  */
-router.post('/logout', isAuthenticated, async (req: Request, res: Response) => {
+router.post('/logout', async (req: Request, res: Response) => {
   try {
     // CookieからセッションIDを取得
     const sessionId = req.cookies?.sessionId;
@@ -177,6 +177,15 @@ router.post('/logout', isAuthenticated, async (req: Request, res: Response) => {
       message: 'ログアウト処理中にエラーが発生しました',
     });
   }
+});
+
+// テスト用: 401エラーを発生させるエンドポイント
+router.get('/test-401', (req: Request, res: Response) => {
+  console.log('🔍 /api/auth/test-401 が呼び出されました');
+  res.status(401).json({
+    success: false,
+    message: '認証が必要です',
+  });
 });
 
 /**
