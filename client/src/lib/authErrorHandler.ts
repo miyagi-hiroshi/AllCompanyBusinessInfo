@@ -85,6 +85,7 @@ export class AuthErrorHandler {
     if (response.status === 401) {
       // 認証エラーの通知を表示
       showErrorToast(new AppError("認証が必要です", ErrorType.UNAUTHORIZED, undefined, "セッションが期限切れです。再ログインしてください。"));
+      
       this.performLogout();
       return true;
     }

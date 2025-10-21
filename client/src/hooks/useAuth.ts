@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect,useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import { useToast } from "@/hooks/useToast";
 import { authErrorHandler } from "@/lib/authErrorHandler";
@@ -145,8 +145,8 @@ export function useAuth() {
     },
   });
 
-  // ログアウト処理の定義
-  const performLogout = () => {
+  // ログアウト処理の定義をuseCallbackでメモ化
+  const performLogout = useCallback(() => {
     setAuthState({
       user: null,
       employee: null,
@@ -157,7 +157,7 @@ export function useAuth() {
     // クエリキャッシュをクリアして認証状態をリセット
     void queryClient.clear();
     // ログアウト通知はauthErrorHandlerで表示されるため、ここでは表示しない
-  };
+  }, [queryClient]);
 
   // ログアウトMutation
   const logoutMutation = useMutation({
@@ -174,7 +174,7 @@ export function useAuth() {
   // 認証エラーハンドラーにログアウトコールバックを設定
   useEffect(() => {
     authErrorHandler.setLogoutCallback(performLogout);
-  }, []);
+  }, [performLogout]);
 
   // 初回アクセス時の処理
   useEffect(() => {
@@ -203,7 +203,13 @@ export function useAuth() {
           }
         }
         
-        // 認証エラーまたはCookieなしの場合はログイン画面を表示
+        // 401エラーの場合は認証エラーハンドラーで処理
+        if (response.status === 401) {
+          authErrorHandler.handleResponseError(response);
+          return;
+        }
+        
+        // その他の認証エラーまたはCookieなしの場合はログイン画面を表示
         setAuthState(prev => ({
           ...prev,
           isLoading: false,
