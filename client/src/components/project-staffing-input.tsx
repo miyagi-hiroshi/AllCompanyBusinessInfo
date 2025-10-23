@@ -73,16 +73,17 @@ export function ProjectStaffingInput() {
     p.fiscalYear === selectedYear && selectedProjectIds.includes(p.id)
   );
 
-  // 既存のstaffingデータを取得（年度のみで絞り込み、プロジェクト選択に関係なく全データを取得）
+  // 既存のstaffingデータを取得（プロジェクトが選択されている場合のみ）
   // プロジェクト別入力専用のクエリキーを使用してキャッシュの競合を回避
   const { data: existingStaffing = [], isLoading } = useQuery<NewStaffing[]>({
-    queryKey: ["/api/staffing", "project-input", selectedYear],
+    queryKey: ["/api/staffing", "project-input", selectedYear, selectedProjectIds],
     queryFn: async () => {
       const url = `/api/staffing?fiscalYear=${selectedYear}&limit=10000&sortBy=employeeId&sortOrder=asc`;
       const res = await apiRequest("GET", url, undefined);
       const result = await res.json();
       return result.data?.items || [];
     },
+    enabled: selectedProjectIds.length > 0, // プロジェクトが選択されている場合のみ
   });
 
   // 既存データをStaffingRow形式に変換してフィルタリング
@@ -142,17 +143,6 @@ export function ProjectStaffingInput() {
       });
 
       
-            // デバッグログ: 最初の行のmonthlyHoursを確認
-            if (sortedRows.length > 0) {
-              console.log('🔍 最初の行のmonthlyHours:', sortedRows[0].monthlyHours);
-              console.log('🔍 MONTHS配列:', MONTHS.map(m => m.value));
-              
-              // 久保山 隆之の行を探す
-              const kuboyamaRow = sortedRows.find(row => row.employeeName.includes('久保山'));
-              if (kuboyamaRow) {
-                console.log('🔍 久保山 隆之のmonthlyHours:', kuboyamaRow.monthlyHours);
-              }
-            }
             setStaffingRows(sortedRows);
           } else {
             setStaffingRows([]);
@@ -272,11 +262,14 @@ export function ProjectStaffingInput() {
             };
 
             if (existingStaff) {
-              // 更新
-              updateData.push({
-                id: existingStaff.id,
-                data: { workHours: workHours.toString() }
-              });
+              // 工数が変更されている場合のみ更新
+              const existingHours = parseFloat(existingStaff.workHours || "0");
+              if (existingHours !== workHours) {
+                updateData.push({
+                  id: existingStaff.id,
+                  data: { workHours: workHours.toString() }
+                });
+              }
             } else {
               // 新規作成
               createData.push(staffData);
@@ -288,18 +281,6 @@ export function ProjectStaffingInput() {
         });
       });
 
-      // 既存データで、現在の行に含まれていないものを削除
-      existingStaffing.forEach(staff => {
-        const hasCorrespondingRow = staffingRows.some(row => 
-          staff.employeeId === row.employeeId &&
-          staff.projectId === row.projectId
-        );
-        if (!hasCorrespondingRow) {
-          if (staff.id) {
-            deleteIds.push(staff.id);
-          }
-        }
-      });
 
       // 一括操作を実行
       const promises = [];
@@ -423,13 +404,15 @@ export function ProjectStaffingInput() {
           </div>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">読み込み中...</div>
-          ) : staffingRows.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              データがありません。「行追加」ボタンで従業員を追加してください。
-            </div>
-          ) : (
+               {isLoading ? (
+                 <div className="text-center py-8 text-muted-foreground">読み込み中...</div>
+               ) : staffingRows.length === 0 ? (
+                 <div className="text-center py-8 text-muted-foreground">
+                   {selectedProjectIds.length === 0 
+                     ? "プロジェクトを選択してください" 
+                     : "データがありません。「行追加」ボタンで従業員を追加してください。"}
+                 </div>
+               ) : (
             <div className="max-h-[600px] overflow-y-auto overflow-x-auto">
               <Table>
                 <TableHeader className="sticky top-0 bg-background z-10">
@@ -494,10 +477,6 @@ export function ProjectStaffingInput() {
                       </TableCell>
                       {MONTHS.map((month) => {
                         const value = row.monthlyHours[month.value] || "";
-                        // デバッグログ（最初の行のみ）
-                        if (index === 0) {
-                          console.log(`🔍 月${month.value}: value=${value}, monthlyHours=${JSON.stringify(row.monthlyHours)}`);
-                        }
                         return (
                           <TableCell key={month.value}>
                             <Input
