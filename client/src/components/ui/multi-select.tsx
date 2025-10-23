@@ -52,13 +52,6 @@ export function MultiSelect({
     onChange(selected.filter((item) => item !== value));
   };
 
-  const handleSelectAll = () => {
-    if (selected.length === options.length) {
-      onChange([]);
-    } else {
-      onChange(options.map((option) => option.value));
-    }
-  };
 
   const selectedLabels = options
     .filter((option) => selected.includes(option.value))
@@ -76,8 +69,6 @@ export function MultiSelect({
           <div className="flex gap-1 flex-wrap">
             {selected.length === 0 ? (
               <span className="text-muted-foreground">{placeholder}</span>
-            ) : selected.length === options.length ? (
-              <span>全て選択中</span>
             ) : (
               selectedLabels.map((label) => (
                 <Badge
@@ -104,23 +95,6 @@ export function MultiSelect({
           <CommandList>
             <CommandEmpty>見つかりません</CommandEmpty>
             <CommandGroup>
-              <CommandItem onSelect={handleSelectAll}>
-                <div className="flex items-center space-x-2">
-                  <div
-                    className={cn(
-                      "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                      selected.length === options.length
-                        ? "bg-primary text-primary-foreground"
-                        : "opacity-50 [&_svg]:invisible"
-                    )}
-                  >
-                    <Check className="h-4 w-4" />
-                  </div>
-                  <span className="font-medium">
-                    {selected.length === options.length ? "全て解除" : "全て選択"}
-                  </span>
-                </div>
-              </CommandItem>
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
