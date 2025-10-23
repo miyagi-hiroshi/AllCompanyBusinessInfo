@@ -82,10 +82,10 @@ export function ProjectStaffingInput() {
       // フィルタリング処理を追加
       let filteredStaffing = existingStaffing;
       
-      // 従業員でフィルタリング（"all"の場合はフィルタリングしない）
+      // 従業員でフィルタリング（staff.employeeIdとemployee.employee_idを比較）
       if (selectedEmployeeId && selectedEmployeeId !== "all") {
         filteredStaffing = filteredStaffing.filter(
-          staff => staff.employeeId?.toString() === selectedEmployeeId
+          staff => staff.employeeId === selectedEmployeeId
         );
       }
       
@@ -97,20 +97,25 @@ export function ProjectStaffingInput() {
       }
       
       const groupedData = filteredStaffing.reduce((acc, staff) => {
-        const key = `${staff.employeeId || staff.employeeName}_${staff.projectId}`;
+        // employeeIdを文字列として明示的に変換（DBではvarchar型）
+        const empId = String(staff.employeeId || "");
+        const key = `${empId}_${staff.projectId}`;
         if (!acc[key]) {
           acc[key] = {
             id: staff.id,
-            employeeId: staff.employeeId || "",
+            employeeId: empId, // 文字列として保存
             employeeName: staff.employeeName,
             projectId: staff.projectId,
             projectName: staff.projectName,
             monthlyHours: {},
           };
         }
-        acc[key].monthlyHours[staff.month] = Number(staff.workHours);
+        // workHoursを数値に変換してmonthlyHoursに格納
+        const hours = Number(staff.workHours) || 0;
+        acc[key].monthlyHours[staff.month] = hours;
         return acc;
       }, {} as Record<string, StaffingRow>);
+
 
       // employee_id昇順＆プロジェクト名昇順でソート
       const sortedRows = Object.values(groupedData).sort((a, b) => {
@@ -133,7 +138,7 @@ export function ProjectStaffingInput() {
   // 行を追加
   const addRow = () => {
     const employee = selectedEmployeeId && selectedEmployeeId !== "all"
-      ? employees.find(e => e.id.toString() === selectedEmployeeId)
+      ? employees.find(e => e.employeeId === selectedEmployeeId)
       : null;
       
     const newRow: StaffingRow = {
@@ -156,13 +161,14 @@ export function ProjectStaffingInput() {
 
   // 従業員選択
   const handleEmployeeChange = (index: number, employeeId: string) => {
-    const employee = employees.find(e => String(e.id) === employeeId);
+    // employee.employee_idを使用して検索
+    const employee = employees.find(e => e.employeeId === employeeId);
     const fullName = employee ? `${employee.lastName} ${employee.firstName}` : "";
     
     const updatedRows = [...staffingRows];
     updatedRows[index] = {
       ...updatedRows[index],
-      employeeId,
+      employeeId, // 文字列として保存
       employeeName: fullName,
     };
     setStaffingRows(updatedRows);
@@ -213,7 +219,7 @@ export function ProjectStaffingInput() {
       // 既存データと比較して、作成・更新・削除を決定
       const existingDataMap = new Map();
       existingStaffing.forEach(staff => {
-        const key = `${staff.employeeId || staff.employeeName}_${staff.projectId}_${staff.month}`;
+        const key = `${staff.employeeId}_${staff.projectId}_${staff.month}`;
         existingDataMap.set(key, staff);
       });
 
@@ -261,7 +267,7 @@ export function ProjectStaffingInput() {
       // 既存データで、現在の行に含まれていないものを削除
       existingStaffing.forEach(staff => {
         const hasCorrespondingRow = staffingRows.some(row => 
-          (staff.employeeId === row.employeeId || staff.employeeName === row.employeeName) &&
+          staff.employeeId === row.employeeId &&
           staff.projectId === row.projectId
         );
         if (!hasCorrespondingRow) {
@@ -422,7 +428,7 @@ export function ProjectStaffingInput() {
                         ) : (
                           // フィルタリングなしの場合は選択可能
                           <Select
-                            value={row.employeeId}
+                            value={row.employeeId || ""} // 空文字列をデフォルトに
                             onValueChange={(value) => handleEmployeeChange(index, value)}
                           >
                             <SelectTrigger>
@@ -432,7 +438,7 @@ export function ProjectStaffingInput() {
                   {employees
                     .filter((employee) => employee.status !== "terminated")
                     .map((employee) => (
-                      <SelectItem key={employee.id} value={String(employee.id)}>
+                      <SelectItem key={employee.id} value={employee.employeeId}>
                         {employee.lastName} {employee.firstName}
                       </SelectItem>
                     ))}

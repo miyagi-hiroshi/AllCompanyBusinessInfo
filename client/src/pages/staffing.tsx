@@ -263,8 +263,8 @@ export default function StaffingPage() {
 
       <Tabs defaultValue="monthly" className="space-y-6">
         <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="monthly">月別入力</TabsTrigger>
-          <TabsTrigger value="project">プロジェクト別入力</TabsTrigger>
+          <TabsTrigger value="monthly" data-testid="tab-monthly">月別入力</TabsTrigger>
+          <TabsTrigger value="project" data-testid="tab-project">プロジェクト別入力</TabsTrigger>
         </TabsList>
 
         <TabsContent value="monthly" className="space-y-6">
@@ -302,7 +302,7 @@ export default function StaffingPage() {
           />
         </TabsContent>
 
-        <TabsContent value="project" className="space-y-6">
+        <TabsContent value="project" className="space-y-6" data-testid="tab-content-project">
           <ProjectStaffingInput />
         </TabsContent>
       </Tabs>
