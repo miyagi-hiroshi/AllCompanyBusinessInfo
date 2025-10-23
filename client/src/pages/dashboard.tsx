@@ -80,13 +80,6 @@ export default function DashboardPage() {
 
   const data = dashboardData.data;
 
-  // デバッグログ
-  console.log('ダッシュボードデータ:', {
-    profitBudget: data.profitBudget,
-    profitActual: data.profitActual,
-    profitAchievementRate: data.profitAchievementRate,
-    calculatedRate: data.profitBudget > 0 ? (data.profitActual / data.profitBudget) * 100 : 0
-  });
 
   // グラフ用データ
   const chartData = [
@@ -115,18 +108,20 @@ export default function DashboardPage() {
           <BarChart3 className="h-6 w-6" />
           <h1 className="text-2xl font-bold">ダッシュボード</h1>
         </div>
-        <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(Number(value))}>
-          <SelectTrigger className="w-[120px]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {FISCAL_YEARS.map((year) => (
-              <SelectItem key={year} value={year.toString()}>
-                {year}年度
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-4">
+          <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(Number(value))}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {FISCAL_YEARS.map((year) => (
+                <SelectItem key={year} value={year.toString()}>
+                  {year}年度
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       {/* サマリーカード */}

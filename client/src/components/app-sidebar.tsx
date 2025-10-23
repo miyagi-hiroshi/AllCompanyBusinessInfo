@@ -50,8 +50,13 @@ const menuItems = {
       icon: FileText,
     },
     {
-      title: "要員山積み登録",
+      title: "月別工数入力",
       url: "/staffing",
+      icon: Users,
+    },
+    {
+      title: "プロジェクト別工数入力",
+      url: "/staffing-project",
       icon: Users,
     },
     {

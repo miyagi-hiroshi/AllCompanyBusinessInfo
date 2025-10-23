@@ -1,4 +1,5 @@
 import type { NewStaffing } from "@shared/schema";
+import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { useEffect,useState } from "react";
 
@@ -24,8 +25,9 @@ import {
 } from "@/components/ui/table";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useProjects } from "@/hooks/useMasters";
-import { useBulkCreateStaffing, useBulkDeleteStaffing,useBulkUpdateStaffing, useStaffing } from "@/hooks/useStaffing";
+import { useBulkCreateStaffing, useBulkDeleteStaffing,useBulkUpdateStaffing } from "@/hooks/useStaffing";
 import { useToast } from "@/hooks/useToast";
+import { apiRequest } from "@/lib/queryClient";
 
 const FISCAL_YEARS = [2023, 2024, 2025, 2026];
 const MONTHS = [
@@ -72,13 +74,20 @@ export function ProjectStaffingInput() {
   );
 
   // 既存のstaffingデータを取得（年度のみで絞り込み、プロジェクト選択に関係なく全データを取得）
-  const { data: existingStaffing = [], isLoading } = useStaffing({
-    fiscalYear: selectedYear,
+  // プロジェクト別入力専用のクエリキーを使用してキャッシュの競合を回避
+  const { data: existingStaffing = [], isLoading } = useQuery<NewStaffing[]>({
+    queryKey: ["/api/staffing", "project-input", selectedYear],
+    queryFn: async () => {
+      const res = await apiRequest("GET", `/api/staffing?fiscalYear=${selectedYear}`, undefined);
+      const result = await res.json();
+      return result.data?.items || [];
+    },
   });
 
   // 既存データをStaffingRow形式に変換してフィルタリング
   useEffect(() => {
     if (existingStaffing.length > 0) {
+      
       // フィルタリング処理を追加
       let filteredStaffing = existingStaffing;
       
@@ -98,21 +107,23 @@ export function ProjectStaffingInput() {
       
       const groupedData = filteredStaffing.reduce((acc, staff) => {
         // employeeIdを文字列として明示的に変換（DBではvarchar型）
-        const empId = String(staff.employeeId || "");
-        const key = `${empId}_${staff.projectId}`;
+               const empId = String(staff.employeeId || "");
+               const key = `${empId}_${staff.projectId || ""}`;
         if (!acc[key]) {
           acc[key] = {
-            id: staff.id,
+            id: staff.id || "",
             employeeId: empId, // 文字列として保存
-            employeeName: staff.employeeName,
-            projectId: staff.projectId,
-            projectName: staff.projectName,
+            employeeName: staff.employeeName || "",
+            projectId: staff.projectId || "",
+            projectName: staff.projectName || "",
             monthlyHours: {},
           };
         }
         // workHoursを数値に変換してmonthlyHoursに格納
         const hours = Number(staff.workHours) || 0;
-        acc[key].monthlyHours[staff.month] = hours;
+        acc[key].monthlyHours[Number(staff.month)] = hours;
+        
+        
         return acc;
       }, {} as Record<string, StaffingRow>);
 
@@ -129,11 +140,12 @@ export function ProjectStaffingInput() {
         return a.projectName.localeCompare(b.projectName);
       });
 
-      setStaffingRows(sortedRows);
-    } else {
-      setStaffingRows([]);
-    }
-  }, [existingStaffing, selectedEmployeeId, selectedProjectIds]);
+      
+            setStaffingRows(sortedRows);
+          } else {
+            setStaffingRows([]);
+          }
+        }, [existingStaffing, selectedEmployeeId, selectedProjectIds]);
 
   // 行を追加
   const addRow = () => {
@@ -183,7 +195,7 @@ export function ProjectStaffingInput() {
     const updatedRows = [...staffingRows];
     updatedRows[index] = {
       ...updatedRows[index],
-      projectId,
+      projectId: projectId || "",
       projectName: project?.name || "",
     };
     setStaffingRows(updatedRows);
@@ -271,7 +283,9 @@ export function ProjectStaffingInput() {
           staff.projectId === row.projectId
         );
         if (!hasCorrespondingRow) {
-          deleteIds.push(staff.id);
+          if (staff.id) {
+            deleteIds.push(staff.id);
+          }
         }
       });
 

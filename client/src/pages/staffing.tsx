@@ -2,7 +2,6 @@ import type { NewStaffing, Staffing } from "@shared/schema";
 import { CalendarDays, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
-import { ProjectStaffingInput } from "@/components/project-staffing-input";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,7 +40,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useEmployees } from "@/hooks/useEmployees";
 import { useProjects } from "@/hooks/useMasters";
@@ -252,60 +250,49 @@ export default function StaffingPage() {
   return (
     <div className="h-full p-6">
       <div className="mb-6">
-        <div className="flex items-center gap-3">
-          <CalendarDays className="h-6 w-6 text-primary" />
-          <h1 className="text-2xl font-bold" data-testid="text-page-title">
-            要員山積み登録
-          </h1>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <CalendarDays className="h-6 w-6 text-primary" />
+            <h1 className="text-2xl font-bold" data-testid="text-page-title">
+              月別工数入力
+            </h1>
+          </div>
         </div>
-        <p className="text-muted-foreground mt-1">プロジェクトごとの要員配置を登録・管理します</p>
+        <p className="text-muted-foreground mt-1">月別の要員配置を登録・管理します</p>
       </div>
 
-      <Tabs defaultValue="monthly" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="monthly" data-testid="tab-monthly">月別入力</TabsTrigger>
-          <TabsTrigger value="project" data-testid="tab-project">プロジェクト別入力</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="monthly" className="space-y-6">
-          <MonthlyStaffingInput
-            selectedYear={selectedYear}
-            setSelectedYear={setSelectedYear}
-            selectedMonth={selectedMonth}
-            setSelectedMonth={setSelectedMonth}
-            selectedProjectIds={selectedProjectIds}
-            setSelectedProjectIds={setSelectedProjectIds}
-            productivityProjects={productivityProjects}
-            projects={projects}
-            employees={employees}
-            staffingData={staffingData}
-            isLoading={isLoading}
-            _employeeTotals={employeeTotals}
-            dialogOpen={dialogOpen}
-            setDialogOpen={setDialogOpen}
-            editMode={editMode}
-            selectedStaffing={selectedStaffing}
-            setSelectedStaffing={setSelectedStaffing}
-            formData={formData}
-            setFormData={setFormData}
-            deleteOpen={deleteOpen}
-            setDeleteOpen={setDeleteOpen}
-            openCreateDialog={openCreateDialog}
-            openEditDialog={openEditDialog}
-            handleSave={handleSave}
-            handleDelete={handleDelete}
-            handleProjectChange={handleProjectChange}
-            handleEmployeeChange={handleEmployeeChange}
-            createMutation={createMutation}
-            updateMutation={updateMutation}
-            deleteMutation={deleteMutation}
-          />
-        </TabsContent>
-
-        <TabsContent value="project" className="space-y-6" data-testid="tab-content-project">
-          <ProjectStaffingInput />
-        </TabsContent>
-      </Tabs>
+      <MonthlyStaffingInput
+        selectedYear={selectedYear}
+        setSelectedYear={setSelectedYear}
+        selectedMonth={selectedMonth}
+        setSelectedMonth={setSelectedMonth}
+        selectedProjectIds={selectedProjectIds}
+        setSelectedProjectIds={setSelectedProjectIds}
+        productivityProjects={productivityProjects}
+        projects={projects}
+        employees={employees}
+        staffingData={staffingData}
+        isLoading={isLoading}
+        _employeeTotals={employeeTotals}
+        dialogOpen={dialogOpen}
+        setDialogOpen={setDialogOpen}
+        editMode={editMode}
+        selectedStaffing={selectedStaffing}
+        setSelectedStaffing={setSelectedStaffing}
+        formData={formData}
+        setFormData={setFormData}
+        deleteOpen={deleteOpen}
+        setDeleteOpen={setDeleteOpen}
+        openCreateDialog={openCreateDialog}
+        openEditDialog={openEditDialog}
+        handleSave={handleSave}
+        handleDelete={handleDelete}
+        handleProjectChange={handleProjectChange}
+        handleEmployeeChange={handleEmployeeChange}
+        createMutation={createMutation}
+        updateMutation={updateMutation}
+        deleteMutation={deleteMutation}
+      />
     </div>
   );
 }
