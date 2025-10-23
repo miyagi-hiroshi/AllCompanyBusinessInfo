@@ -180,6 +180,26 @@ export function ProjectStaffingInput() {
     const fullName = employee ? `${employee.lastName} ${employee.firstName}` : "";
     
     const updatedRows = [...staffingRows];
+    const currentRow = updatedRows[index];
+    
+    // 重複チェック（現在の行以外で同じ従業員-プロジェクトの組み合わせがあるか）
+    const isDuplicate = updatedRows.some((row, i) => 
+      i !== index && 
+      row.employeeId === employeeId && 
+      row.projectId === currentRow.projectId &&
+      row.employeeId !== "" && 
+      row.projectId !== ""
+    );
+    
+    if (isDuplicate) {
+      toast({
+        title: "重複エラー",
+        description: "同じ従業員-プロジェクトの組み合わせは既に存在します",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     updatedRows[index] = {
       ...updatedRows[index],
       employeeId, // 文字列として保存
@@ -195,6 +215,26 @@ export function ProjectStaffingInput() {
                    productivityProjects.find(p => p.id === projectId);
     
     const updatedRows = [...staffingRows];
+    const currentRow = updatedRows[index];
+    
+    // 重複チェック（現在の行以外で同じ従業員-プロジェクトの組み合わせがあるか）
+    const isDuplicate = updatedRows.some((row, i) => 
+      i !== index && 
+      row.employeeId === currentRow.employeeId && 
+      row.projectId === projectId &&
+      row.employeeId !== "" && 
+      projectId !== ""
+    );
+    
+    if (isDuplicate) {
+      toast({
+        title: "重複エラー",
+        description: "同じ従業員-プロジェクトの組み合わせは既に存在します",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     updatedRows[index] = {
       ...updatedRows[index],
       projectId: projectId || "",
@@ -228,6 +268,21 @@ export function ProjectStaffingInput() {
           });
           return;
         }
+      }
+
+      // 重複チェック
+      const combinations = new Set<string>();
+      for (const row of staffingRows) {
+        const combination = `${row.employeeId}_${row.projectId}`;
+        if (combinations.has(combination)) {
+          toast({
+            title: "重複エラー",
+            description: "同じ従業員-プロジェクトの組み合わせが複数存在します",
+            variant: "destructive",
+          });
+          return;
+        }
+        combinations.add(combination);
       }
 
       // 既存データと比較して、作成・更新・削除を決定
