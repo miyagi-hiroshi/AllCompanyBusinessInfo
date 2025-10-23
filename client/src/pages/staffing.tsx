@@ -229,7 +229,7 @@ export default function StaffingPage() {
   };
   
   const handleEmployeeChange = (employeeIdStr: string) => {
-    const employee = employees.find((e) => String(e.id) === employeeIdStr);
+    const employee = employees.find((e) => e.employeeId === employeeIdStr);
     const fullName = employee ? `${employee.lastName} ${employee.firstName}` : "";
     setFormData({
       ...formData,
@@ -552,7 +552,7 @@ function MonthlyStaffingInput({
                 </SelectTrigger>
                 <SelectContent>
                   {employees.map((employee) => (
-                    <SelectItem key={employee.id} value={String(employee.id)}>
+                    <SelectItem key={employee.id} value={employee.employeeId}>
                       {employee.lastName} {employee.firstName}
                     </SelectItem>
                   ))}

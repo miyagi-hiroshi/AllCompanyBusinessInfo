@@ -13,7 +13,7 @@ export class StaffingRepository {
     filter?: StaffingFilter;
     limit?: number;
     offset?: number;
-    sortBy?: "fiscalYear" | "month" | "employeeName" | "workHours" | "createdAt";
+    sortBy?: "fiscalYear" | "month" | "employeeId" | "employeeName" | "workHours" | "createdAt";
     sortOrder?: "asc" | "desc";
   }): Promise<Staffing[]> {
     const { filter, limit = 100, offset = 0, sortBy = "createdAt", sortOrder = "desc" } = options;
@@ -23,6 +23,7 @@ export class StaffingRepository {
     const orderByColumn = {
       fiscalYear: staffing.fiscalYear,
       month: staffing.month,
+      employeeId: staffing.employeeId,
       employeeName: staffing.employeeName,
       workHours: staffing.workHours,
       createdAt: staffing.createdAt,

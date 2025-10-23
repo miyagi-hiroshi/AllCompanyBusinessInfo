@@ -33,7 +33,7 @@ const searchStaffingSchema = z.object({
   employeeName: z.string().optional(),
   page: z.string().transform(Number).optional().default('1'),
   limit: z.string().transform(Number).optional().default('100'),
-  sortBy: z.enum(['fiscalYear', 'month', 'employeeName', 'workHours', 'createdAt']).optional().default('month'),
+  sortBy: z.enum(['fiscalYear', 'month', 'employeeId', 'employeeName', 'workHours', 'createdAt']).optional().default('month'),
   sortOrder: z.enum(['asc', 'desc']).optional().default('asc'),
 });
 

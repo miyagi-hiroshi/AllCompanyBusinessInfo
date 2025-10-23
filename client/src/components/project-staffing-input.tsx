@@ -78,7 +78,8 @@ export function ProjectStaffingInput() {
   const { data: existingStaffing = [], isLoading } = useQuery<NewStaffing[]>({
     queryKey: ["/api/staffing", "project-input", selectedYear],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/staffing?fiscalYear=${selectedYear}`, undefined);
+      const url = `/api/staffing?fiscalYear=${selectedYear}&limit=10000&sortBy=employeeId&sortOrder=asc`;
+      const res = await apiRequest("GET", url, undefined);
       const result = await res.json();
       return result.data?.items || [];
     },
@@ -141,6 +142,17 @@ export function ProjectStaffingInput() {
       });
 
       
+            // デバッグログ: 最初の行のmonthlyHoursを確認
+            if (sortedRows.length > 0) {
+              console.log('🔍 最初の行のmonthlyHours:', sortedRows[0].monthlyHours);
+              console.log('🔍 MONTHS配列:', MONTHS.map(m => m.value));
+              
+              // 久保山 隆之の行を探す
+              const kuboyamaRow = sortedRows.find(row => row.employeeName.includes('久保山'));
+              if (kuboyamaRow) {
+                console.log('🔍 久保山 隆之のmonthlyHours:', kuboyamaRow.monthlyHours);
+              }
+            }
             setStaffingRows(sortedRows);
           } else {
             setStaffingRows([]);
@@ -374,7 +386,7 @@ export function ProjectStaffingInput() {
                 .filter((employee) => employee.status !== "terminated")
                 .sort((a, b) => parseInt(a.id) - parseInt(b.id))
                 .map((employee) => (
-                  <SelectItem key={employee.id} value={employee.id.toString()}>
+                  <SelectItem key={employee.id} value={employee.employeeId}>
                     {employee.lastName} {employee.firstName}
                   </SelectItem>
                 ))}
@@ -480,20 +492,27 @@ export function ProjectStaffingInput() {
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      {MONTHS.map((month) => (
-                        <TableCell key={month.value}>
-                          <Input
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            max="99.99"
-                            value={row.monthlyHours[month.value] || ""}
-                            onChange={(e) => handleMonthlyHoursChange(index, month.value, e.target.value)}
-                            placeholder="0.00"
-                            className="text-center"
-                          />
-                        </TableCell>
-                      ))}
+                      {MONTHS.map((month) => {
+                        const value = row.monthlyHours[month.value] || "";
+                        // デバッグログ（最初の行のみ）
+                        if (index === 0) {
+                          console.log(`🔍 月${month.value}: value=${value}, monthlyHours=${JSON.stringify(row.monthlyHours)}`);
+                        }
+                        return (
+                          <TableCell key={month.value}>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              max="99.99"
+                              value={value}
+                              onChange={(e) => handleMonthlyHoursChange(index, month.value, e.target.value)}
+                              placeholder="0.00"
+                              className="text-center"
+                            />
+                          </TableCell>
+                        );
+                      })}
                       <TableCell>
                         <Button
                           variant="ghost"
