@@ -23,13 +23,6 @@ export default function DashboardPage() {
   const { data: dashboardData, isLoading } = useDashboard(selectedYear);
 
   // 数値フォーマット関数
-  const formatCurrency = (value: number | undefined) => {
-    if (value === undefined || isNaN(value)) {
-      return '¥0';
-    }
-    return `¥${value.toLocaleString()}`;
-  };
-
   const formatPercentage = (value: number | undefined) => {
     if (value === undefined || isNaN(value)) {
       return '0.0%';
@@ -146,53 +139,67 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* KPI指標とグラフ */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* KPI指標 */}
+      {/* KPI指標とグラフ（3列2行レイアウト） */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* 1行目1列目：利益率カード */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg font-semibold">KPI指標</CardTitle>
+            <CardTitle className="text-lg font-semibold">利益率</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">売上達成率</p>
-                <p className="text-2xl font-bold text-green-600">
-                  {formatPercentage(data.revenueAchievementRate)}
-                </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">利益達成率</p>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-muted-foreground">予算</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  {formatPercentage(data.profitAchievementRate)}
+                  {formatPercentage(data.profitMarginBudget)}
                 </p>
               </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">差異金額</p>
-                <p className={`text-2xl font-bold ${(data.varianceAmount || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {formatCurrency(data.varianceAmount)}
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-muted-foreground">実績</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {formatPercentage(data.profitMarginActual)}
                 </p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-medium text-muted-foreground">利益率</p>
-                <div className="space-y-1">
-                  <p className="text-lg font-bold text-blue-600">
-                    予算: {formatPercentage(data.profitMarginBudget)}
-                  </p>
-                  <p className="text-lg font-bold text-purple-600">
-                    実績: {formatPercentage(data.profitMarginActual)}
-                  </p>
-                </div>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* グラフ */}
-        <DashboardChart
-          data={chartData}
-          title={`${selectedYear}年度 予算vs実績比較`}
-        />
+        {/* 1行目2列目：原価率カード */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">原価率</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-muted-foreground">予算</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {formatPercentage(data.costRateBudget)}
+                </p>
+              </div>
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium text-muted-foreground">実績</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {formatPercentage(data.costRateActual)}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* 1行目3列目：グラフ（縦に引き伸ばして2行目も占有） */}
+        <Card className="md:row-span-2">
+          <DashboardChart
+            data={chartData}
+            title={`${selectedYear}年度 予算vs実績比較`}
+          />
+        </Card>
+
+        {/* 2行目1列目：空 */}
+        <div className="hidden md:block"></div>
+
+        {/* 2行目2列目：空 */}
+        <div className="hidden md:block"></div>
       </div>
     </div>
   );

@@ -75,16 +75,14 @@ export class DashboardService {
         expenseBudget,
         expenseActual,
         profitBudget,
-        profitActual,
-        profitAchievementRate: profitBudget > 0 ? (profitActual / profitBudget) * 100 : 0
+        profitActual
       });
 
       // KPI指標計算
-      const revenueAchievementRate = revenueBudget > 0 ? (revenueActual / revenueBudget) * 100 : 0;
-      const profitAchievementRate = profitBudget > 0 ? (profitActual / profitBudget) * 100 : 0;
       const profitMarginBudget = revenueBudget > 0 ? (profitBudget / revenueBudget) * 100 : 0;
       const profitMarginActual = revenueActual > 0 ? (profitActual / revenueActual) * 100 : 0;
-      const varianceAmount = profitActual - profitBudget;
+      const costRateBudget = revenueBudget > 0 ? (expenseBudget / revenueBudget) * 100 : 0;
+      const costRateActual = revenueActual > 0 ? (expenseActual / revenueActual) * 100 : 0;
 
       return {
         fiscalYear,
@@ -94,11 +92,10 @@ export class DashboardService {
         expenseActual,
         profitBudget,
         profitActual,
-        revenueAchievementRate,
-        profitAchievementRate,
         profitMarginBudget,
         profitMarginActual,
-        varianceAmount
+        costRateBudget,
+        costRateActual
       };
     } catch (error) {
       console.error('ダッシュボードデータ取得エラー:', error);
