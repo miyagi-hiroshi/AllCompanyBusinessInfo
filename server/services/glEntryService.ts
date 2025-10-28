@@ -1,4 +1,5 @@
 import { CreateGLEntryData, GLEntry, GLEntryFilter,UpdateGLEntryData } from '@shared/schema/integrated';
+import { convertHalfWidthKanaToFullWidth } from '@shared/utils/textNormalization';
 import csv from 'csv-parser';
 import iconv from 'iconv-lite';
 import { Readable } from 'stream';
@@ -516,7 +517,7 @@ export class GLEntryService {
                 voucherNo: row.voucherNo,
                 transactionDate: transactionDate,
                 accountCode: row.accountCode,
-                accountName: row.accountName,
+                accountName: convertHalfWidthKanaToFullWidth(row.accountName),
                 amount: amount.toString(),
                 debitCredit,
                 description: row.description || '',

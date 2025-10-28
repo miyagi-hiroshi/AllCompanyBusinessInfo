@@ -90,6 +90,12 @@ export function GLReconciliationPanel({
   // Filter GL entries based on filters
   const filteredGLEntries = useMemo(() => {
     return glEntries.filter(gl => {
+      // 突合済み受発注選択時: glMatchIdに一致するGLデータのみ表示
+      if (selectedOrder && selectedOrder.reconciliationStatus === "matched" && selectedOrder.glMatchId) {
+        return gl.id === selectedOrder.glMatchId;
+      }
+      
+      // 未突合受発注または選択なしの場合: 既存のフィルタリング処理
       if (unmatchedOnly && gl.reconciliationStatus !== "unmatched") return false;
       if (accountCodeFilter && gl.accountCode !== accountCodeFilter) return false;
       if (searchText) {
@@ -99,7 +105,7 @@ export function GLReconciliationPanel({
       }
       return true;
     });
-  }, [glEntries, accountCodeFilter, searchText, unmatchedOnly]);
+  }, [glEntries, accountCodeFilter, searchText, unmatchedOnly, selectedOrder]);
 
   const handleManualMatch = async (glId: string) => {
     if (!selectedOrderId || !selectedOrder) return;

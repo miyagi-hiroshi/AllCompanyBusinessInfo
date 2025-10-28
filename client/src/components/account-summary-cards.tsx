@@ -112,30 +112,28 @@ export function AccountSummaryCards({ summary, isLoading }: AccountSummaryCardsP
       </div>
 
       {/* 科目別差異 */}
-      {summary.differences.some(d => d.difference !== 0) && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-warning" />
-              科目別差異
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>科目名</TableHead>
-                    <TableHead className="text-right">GL金額</TableHead>
-                    <TableHead className="text-right">受発注金額</TableHead>
-                    <TableHead className="text-right">差異</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {summary.differences
-                    .filter(d => d.difference !== 0)
-                    .sort((a, b) => Math.abs(b.difference) - Math.abs(a.difference))
-                    .map((diff) => (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <AlertCircle className="h-5 w-5 text-warning" />
+            科目別差異
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>科目名</TableHead>
+                  <TableHead className="text-right">GL金額</TableHead>
+                  <TableHead className="text-right">受発注金額</TableHead>
+                  <TableHead className="text-right">差異</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {summary.differences
+                  .sort((a, b) => a.accountCode.localeCompare(b.accountCode))
+                  .map((diff) => (
                       <TableRow key={diff.accountCode}>
                         <TableCell className="font-medium">{diff.accountName}</TableCell>
                         <TableCell className="text-right font-mono">¥{diff.glAmount.toLocaleString()}</TableCell>
@@ -150,7 +148,6 @@ export function AccountSummaryCards({ summary, isLoading }: AccountSummaryCardsP
             </div>
           </CardContent>
         </Card>
-      )}
     </div>
   );
 }

@@ -106,15 +106,10 @@ export class GLEntryRepository {
       
       // 月フィルタリング（年度が指定されている場合のみ有効）
       if (filter.month && filter.fiscalYear) {
+        // 会計年度: 4月～翌年3月
         const year = filter.month >= 4 ? filter.fiscalYear : filter.fiscalYear + 1;
-        const monthStart = `${year}-${filter.month.toString().padStart(2, '0')}-01`;
-        const monthEnd = `${year}-${filter.month.toString().padStart(2, '0')}-31`;
-        conditions.push(
-          and(
-            gte(glEntries.transactionDate, monthStart),
-            lte(glEntries.transactionDate, monthEnd)
-          )
-        );
+        const period = `${year}-${filter.month.toString().padStart(2, '0')}`;
+        conditions.push(eq(glEntries.period, period));
       }
       
       if (conditions.length > 0) {
@@ -301,15 +296,10 @@ export class GLEntryRepository {
       
       // 月フィルタリング（年度が指定されている場合のみ有効）
       if (filter.month && filter.fiscalYear) {
+        // 会計年度: 4月～翌年3月
         const year = filter.month >= 4 ? filter.fiscalYear : filter.fiscalYear + 1;
-        const monthStart = `${year}-${filter.month.toString().padStart(2, '0')}-01`;
-        const monthEnd = `${year}-${filter.month.toString().padStart(2, '0')}-31`;
-        conditions.push(
-          and(
-            gte(glEntries.transactionDate, monthStart),
-            lte(glEntries.transactionDate, monthEnd)
-          )
-        );
+        const period = `${year}-${filter.month.toString().padStart(2, '0')}`;
+        conditions.push(eq(glEntries.period, period));
       }
       
       if (conditions.length > 0) {
