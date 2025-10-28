@@ -188,7 +188,7 @@ export default function DashboardPage() {
         </Card>
 
         {/* 1行目3列目：グラフ（縦に引き伸ばして2行目も占有） */}
-        <Card className="md:row-span-2">
+        <Card className="md:col-start-3 md:row-start-1 md:row-span-2">
           <DashboardChart
             data={chartData}
             title={`${selectedYear}年度 予算vs実績比較`}
