@@ -65,12 +65,32 @@ export function GLReconciliationPanel({
     }))
   ];
 
+  const selectedOrder = selectedOrderId 
+    ? orderForecasts.find(o => o.id === selectedOrderId) 
+    : null;
+
   // Auto-open panel when order is selected
   useEffect(() => {
     if (externalSelectedOrderId) {
       setOpen(true);
     }
   }, [externalSelectedOrderId]);
+
+  // Auto-set account code filter when order is selected
+  useEffect(() => {
+    if (selectedOrder && selectedOrder.reconciliationStatus === "unmatched") {
+      // 受発注の計上科目名から対応する科目コードを取得
+      const matchingItem = accountingItems.find(
+        item => item.name === selectedOrder.accountingItem
+      );
+      
+      // 該当する科目コードがあればセット、なければ""（すべて）
+      setAccountCodeFilter(matchingItem?.code || "");
+    } else if (!selectedOrder) {
+      // 選択解除時はフィルタをリセット
+      setAccountCodeFilter("");
+    }
+  }, [selectedOrder, accountingItems]);
 
   // Mutations
   const manualReconcile = useManualReconcile();
@@ -83,13 +103,12 @@ export function GLReconciliationPanel({
     ? Math.round((matched.length / orderForecasts.length) * 100) 
     : 0;
 
-  const selectedOrder = selectedOrderId 
-    ? orderForecasts.find(o => o.id === selectedOrderId) 
-    : null;
-
   // Filter GL entries based on filters
   const filteredGLEntries = useMemo(() => {
     return glEntries.filter(gl => {
+      // 突合除外指定されたGLデータは常に非表示
+      if (gl.isExcluded === "true") return false;
+      
       // 突合済み受発注選択時: glMatchIdに一致するGLデータのみ表示
       if (selectedOrder && selectedOrder.reconciliationStatus === "matched" && selectedOrder.glMatchId) {
         return gl.id === selectedOrder.glMatchId;

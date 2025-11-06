@@ -13,10 +13,20 @@ const orderForecastRepository = new OrderForecastRepository();
 const angleBForecastService = new AngleBForecastService(angleBForecastRepository, orderForecastRepository);
 
 // 角度B案件作成スキーマ
-const createAngleBForecastSchema = insertAngleBForecastSchema;
+// 取引先フィールドをoptionalにする
+const createAngleBForecastSchema = insertAngleBForecastSchema.extend({
+  customerId: z.string().optional().nullable(),
+  customerCode: z.string().optional().nullable(),
+  customerName: z.string().optional().nullable(),
+});
 
 // 角度B案件更新スキーマ
-const updateAngleBForecastSchema = insertAngleBForecastSchema.partial();
+// 取引先フィールドをoptionalにする
+const updateAngleBForecastSchema = insertAngleBForecastSchema.partial().extend({
+  customerId: z.string().optional().nullable(),
+  customerCode: z.string().optional().nullable(),
+  customerName: z.string().optional().nullable(),
+});
 
 // 角度B案件検索スキーマ
 const searchAngleBForecastSchema = z.object({

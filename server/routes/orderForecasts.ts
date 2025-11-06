@@ -19,10 +19,20 @@ const angleBForecastRepository = new AngleBForecastRepository();
 const orderForecastService = new OrderForecastService(orderForecastRepository, projectRepository, glEntryRepository, accountingItemRepository, angleBForecastRepository);
 
 // 受発注データ作成スキーマ
-const createOrderForecastSchema = insertOrderForecastSchema;
+// 取引先フィールドをoptionalにする
+const createOrderForecastSchema = insertOrderForecastSchema.extend({
+  customerId: z.string().optional().nullable(),
+  customerCode: z.string().optional().nullable(),
+  customerName: z.string().optional().nullable(),
+});
 
 // 受発注データ更新スキーマ
-const updateOrderForecastSchema = insertOrderForecastSchema.partial();
+// 取引先フィールドをoptionalにする
+const updateOrderForecastSchema = insertOrderForecastSchema.partial().extend({
+  customerId: z.string().optional().nullable(),
+  customerCode: z.string().optional().nullable(),
+  customerName: z.string().optional().nullable(),
+});
 
 // 受発注データ検索スキーマ
 const searchOrderForecastSchema = z.object({

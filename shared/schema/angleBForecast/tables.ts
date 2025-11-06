@@ -10,9 +10,9 @@ export const angleBForecasts = appSchema.table("angle_b_forecasts", {
   projectId: varchar("project_id").notNull(),
   projectCode: text("project_code").notNull(),
   projectName: text("project_name").notNull(),
-  customerId: varchar("customer_id").notNull(),
-  customerCode: text("customer_code").notNull(),
-  customerName: text("customer_name").notNull(),
+  customerId: varchar("customer_id"), // NULL許可に変更
+  customerCode: text("customer_code"), // NULL許可に変更
+  customerName: text("customer_name"), // NULL許可に変更
   accountingPeriod: text("accounting_period").notNull(), // 計上年月 (YYYY-MM形式)
   accountingItem: text("accounting_item").notNull(), // 計上科目
   description: text("description").notNull(), // 摘要文

@@ -158,12 +158,24 @@ export function ExcelDataGrid({
       }
     });
 
-    const newRows = [...rows, newRow];
+    // activeCellがある場合はその行の直下に挿入、ない場合は最下行に追加
+    let newRows: GridRowData[];
+    let insertedRowIndex: number;
+    
+    if (activeCell) {
+      newRows = [...rows];
+      insertedRowIndex = activeCell.rowIndex + 1;
+      newRows.splice(insertedRowIndex, 0, newRow);
+    } else {
+      newRows = [...rows, newRow];
+      insertedRowIndex = newRows.length - 1;
+    }
+    
     onRowsChange(newRows);
     
     // Focus on first cell of new row
     setTimeout(() => {
-      setActiveCell({ rowIndex: newRows.length - 1, colKey: columns[0].key });
+      setActiveCell({ rowIndex: insertedRowIndex, colKey: columns[0].key });
     }, 0);
   };
 
@@ -675,24 +687,25 @@ export function ExcelDataGrid({
               value={value as string | undefined}
               onChange={(val, option) => {
                 const newRows = [...rows];
-                const updates: Record<string, string | number | boolean> = {
+                const updates: Record<string, string | number | boolean | undefined> = {
                   [column.key]: val,
                   _modified: true,
                 };
                 
                 // Also update related fields if needed
+                // 空の場合はundefinedにする（空文字を避ける）
                 if (column.key.includes("customer")) {
-                  updates.customerCode = option.code || "";
-                  updates.customerName = option.label || "";
+                  updates.customerCode = option.code || undefined;
+                  updates.customerName = option.label || undefined;
                 } else if (column.key === "projectId") {
-                  updates.projectCode = option.code || "";
-                  updates.projectName = option.label || "";
+                  updates.projectCode = option.code || undefined;
+                  updates.projectName = option.label || undefined;
                 } else if (column.key.includes("project")) {
-                  updates.projectCode = option.code || "";
-                  updates.projectName = option.label || "";
+                  updates.projectCode = option.code || undefined;
+                  updates.projectName = option.label || undefined;
                 } else if (column.key.includes("item")) {
-                  updates.itemCode = option.code || "";
-                  updates.itemName = option.label || "";
+                  updates.itemCode = option.code || undefined;
+                  updates.itemName = option.label || undefined;
                 }
                 
                 newRows[rowIndex] = {

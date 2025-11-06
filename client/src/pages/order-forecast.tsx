@@ -71,6 +71,7 @@ export default function OrderForecastPage() {
   const handleFilterChange = (newFilter: FilterState) => {
     setFilter(newFilter);
     setShouldResetPage(true);  // ページをリセット
+    setSelectedOrderIdForGL(null);  // GL突合パネルを閉じる
     
     // フィルタ説明文を生成
     const filterParts: string[] = [];
@@ -88,6 +89,7 @@ export default function OrderForecastPage() {
   // 詳細検索実行時
   const handleSearch = (newSearchFilter: SearchFilter) => {
     setSearchFilter(newSearchFilter);
+    setSelectedOrderIdForGL(null);  // GL突合パネルを閉じる
     
     // 検索条件の説明文を生成
     const searchParts: string[] = [];
@@ -177,6 +179,7 @@ export default function OrderForecastPage() {
       type: "autocomplete",
       width: 200,
       required: true,
+      sortable: true, // 並び替え機能を追加
       autocompleteOptions: projects.map((p) => ({
         value: p.id,
         label: p.code,
@@ -188,7 +191,7 @@ export default function OrderForecastPage() {
       label: "取引先",
       type: "autocomplete",
       width: 250,
-      required: true,
+      required: false, // 非必須に変更
       autocompleteOptions: customers.map((c) => ({
         value: c.id,
         label: c.name,
@@ -283,9 +286,9 @@ export default function OrderForecastPage() {
     projectId: order.projectId,
     projectCode: order.projectCode,
     projectName: order.projectName,
-    customerId: order.customerId,
-    customerCode: order.customerCode,
-    customerName: order.customerName,
+    customerId: order.customerId || undefined,
+    customerCode: order.customerCode || undefined,
+    customerName: order.customerName || undefined,
     accountingPeriod: order.accountingPeriod,
     accountingItem: order.accountingItem,
     description: order.description,
@@ -320,9 +323,9 @@ export default function OrderForecastPage() {
         projectId: order.projectId,
         projectCode: order.projectCode,
         projectName: order.projectName,
-        customerId: order.customerId,
-        customerCode: order.customerCode,
-        customerName: order.customerName,
+        customerId: order.customerId || undefined,
+        customerCode: order.customerCode || undefined,
+        customerName: order.customerName || undefined,
         accountingPeriod: order.accountingPeriod,
         accountingItem: order.accountingItem,
         description: order.description,
@@ -371,7 +374,8 @@ export default function OrderForecastPage() {
         if (isNaN(amount)) {
           validationErrors.push(`行${index + 1}: 金額は有効な数値を入力してください`);
         }
-        if (!row.projectId || !row.customerId || !row.accountingPeriod || !row.accountingItem || !row.description) {
+        // 取引先は非必須なのでチェックから除外
+        if (!row.projectId || !row.accountingPeriod || !row.accountingItem || !row.description) {
           validationErrors.push(`行${index + 1}: 必須項目を入力してください`);
         }
       });
@@ -424,9 +428,12 @@ export default function OrderForecastPage() {
             projectId: row.projectId as string,
             projectCode: row.projectCode as string,
             projectName: row.projectName as string,
-            customerId: row.customerId as string,
-            customerCode: row.customerCode as string,
-            customerName: row.customerName as string,
+            // 取引先は非必須なので、空の場合はundefinedにする
+            ...(row.customerId ? {
+              customerId: row.customerId as string,
+              customerCode: row.customerCode as string,
+              customerName: row.customerName as string,
+            } : {}),
             accountingPeriod: row.accountingPeriod as string,
             accountingItem: row.accountingItem as string,
             description: row.description as string,
@@ -439,21 +446,31 @@ export default function OrderForecastPage() {
         } else {
           // Update existing order
           if (existing) {
+            // 取引先は非必須なので、空の場合はundefinedにする
+            const updateData: any = {
+              projectId: row.projectId as string,
+              projectCode: row.projectCode as string,
+              projectName: row.projectName as string,
+              accountingPeriod: row.accountingPeriod as string,
+              accountingItem: row.accountingItem as string,
+              description: row.description as string,
+              amount: String(row.amount),
+              remarks: (row.remarks as string) || "",
+            };
+            
+            if (row.customerId) {
+              updateData.customerId = row.customerId as string;
+              updateData.customerCode = row.customerCode as string;
+              updateData.customerName = row.customerName as string;
+            } else {
+              updateData.customerId = null;
+              updateData.customerCode = null;
+              updateData.customerName = null;
+            }
+            
             await updateMutation.mutateAsync({
               id: row.id,
-              data: {
-                projectId: row.projectId as string,
-                projectCode: row.projectCode as string,
-                projectName: row.projectName as string,
-                customerId: row.customerId as string,
-                customerCode: row.customerCode as string,
-                customerName: row.customerName as string,
-                accountingPeriod: row.accountingPeriod as string,
-                accountingItem: row.accountingItem as string,
-                description: row.description as string,
-                amount: String(row.amount),
-                remarks: (row.remarks as string) || "",
-              },
+              data: updateData,
               filter,
             });
           }
@@ -476,9 +493,9 @@ export default function OrderForecastPage() {
           projectId: order.projectId,
           projectCode: order.projectCode,
           projectName: order.projectName,
-          customerId: order.customerId,
-          customerCode: order.customerCode,
-          customerName: order.customerName,
+          customerId: order.customerId || undefined,
+          customerCode: order.customerCode || undefined,
+          customerName: order.customerName || undefined,
           accountingPeriod: order.accountingPeriod,
           accountingItem: order.accountingItem,
           description: order.description,
@@ -530,9 +547,9 @@ export default function OrderForecastPage() {
           projectId: order.projectId,
           projectCode: order.projectCode,
           projectName: order.projectName,
-          customerId: order.customerId,
-          customerCode: order.customerCode,
-          customerName: order.customerName,
+          customerId: order.customerId || undefined,
+          customerCode: order.customerCode || undefined,
+          customerName: order.customerName || undefined,
           accountingPeriod: order.accountingPeriod,
           accountingItem: order.accountingItem,
           description: order.description,

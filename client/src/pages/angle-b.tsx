@@ -108,6 +108,7 @@ export default function AngleBPage() {
       type: "autocomplete",
       width: 200,
       required: true,
+      sortable: true, // 並び替え機能を追加
       autocompleteOptions: projects.map((p) => ({
         value: p.id,
         label: p.name,
@@ -119,7 +120,7 @@ export default function AngleBPage() {
       label: "取引先",
       type: "autocomplete",
       width: 250,
-      required: true,
+      required: false, // 非必須に変更
       autocompleteOptions: customers.map((c) => ({
         value: c.id,
         label: c.name,
@@ -213,9 +214,9 @@ export default function AngleBPage() {
         projectId: angleB.projectId,
         projectCode: angleB.projectCode,
         projectName: angleB.projectName,
-        customerId: angleB.customerId,
-        customerCode: angleB.customerCode,
-        customerName: angleB.customerName,
+        customerId: angleB.customerId || undefined,
+        customerCode: angleB.customerCode || undefined,
+        customerName: angleB.customerName || undefined,
         accountingPeriod: angleB.accountingPeriod,
         accountingItem: angleB.accountingItem,
         description: angleB.description,
@@ -255,9 +256,9 @@ export default function AngleBPage() {
         if (isNaN(probability) || probability < 0 || probability > 100) {
           validationErrors.push(`行${index + 1}: 確度は0〜100の範囲で入力してください`);
         }
+        // 取引先は非必須なのでチェックから除外
         if (
           !row.projectId ||
-          !row.customerId ||
           !row.accountingPeriod ||
           !row.accountingItem ||
           !row.description
@@ -281,9 +282,12 @@ export default function AngleBPage() {
             projectId: row.projectId as string,
             projectCode: row.projectCode as string,
             projectName: row.projectName as string,
-            customerId: row.customerId as string,
-            customerCode: row.customerCode as string,
-            customerName: row.customerName as string,
+            // 取引先は非必須なので、空の場合はundefinedにする
+            ...(row.customerId ? {
+              customerId: row.customerId as string,
+              customerCode: row.customerCode as string,
+              customerName: row.customerName as string,
+            } : {}),
             accountingPeriod: row.accountingPeriod as string,
             accountingItem: row.accountingItem as string,
             description: row.description as string,
@@ -296,22 +300,32 @@ export default function AngleBPage() {
         } else {
           const existing = angleBForecasts.find((a) => a.id === row.id);
           if (existing) {
+            // 取引先は非必須なので、空の場合はnullにする
+            const updateData: any = {
+              projectId: row.projectId as string,
+              projectCode: row.projectCode as string,
+              projectName: row.projectName as string,
+              accountingPeriod: row.accountingPeriod as string,
+              accountingItem: row.accountingItem as string,
+              description: row.description as string,
+              amount: String(row.amount),
+              probability: Number(row.probability),
+              remarks: (row.remarks as string) || "",
+            };
+            
+            if (row.customerId) {
+              updateData.customerId = row.customerId as string;
+              updateData.customerCode = row.customerCode as string;
+              updateData.customerName = row.customerName as string;
+            } else {
+              updateData.customerId = null;
+              updateData.customerCode = null;
+              updateData.customerName = null;
+            }
+            
             await updateMutation.mutateAsync({
               id: row.id,
-              data: {
-                projectId: row.projectId as string,
-                projectCode: row.projectCode as string,
-                projectName: row.projectName as string,
-                customerId: row.customerId as string,
-                customerCode: row.customerCode as string,
-                customerName: row.customerName as string,
-                accountingPeriod: row.accountingPeriod as string,
-                accountingItem: row.accountingItem as string,
-                description: row.description as string,
-                amount: String(row.amount),
-                probability: Number(row.probability),
-                remarks: (row.remarks as string) || "",
-              },
+              data: updateData,
               filter,
             });
           }
@@ -330,9 +344,9 @@ export default function AngleBPage() {
           projectId: angleB.projectId,
           projectCode: angleB.projectCode,
           projectName: angleB.projectName,
-          customerId: angleB.customerId,
-          customerCode: angleB.customerCode,
-          customerName: angleB.customerName,
+          customerId: angleB.customerId || undefined,
+          customerCode: angleB.customerCode || undefined,
+          customerName: angleB.customerName || undefined,
           accountingPeriod: angleB.accountingPeriod,
           accountingItem: angleB.accountingItem,
           description: angleB.description,
@@ -381,9 +395,9 @@ export default function AngleBPage() {
           projectId: angleB.projectId,
           projectCode: angleB.projectCode,
           projectName: angleB.projectName,
-          customerId: angleB.customerId,
-          customerCode: angleB.customerCode,
-          customerName: angleB.customerName,
+          customerId: angleB.customerId || undefined,
+          customerCode: angleB.customerCode || undefined,
+          customerName: angleB.customerName || undefined,
           accountingPeriod: angleB.accountingPeriod,
           accountingItem: angleB.accountingItem,
           description: angleB.description,
