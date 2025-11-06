@@ -224,6 +224,7 @@ export default function AngleBPage() {
         probability: angleB.probability,
         remarks: angleB.remarks || "",
         _modified: false,
+        _selected: false,
       }));
       setLocalRows(freshGridRows);
       lastSyncedDataRef.current = angleBForecasts;
@@ -354,6 +355,7 @@ export default function AngleBPage() {
           probability: angleB.probability,
           remarks: angleB.remarks || "",
           _modified: false,
+          _selected: false,
         }));
         setLocalRows(freshRows);
       }
@@ -405,6 +407,7 @@ export default function AngleBPage() {
           probability: angleB.probability,
           remarks: angleB.remarks || "",
           _modified: false,
+          _selected: false,
         }));
         setLocalRows(freshRows);
       }

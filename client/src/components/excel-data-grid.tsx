@@ -31,6 +31,7 @@ export interface GridRow {
   _modified?: boolean;
   _error?: string;
   _readonly?: boolean;
+  _selected?: boolean;
 }
 
 export type GridRowData = GridRow & Record<string, string | number | boolean | undefined>;
@@ -66,6 +67,17 @@ export function ExcelDataGrid({
   const gridRef = useRef<HTMLDivElement>(null);
   const cellRefs = useRef<Map<string, HTMLTableCellElement>>(new Map());
   const { toast } = useToast();
+
+  // Sync selectedRows with _selected property
+  useEffect(() => {
+    const newSelectedRows = new Set<number>();
+    rows.forEach((row, index) => {
+      if (row._selected) {
+        newSelectedRows.add(index);
+      }
+    });
+    setSelectedRows(newSelectedRows);
+  }, [rows]);
 
   // Focus on active cell when it changes
   useEffect(() => {
@@ -934,6 +946,15 @@ export function ExcelDataGrid({
                         newSelected.delete(actualRowIndex);
                       }
                       setSelectedRows(newSelected);
+                      
+                      // 行データの_selectedも更新
+                      const updatedRows = rows.map((r, idx) => {
+                        if (idx === actualRowIndex) {
+                          return { ...r, _selected: e.target.checked };
+                        }
+                        return r;
+                      });
+                      onRowsChange(updatedRows);
                     }}
                     data-testid={`checkbox-row-${actualRowIndex}`}
                   />
