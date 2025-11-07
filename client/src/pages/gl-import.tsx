@@ -1,9 +1,19 @@
-import { FileUp, Upload, X } from "lucide-react";
+import { FileUp, Trash2, Upload, X } from "lucide-react";
 import { useState } from "react";
 
 import { ExclusionDialog } from "@/components/exclusion-dialog";
 import { GLCSVImportDialog } from "@/components/gl-csv-import-dialog";
 import { ReconciliationStatusBadge } from "@/components/reconciliation-status-badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +22,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { useGLEntries, useSetGLEntriesExclusion } from "@/hooks/useGLEntries";
+import { useDeleteGLByPeriod, useGLEntries, useSetGLEntriesExclusion } from "@/hooks/useGLEntries";
 import { useToast } from "@/hooks/useToast";
 
 export default function GLImportPage() {
@@ -22,6 +32,7 @@ export default function GLImportPage() {
   const [exclusionDialogOpen, setExclusionDialogOpen] = useState(false);
   const [isExcluding, setIsExcluding] = useState(true);
   const [searchFilter, setSearchFilter] = useState<string>("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const { toast } = useToast();
 
   // Fetch GL entries
@@ -30,6 +41,7 @@ export default function GLImportPage() {
     month,
   });
   const setGLExclusion = useSetGLEntriesExclusion();
+  const deleteGLByPeriod = useDeleteGLByPeriod();
 
   // フィルタリング処理
   const filteredGLEntries = glEntries.filter((gl) => {
@@ -96,6 +108,46 @@ export default function GLImportPage() {
         },
       }
     );
+  };
+
+  // 期間（period）を計算
+  const calculatePeriod = (): string | null => {
+    if (!month) return null;
+    // 年度は会計年度（4月～翌年3月）として扱う
+    // 月が4月以上の場合：fiscalYear-月
+    // 月が1-3月の場合：(fiscalYear + 1)-月
+    const year = month >= 4 ? fiscalYear : fiscalYear + 1;
+    return `${year}-${month.toString().padStart(2, '0')}`;
+  };
+
+  const handleDeleteGL = () => {
+    const period = calculatePeriod();
+    if (!period) {
+      toast({
+        variant: "destructive",
+        title: "月を選択してください",
+        description: "GL データ削除には月の選択が必要です",
+      });
+      return;
+    }
+
+    deleteGLByPeriod.mutate(period, {
+      onSuccess: (data) => {
+        toast({
+          title: "GL データ削除完了",
+          description: data.data?.message || `期間（${period}）のGLデータを削除しました`,
+        });
+        setDeleteDialogOpen(false);
+        handleRefresh();
+      },
+      onError: (error: any) => {
+        toast({
+          variant: "destructive",
+          title: "削除エラー",
+          description: error.message || "GL データ削除中にエラーが発生しました",
+        });
+      },
+    });
   };
 
   // Generate year and month options
@@ -170,7 +222,15 @@ export default function GLImportPage() {
                 </Select>
               </div>
               
-              <div className="ml-auto">
+              <div className="ml-auto flex gap-2">
+                <Button
+                  variant="destructive"
+                  onClick={() => setDeleteDialogOpen(true)}
+                  disabled={!month}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  GL データ削除
+                </Button>
                 <GLCSVImportDialog />
               </div>
             </div>
@@ -383,6 +443,32 @@ export default function GLImportPage() {
           isExcluding={isExcluding}
           onConfirm={handleConfirmExclusion}
         />
+
+        {/* Delete Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>GL データ削除の確認</AlertDialogTitle>
+              <AlertDialogDescription>
+                期間（{calculatePeriod() || '未選択'}）のGLデータを削除します。
+                <br />
+                突合済みのデータは突合解除後に削除されます。
+                <br />
+                この操作は取り消せません。
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>キャンセル</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleDeleteGL}
+                disabled={deleteGLByPeriod.isPending}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                {deleteGLByPeriod.isPending ? "削除中..." : "削除"}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );

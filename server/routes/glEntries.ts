@@ -272,6 +272,38 @@ router.get('/period/:period', requireAuth, async (req: Request, res: Response) =
 });
 
 /**
+ * 期間別GLデータ削除API
+ * DELETE /api/gl-entries/period/:period
+ */
+router.delete('/period/:period', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { period } = req.params;
+    
+    // 期間フォーマット検証（YYYY-MM形式）
+    if (!/^\d{4}-\d{2}$/.test(period)) {
+      return res.status(400).json({
+        success: false,
+        message: '期間フォーマットが正しくありません（YYYY-MM形式で指定してください）',
+      });
+    }
+
+    const result = await glEntryService.deleteByPeriod(period);
+
+    res.json({
+      success: true,
+      data: result,
+      message: `期間（${period}）のGLデータを削除しました（削除: ${result.deletedCount}件、突合解除: ${result.unmatchedCount}件）`,
+    });
+  } catch (error: any) {
+    console.error('期間別GLデータ削除エラー:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || '期間別GLデータの削除中にエラーが発生しました',
+    });
+  }
+});
+
+/**
  * 突合されていないGLデータ取得API
  * GET /api/gl-entries/unmatched
  */

@@ -45,11 +45,14 @@ export function GLCSVImportDialog() {
         setOpen(false);
         setSelectedFile(null);
       },
-      onError: () => {
+      onError: (error: any) => {
+        const errorMessage = error?.message || "CSVファイルの取込中にエラーが発生しました";
+        const isExistingDataError = errorMessage.includes("既存のGLデータが");
+        
         toast({
           variant: "destructive",
           title: "CSV取込エラー",
-          description: "CSVファイルの取込中にエラーが発生しました",
+          description: errorMessage + (isExistingDataError ? " 先に「GL データ削除」ボタンで月度データを削除してから取り込んでください。" : ""),
         });
       },
     });

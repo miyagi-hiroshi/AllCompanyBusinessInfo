@@ -8,6 +8,8 @@ import { db } from '../db';
 import { AppError } from '../middleware/errorHandler';
 import { GLEntryRepository } from '../storage/glEntry';
 import { OrderForecastRepository } from '../storage/orderForecast';
+import { ReconciliationLogRepository } from '../storage/reconciliationLog';
+import { ReconciliationService } from './reconciliationService';
 
 /**
  * GL総勘定元帳管理サービスクラス
@@ -16,10 +18,20 @@ import { OrderForecastRepository } from '../storage/orderForecast';
  * @responsibility GLデータの作成・更新・削除・突合処理時のビジネスルール適用
  */
 export class GLEntryService {
+  private reconciliationService: ReconciliationService;
+
   constructor(
     private glEntryRepository: GLEntryRepository,
     private orderForecastRepository: OrderForecastRepository
-  ) {}
+  ) {
+    // ReconciliationServiceを初期化
+    const reconciliationLogRepository = new ReconciliationLogRepository();
+    this.reconciliationService = new ReconciliationService(
+      reconciliationLogRepository,
+      orderForecastRepository,
+      glEntryRepository
+    );
+  }
 
   /**
    * GLデータ一覧取得
@@ -541,6 +553,23 @@ export class GLEntryService {
           });
       });
 
+      // CSVに含まれるすべての期間（period）を抽出
+      const periods = new Set<string>();
+      for (const glEntry of results) {
+        periods.add(glEntry.period);
+      }
+
+      // 各期間について既存データをチェック
+      for (const period of periods) {
+        const existingData = await this.glEntryRepository.findByPeriod(period);
+        if (existingData.length > 0) {
+          throw new AppError(
+            `対象期間（${period}）に既存のGLデータが${existingData.length}件存在します。先に月度データを削除してから取り込んでください。`,
+            400
+          );
+        }
+      }
+
       // トランザクション内で一括登録
       if (results.length > 0) {
         await db.transaction(async (_tx) => {
@@ -590,6 +619,61 @@ export class GLEntryService {
     } catch (error) {
       console.error('除外設定エラー:', error);
       throw new AppError('除外設定の更新中にエラーが発生しました', 500);
+    }
+  }
+
+  /**
+   * 期間でGLデータを削除（突合解除も含む）
+   * 
+   * @param period - 期間（YYYY-MM形式）
+   * @returns 削除件数、突合解除件数
+   */
+  async deleteByPeriod(period: string): Promise<{
+    deletedCount: number;
+    unmatchedCount: number;
+  }> {
+    try {
+      // 対象期間のGLデータを取得
+      const glEntries = await this.glEntryRepository.findByPeriod(period);
+      
+      if (glEntries.length === 0) {
+        return { deletedCount: 0, unmatchedCount: 0 };
+      }
+
+      // 突合済みデータを抽出
+      const matchedEntries = glEntries.filter(gl => gl.reconciliationStatus === 'matched' && gl.orderMatchId);
+
+      let unmatchedCount = 0;
+
+      // トランザクション内で突合解除と削除を実行
+      await db.transaction(async (_tx) => {
+        // 突合済みデータの突合解除
+        for (const glEntry of matchedEntries) {
+          if (glEntry.orderMatchId) {
+            try {
+              await this.reconciliationService.unmatchReconciliation(glEntry.id, glEntry.orderMatchId);
+              unmatchedCount++;
+            } catch (error) {
+              console.error(`突合解除エラー (GL ID: ${glEntry.id}):`, error);
+              // エラーが発生しても処理を続行
+            }
+          }
+        }
+
+        // すべてのGLデータを削除
+        await this.glEntryRepository.deleteByPeriod(period);
+      });
+
+      return {
+        deletedCount: glEntries.length,
+        unmatchedCount,
+      };
+    } catch (error) {
+      console.error('期間削除エラー:', error);
+      if (error instanceof AppError) {
+        throw error;
+      }
+      throw new AppError('期間削除処理中にエラーが発生しました', 500);
     }
   }
 }

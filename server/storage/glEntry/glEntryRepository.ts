@@ -209,6 +209,14 @@ export class GLEntryRepository {
     const result = await db.delete(glEntries).where(eq(glEntries.id, id));
     return (result.rowCount ?? 0) > 0;
   }
+
+  /**
+   * 期間でGLデータを削除
+   */
+  async deleteByPeriod(period: string): Promise<number> {
+    const result = await db.delete(glEntries).where(eq(glEntries.period, period));
+    return result.rowCount ?? 0;
+  }
   
   /**
    * 突合ステータスを更新

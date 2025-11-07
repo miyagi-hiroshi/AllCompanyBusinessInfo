@@ -91,3 +91,16 @@ export function useSetGLEntriesExclusion() {
     },
   });
 }
+
+export function useDeleteGLByPeriod() {
+  return useMutation({
+    mutationFn: async (period: string) => {
+      const res = await apiRequest("DELETE", `/api/gl-entries/period/${period}`, undefined);
+      return await res.json();
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["/api/gl-entries"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/order-forecasts"] });
+    },
+  });
+}
