@@ -521,4 +521,186 @@ export class OrderForecastService {
       throw new AppError('月次サマリの取得中にエラーが発生しました', 500);
     }
   }
+
+  /**
+   * 営業担当者別サマリ取得
+   * 
+   * @param fiscalYear - 年度
+   * @param includeAngleB - 角度B案件を含むかどうか
+   * @param salesPersons - 営業担当者リスト（オプション）
+   * @returns 営業担当者別・サービス区分別の集計データ
+   */
+  async getSalesPersonSummary(fiscalYear: number, includeAngleB: boolean = false, salesPersons?: string[]): Promise<{
+    fiscalYear: number;
+    salesPersons: string[];
+    summaries: Array<{
+      salesPerson: string;
+      serviceType: string;
+      analysisType: string;
+      revenueWithAngleB: number;
+      costOfSalesWithAngleB: number;
+      grossProfitWithAngleB: number;
+      revenueWithoutAngleB: number;
+      costOfSalesWithoutAngleB: number;
+      grossProfitWithoutAngleB: number;
+    }>;
+  }> {
+    try {
+      // 計上区分のマッピング定義（名称ベース）
+      const revenueNames = ['保守売上', 'ソフト売上', '商品売上', '消耗品売上', 'その他売上']; // 純売上
+      const costOfSalesNames = ['仕入高', '外注加工費', '支払保守料', '期首商品棚卸高', '期首製品棚卸高']; // 売上原価
+
+      // 並列でデータを取得（パフォーマンス最適化）
+      const [orderForecastData, angleBData] = await Promise.all([
+        this.orderForecastRepository.getSalesPersonSummary(fiscalYear, salesPersons),
+        includeAngleB ? this.angleBForecastRepository.getSalesPersonSummary(fiscalYear, salesPersons) : Promise.resolve([])
+      ]);
+
+      console.log('営業担当者別サマリ - データ取得結果:', {
+        fiscalYear,
+        salesPersons,
+        orderForecastDataCount: orderForecastData.length,
+        angleBDataCount: angleBData.length,
+        firstOrderForecastRow: orderForecastData[0],
+        firstAngleBRow: angleBData[0]
+      });
+
+      // 営業担当者・サービス区分・分析区分別の集計データを構築
+      const summaryMap = new Map<string, {
+        salesPerson: string;
+        serviceType: string;
+        analysisType: string;
+        revenueWithAngleB: number;
+        costOfSalesWithAngleB: number;
+        revenueWithoutAngleB: number;
+        costOfSalesWithoutAngleB: number;
+      }>();
+
+      // 受発注見込みデータを処理（角度B含まない）
+      let processedCount = 0;
+      let skippedCount = 0;
+      for (const row of orderForecastData) {
+        if (!row.sales_person || !row.service_type || !row.analysis_type) {
+          skippedCount++;
+          continue;
+        }
+        
+        const key = `${row.sales_person}_${row.service_type}_${row.analysis_type}`;
+        const amount = parseFloat(row.total_amount);
+        
+        if (!summaryMap.has(key)) {
+          summaryMap.set(key, {
+            salesPerson: row.sales_person,
+            serviceType: row.service_type,
+            analysisType: row.analysis_type,
+            revenueWithAngleB: 0,
+            costOfSalesWithAngleB: 0,
+            revenueWithoutAngleB: 0,
+            costOfSalesWithoutAngleB: 0,
+          });
+        }
+        
+        const summary = summaryMap.get(key)!;
+        
+        // 計上科目名称で分類
+        if (revenueNames.includes(row.accounting_item)) {
+          summary.revenueWithoutAngleB += amount;
+          summary.revenueWithAngleB += amount;
+          processedCount++;
+        } else if (costOfSalesNames.includes(row.accounting_item)) {
+          summary.costOfSalesWithoutAngleB += amount;
+          summary.costOfSalesWithAngleB += amount;
+          processedCount++;
+        } else {
+          console.log('営業担当者別サマリ - 未分類の計上科目:', {
+            sales_person: row.sales_person,
+            service_type: row.service_type,
+            analysis_type: row.analysis_type,
+            accounting_item: row.accounting_item,
+            amount: row.total_amount
+          });
+        }
+      }
+      
+      console.log('営業担当者別サマリ - 受発注見込みデータ処理結果:', {
+        totalRows: orderForecastData.length,
+        processedCount,
+        skippedCount,
+        summaryMapSize: summaryMap.size
+      });
+
+      // 角度B案件データを処理（includeAngleBがtrueの場合）
+      if (includeAngleB) {
+        for (const row of angleBData) {
+          if (!row.sales_person || !row.service_type || !row.analysis_type) continue;
+          
+          const key = `${row.sales_person}_${row.service_type}_${row.analysis_type}`;
+          const amount = parseFloat(row.total_amount);
+          
+          if (!summaryMap.has(key)) {
+            summaryMap.set(key, {
+              salesPerson: row.sales_person,
+              serviceType: row.service_type,
+              analysisType: row.analysis_type,
+              revenueWithAngleB: 0,
+              costOfSalesWithAngleB: 0,
+              revenueWithoutAngleB: 0,
+              costOfSalesWithoutAngleB: 0,
+            });
+          }
+          
+          const summary = summaryMap.get(key)!;
+          
+          // 角度B案件の計上科目は名称で格納されているため、名称で判定
+          const accountingItemName = row.accounting_item;
+          
+          // 売上系（保守売上、ソフト売上、商品売上、消耗品売上、その他売上）
+          if (accountingItemName === '保守売上' || accountingItemName === 'ソフト売上' || 
+              accountingItemName === '商品売上' || accountingItemName === '消耗品売上' || 
+              accountingItemName === 'その他売上') {
+            summary.revenueWithAngleB += amount;
+          }
+          // 仕入高
+          else if (accountingItemName === '仕入高') {
+            summary.costOfSalesWithAngleB += amount;
+          }
+        }
+      }
+
+      // 結果を配列に変換し、粗利を計算
+      const summaries = Array.from(summaryMap.values()).map(summary => ({
+        salesPerson: summary.salesPerson,
+        serviceType: summary.serviceType,
+        analysisType: summary.analysisType,
+        revenueWithAngleB: summary.revenueWithAngleB,
+        costOfSalesWithAngleB: summary.costOfSalesWithAngleB,
+        grossProfitWithAngleB: summary.revenueWithAngleB - summary.costOfSalesWithAngleB,
+        revenueWithoutAngleB: summary.revenueWithoutAngleB,
+        costOfSalesWithoutAngleB: summary.costOfSalesWithoutAngleB,
+        grossProfitWithoutAngleB: summary.revenueWithoutAngleB - summary.costOfSalesWithoutAngleB,
+      }));
+
+      // 営業担当者リストを取得（選択されていない場合は全営業担当者）
+      const allSalesPersons = Array.from(new Set(summaries.map(s => s.salesPerson))).sort();
+      const selectedSalesPersons = salesPersons && salesPersons.length > 0 ? salesPersons : allSalesPersons;
+
+      console.log('営業担当者別サマリ取得結果:', {
+        fiscalYear,
+        orderForecastDataCount: orderForecastData.length,
+        angleBDataCount: angleBData.length,
+        summariesCount: summaries.length,
+        allSalesPersonsCount: allSalesPersons.length,
+        firstSummary: summaries[0]
+      });
+
+      return {
+        fiscalYear,
+        salesPersons: selectedSalesPersons,
+        summaries
+      };
+    } catch (error) {
+      console.error('営業担当者別サマリ取得エラー:', error);
+      throw new AppError('営業担当者別サマリの取得中にエラーが発生しました', 500);
+    }
+  }
 }

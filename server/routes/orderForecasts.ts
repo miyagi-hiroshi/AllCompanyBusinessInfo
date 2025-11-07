@@ -176,6 +176,44 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
 });
 
 /**
+ * 営業担当者別サマリ取得API
+ * GET /api/order-forecasts/sales-person-summary
+ */
+router.get('/sales-person-summary', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { fiscalYear, includeAngleB, salesPersons } = req.query;
+    
+    if (!fiscalYear || isNaN(Number(fiscalYear))) {
+      return res.status(400).json({
+        success: false,
+        message: '年度を指定してください',
+      });
+    }
+
+    const includeAngleBFlag = includeAngleB === 'true';
+    const salesPersonsParam = typeof salesPersons === 'string' && salesPersons.length > 0
+      ? salesPersons.split(',').filter(p => p.trim().length > 0)
+      : undefined;
+    
+    const summary = await orderForecastService.getSalesPersonSummary(
+      Number(fiscalYear),
+      includeAngleBFlag,
+      salesPersonsParam
+    );
+    
+    res.json({
+      success: true,
+      data: summary,
+    });
+  } catch (error: any) {
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || '営業担当者別サマリの取得中にエラーが発生しました',
+    });
+  }
+});
+
+/**
  * 月次サマリ取得API
  * GET /api/order-forecasts/monthly-summary
  */

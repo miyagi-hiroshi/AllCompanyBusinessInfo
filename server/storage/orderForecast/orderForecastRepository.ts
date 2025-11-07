@@ -504,4 +504,59 @@ export class OrderForecastRepository {
     
     return summaryMap;
   }
+
+  /**
+   * 営業担当者別・サービス区分別サマリ取得（角度B含まない）
+   * 
+   * @param fiscalYear - 年度
+   * @param salesPersons - 営業担当者リスト（オプション）
+   * @returns 営業担当者別・サービス区分別の集計データ
+   */
+  async getSalesPersonSummary(fiscalYear: number, salesPersons?: string[]): Promise<Array<{
+    sales_person: string;
+    service_type: string;
+    analysis_type: string;
+    accounting_item: string;
+    total_amount: string;
+  }>> {
+    const startPeriod = `${fiscalYear}-04`;
+    const endPeriod = `${fiscalYear + 1}-03`;
+    
+    // WHERE条件を構築
+    const whereConditions = [
+      sql`${orderForecasts.accountingPeriod} >= ${startPeriod}`,
+      sql`${orderForecasts.accountingPeriod} <= ${endPeriod}`,
+      sql`${projects.salesPerson} IS NOT NULL`,
+      sql`${projects.serviceType} IS NOT NULL`,
+      sql`${projects.analysisType} IS NOT NULL`
+    ];
+    
+    // 営業担当者フィルタ
+    if (salesPersons && salesPersons.length > 0) {
+      whereConditions.push(inArray(projects.salesPerson, salesPersons));
+    }
+    
+    const result = await db
+      .select({
+        sales_person: projects.salesPerson,
+        service_type: projects.serviceType,
+        analysis_type: projects.analysisType,
+        accounting_item: orderForecasts.accountingItem,
+        total_amount: sql<string>`COALESCE(SUM(${orderForecasts.amount}), 0)`
+      })
+      .from(orderForecasts)
+      .leftJoin(projects, eq(orderForecasts.projectId, projects.id))
+      .where(and(...whereConditions))
+      .groupBy(projects.salesPerson, projects.serviceType, projects.analysisType, orderForecasts.accountingItem)
+      .orderBy(projects.salesPerson, projects.serviceType, projects.analysisType, orderForecasts.accountingItem);
+    
+    // nullを除外して型安全性を確保
+    return result.filter((row): row is {
+      sales_person: string;
+      service_type: string;
+      analysis_type: string;
+      accounting_item: string;
+      total_amount: string;
+    } => row.sales_person !== null && row.service_type !== null && row.analysis_type !== null);
+  }
 }

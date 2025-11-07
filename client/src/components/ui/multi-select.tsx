@@ -39,12 +39,15 @@ export function MultiSelect({
   className,
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false);
+  const [shouldClose, setShouldClose] = React.useState(false);
 
   const handleSelect = (value: string) => {
     const newSelected = selected.includes(value)
       ? selected.filter((item) => item !== value)
       : [...selected, value];
     onChange(newSelected);
+    // Popoverを閉じないようにする
+    setShouldClose(false);
   };
 
   const handleRemove = (value: string, e: React.MouseEvent) => {
@@ -52,19 +55,34 @@ export function MultiSelect({
     onChange(selected.filter((item) => item !== value));
   };
 
+  const handleOpenChange = (newOpen: boolean) => {
+    if (shouldClose) {
+      setOpen(newOpen);
+      setShouldClose(false);
+    } else {
+      // shouldCloseがfalseの場合は、Popoverを開いたままにする
+      if (newOpen) {
+        setOpen(true);
+      }
+      // newOpenがfalseの場合でも、shouldCloseがfalseなら閉じない
+    }
+  };
 
   const selectedLabels = options
     .filter((option) => selected.includes(option.value))
     .map((option) => option.label);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
           role="combobox"
           aria-expanded={open}
           className={cn("w-full justify-between", className)}
+          onClick={() => {
+            setShouldClose(false);
+          }}
         >
           <div className="flex gap-1 flex-wrap">
             {selected.length === 0 ? (
@@ -89,7 +107,14 @@ export function MultiSelect({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
+      <PopoverContent 
+        className="w-full p-0" 
+        align="start"
+        onInteractOutside={() => {
+          // 外側をクリックした場合のみ閉じる
+          setShouldClose(true);
+        }}
+      >
         <Command>
           <CommandInput placeholder="検索..." />
           <CommandList>
@@ -99,7 +124,14 @@ export function MultiSelect({
                 <CommandItem
                   key={option.value}
                   value={option.value}
-                  onSelect={() => handleSelect(option.value)}
+                  onSelect={() => {
+                    handleSelect(option.value);
+                    // Popoverを閉じないようにするため、setTimeoutで開いたままにする
+                    setTimeout(() => {
+                      setShouldClose(false);
+                      setOpen(true);
+                    }, 0);
+                  }}
                 >
                   <div
                     className={cn(

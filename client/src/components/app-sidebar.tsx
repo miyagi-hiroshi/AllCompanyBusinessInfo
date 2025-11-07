@@ -33,6 +33,11 @@ const menuItems = {
       icon: BarChart3,
     },
     {
+      title: "営業担当者別サマリ",
+      url: "/sales-person-summary",
+      icon: BarChart3,
+    },
+    {
       title: "GL突合",
       url: "/gl-reconciliation",
       icon: GitMerge,

@@ -20,6 +20,7 @@ import NotFound from "@/pages/not-found";
 import OrderForecastPage from "@/pages/order-forecast";
 import ProjectAnalysisPage from "@/pages/project-analysis";
 import ProjectsPage from "@/pages/projects";
+import SalesPersonSummaryPage from "@/pages/sales-person-summary";
 import StaffingPage from "@/pages/staffing";
 import StaffingCheckPage from "@/pages/staffing-check";
 import StaffingProjectPage from "@/pages/staffing-project";
@@ -32,6 +33,7 @@ function Router() {
       <Route path="/" component={DashboardPage} />
       <Route path="/project-analysis" component={ProjectAnalysisPage} />
       <Route path="/accounting-summary" component={AccountingSummaryPage} />
+      <Route path="/sales-person-summary" component={SalesPersonSummaryPage} />
       <Route path="/gl-import" component={GLImportPage} />
       <Route path="/gl-reconciliation" component={GLReconciliationPage} />
       <Route path="/order-forecast" component={OrderForecastPage} />
