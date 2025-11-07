@@ -37,8 +37,10 @@ export function AdvancedFilterPanel({ filter, onChange, projects }: AdvancedFilt
   // 月リスト（1-12）
   const months = Array.from({ length: 12 }, (_, i) => i + 1);
 
-  // 選択した年度に紐付くプロジェクトのみフィルタリング
-  const filteredProjects = projects.filter(p => p.fiscalYear === filter.fiscalYear);
+  // 選択した年度に紐付くプロジェクトのみフィルタリングし、プロジェクトコード昇順でソート
+  const filteredProjects = projects
+    .filter(p => p.fiscalYear === filter.fiscalYear)
+    .sort((a, b) => a.code.localeCompare(b.code));
 
   const handleFiscalYearChange = (year: string) => {
     onChange({
@@ -135,7 +137,7 @@ export function AdvancedFilterPanel({ filter, onChange, projects }: AdvancedFilt
                 value={project.id} 
                 data-testid={`option-project-${project.id}`}
               >
-                {project.code} - {project.name}
+                {project.name}
               </SelectItem>
             ))}
           </SelectContent>

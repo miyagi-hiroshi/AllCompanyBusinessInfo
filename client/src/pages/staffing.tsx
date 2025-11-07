@@ -1,5 +1,5 @@
 import type { NewStaffing, Staffing } from "@shared/schema";
-import { CalendarDays, Pencil, Plus, Trash2 } from "lucide-react";
+import { Calendar, CalendarDays, FolderKanban, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import {
@@ -248,26 +248,85 @@ export default function StaffingPage() {
   );
 
   return (
-    <div className="h-full p-6">
-      <div className="mb-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+    <div className="flex flex-col h-screen">
+      {/* Header */}
+      <header className="flex items-center justify-between px-6 py-4 border-b bg-card/50 backdrop-blur-md sticky top-0 z-20">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
             <CalendarDays className="h-6 w-6 text-primary" />
-            <h1 className="text-2xl font-bold" data-testid="text-page-title">
+            <h1 className="text-xl font-semibold" data-testid="text-page-title">
               月別工数入力
             </h1>
           </div>
-        </div>
-        <p className="text-muted-foreground mt-1">月別の要員配置を登録・管理します</p>
-      </div>
+          <div className="h-6 w-px bg-border" />
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* 年度選択 */}
+            <div className="flex items-center gap-2">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <Select
+                value={selectedYear.toString()}
+                onValueChange={(value) => setSelectedYear(parseInt(value))}
+              >
+                <SelectTrigger id="fiscal-year-select" className="w-[120px]" data-testid="select-fiscal-year">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {FISCAL_YEARS.map((year) => (
+                    <SelectItem key={year} value={year.toString()}>
+                      {year}年度
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-      <MonthlyStaffingInput
+            {/* 月選択 */}
+            <div className="flex items-center gap-2">
+              <CalendarDays className="h-4 w-4 text-muted-foreground" />
+              <Select
+                value={selectedMonth.toString()}
+                onValueChange={(value) => setSelectedMonth(parseInt(value))}
+              >
+                <SelectTrigger id="month-select" className="w-[100px]" data-testid="select-month">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MONTHS.map((month) => (
+                    <SelectItem key={month} value={month.toString()}>
+                      {month}月
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* プロジェクト選択 */}
+            <div className="flex items-center gap-2">
+              <FolderKanban className="h-4 w-4 text-muted-foreground" />
+              <MultiSelect
+                options={productivityProjects
+                  .filter((p) => p.fiscalYear === selectedYear)
+                  .sort((a, b) => a.code.localeCompare(b.code))
+                  .map((project) => ({
+                    label: project.name,
+                    value: project.id,
+                  }))}
+                selected={selectedProjectIds}
+                onChange={setSelectedProjectIds}
+                placeholder="全て"
+                className="w-[300px]"
+              />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* Main Content */}
+      <main className="flex-1 overflow-hidden p-6">
+        <MonthlyStaffingInput
         selectedYear={selectedYear}
-        setSelectedYear={setSelectedYear}
         selectedMonth={selectedMonth}
-        setSelectedMonth={setSelectedMonth}
         selectedProjectIds={selectedProjectIds}
-        setSelectedProjectIds={setSelectedProjectIds}
         productivityProjects={productivityProjects}
         projects={projects}
         employees={employees}
@@ -292,18 +351,16 @@ export default function StaffingPage() {
         createMutation={createMutation}
         updateMutation={updateMutation}
         deleteMutation={deleteMutation}
-      />
+        />
+      </main>
     </div>
   );
 }
 
 function MonthlyStaffingInput({
   selectedYear,
-  setSelectedYear,
   selectedMonth,
-  setSelectedMonth,
   selectedProjectIds,
-  setSelectedProjectIds,
   productivityProjects,
   projects,
   employees,
@@ -330,11 +387,8 @@ function MonthlyStaffingInput({
   deleteMutation: _deleteMutation,
 }: {
   selectedYear: number;
-  setSelectedYear: (year: number) => void;
   selectedMonth: number;
-  setSelectedMonth: (month: number) => void;
   selectedProjectIds: string[];
-  setSelectedProjectIds: (ids: string[]) => void;
   productivityProjects: any[];
   projects: any[];
   employees: any[];
@@ -361,57 +415,7 @@ function MonthlyStaffingInput({
   deleteMutation: any;
 }) {
   return (
-    <>
-      <div className="flex items-center gap-2">
-        <Label htmlFor="fiscal-year-select">年度:</Label>
-        <Select
-          value={selectedYear.toString()}
-          onValueChange={(value) => setSelectedYear(parseInt(value))}
-        >
-          <SelectTrigger id="fiscal-year-select" className="w-[120px]" data-testid="select-fiscal-year">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {FISCAL_YEARS.map((year) => (
-              <SelectItem key={year} value={year.toString()}>
-                {year}年度
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Label htmlFor="month-select">月:</Label>
-        <Select
-          value={selectedMonth.toString()}
-          onValueChange={(value) => setSelectedMonth(parseInt(value))}
-        >
-          <SelectTrigger id="month-select" className="w-[100px]" data-testid="select-month">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {MONTHS.map((month) => (
-              <SelectItem key={month} value={month.toString()}>
-                {month}月
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Label htmlFor="project-select">プロジェクト:</Label>
-        <MultiSelect
-          options={productivityProjects
-            .filter((p) => p.fiscalYear === selectedYear)
-            .map((project) => ({
-              label: project.name,
-              value: project.id,
-            }))}
-          selected={selectedProjectIds}
-          onChange={setSelectedProjectIds}
-          placeholder="全て"
-          className="w-[300px]"
-        />
-      </div>
-
+    <div className="space-y-6">
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -612,7 +616,7 @@ function MonthlyStaffingInput({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+    </div>
   );
 }
 

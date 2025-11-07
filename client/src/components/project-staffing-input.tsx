@@ -6,8 +6,6 @@ import { useEffect,useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { MultiSelect } from "@/components/ui/multi-select";
 import {
   Select,
   SelectContent,
@@ -23,13 +21,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useEmployees } from "@/hooks/useEmployees";
+import type { Employee } from "@/hooks/useEmployees";
 import { useProjects } from "@/hooks/useMasters";
 import { useBulkCreateStaffing, useBulkDeleteStaffing,useBulkUpdateStaffing } from "@/hooks/useStaffing";
 import { useToast } from "@/hooks/useToast";
 import { apiRequest } from "@/lib/queryClient";
 
-const FISCAL_YEARS = [2023, 2024, 2025, 2026];
 const MONTHS = [
   { value: 4, label: "4月" },
   { value: 5, label: "5月" },
@@ -54,16 +51,19 @@ interface StaffingRow {
   monthlyHours: Record<number, number>; // month -> workHours
 }
 
-export function ProjectStaffingInput() {
+interface ProjectStaffingInputProps {
+  selectedYear: number;
+  selectedProjectIds: string[];
+  selectedEmployeeId: string;
+  employees: Employee[];
+}
+
+export function ProjectStaffingInput({ selectedYear, selectedProjectIds, selectedEmployeeId, employees }: ProjectStaffingInputProps) {
   const { toast } = useToast();
-  const [selectedYear, setSelectedYear] = useState<number>(2025);
-  const [selectedProjectIds, setSelectedProjectIds] = useState<string[]>([]);
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState<string>("all");
   const [staffingRows, setStaffingRows] = useState<StaffingRow[]>([]);
 
   // Fetch data
   const { data: projects = [] } = useProjects(selectedYear);
-  const { data: employees = [] } = useEmployees();
   
   // 生産性プロジェクトのみをフィルタリング
   const productivityProjects = projects.filter(p => p.analysisType === "生産性");
@@ -370,67 +370,6 @@ export function ProjectStaffingInput() {
 
   return (
     <div className="space-y-6">
-      {/* 年度・プロジェクト選択 */}
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <Label htmlFor="project-fiscal-year">年度:</Label>
-          <Select
-            value={selectedYear.toString()}
-            onValueChange={(value) => setSelectedYear(parseInt(value))}
-          >
-            <SelectTrigger id="project-fiscal-year" className="w-[120px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {FISCAL_YEARS.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}年度
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Label htmlFor="project-select">対象プロジェクト:</Label>
-          <MultiSelect
-            options={productivityProjects
-              .filter((p) => p.fiscalYear === selectedYear)
-              .map((project) => ({
-                label: project.name,
-                value: project.id,
-              }))}
-            selected={selectedProjectIds}
-            onChange={setSelectedProjectIds}
-            placeholder="プロジェクトを選択"
-            className="w-[400px]"
-          />
-        </div>
-
-        <div className="flex items-center gap-2">
-          <Label htmlFor="employee-select">対象従業員:</Label>
-          <Select
-            value={selectedEmployeeId}
-            onValueChange={setSelectedEmployeeId}
-          >
-            <SelectTrigger id="employee-select" className="w-[200px]">
-              <SelectValue placeholder="全従業員" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">全従業員</SelectItem>
-              {employees
-                .filter((employee) => employee.status !== "terminated")
-                .sort((a, b) => parseInt(a.id) - parseInt(b.id))
-                .map((employee) => (
-                  <SelectItem key={employee.id} value={employee.employeeId}>
-                    {employee.lastName} {employee.firstName}
-                  </SelectItem>
-                ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
       {/* 入力テーブル */}
       <Card>
         <CardHeader>
@@ -522,6 +461,7 @@ export function ProjectStaffingInput() {
                             {/* 既存データのプロジェクトと選択されたプロジェクトの両方を表示 */}
                             {productivityProjects
                               .filter((p) => p.fiscalYear === selectedYear)
+                              .sort((a, b) => a.code.localeCompare(b.code))
                               .map((project) => (
                                 <SelectItem key={project.id} value={project.id}>
                                   {project.name}
