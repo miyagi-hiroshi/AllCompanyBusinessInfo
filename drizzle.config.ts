@@ -11,7 +11,7 @@ export default defineConfig({
   dbCredentials: {
     url: process.env.DATABASE_URL,
   },
-  // tablesFilterを削除し、app-schema.tsに定義されたテーブルのみを管理対象とする
-  // app-schema.tsにはappスキーマのテーブルのみが定義されているため、
-  // publicスキーマのテーブルは削除対象として認識されない
+  // publicスキーマのテーブルを明示的に除外
+  // appスキーマのテーブルはapp-schema.tsに定義されているため、自動的に管理対象となる
+  tablesFilter: ["!public.*"],
 });
