@@ -12,6 +12,8 @@
     "check:client": "tsc --project client/tsconfig.json",
     "check:server": "tsc --project server/tsconfig.json",
     "db:push": "drizzle-kit push",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc --noEmit --project tsconfig.eslint.json",
