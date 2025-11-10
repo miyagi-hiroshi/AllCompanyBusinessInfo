@@ -11,7 +11,21 @@ export default defineConfig({
   dbCredentials: {
     url: process.env.DATABASE_URL,
   },
-  // publicスキーマのテーブルを明示的に除外
-  // appスキーマのテーブルはapp-schema.tsに定義されているため、自動的に管理対象となる
-  tablesFilter: ["!public.*"],
+  // appスキーマのテーブルのみを明示的に管理対象とする
+  // publicスキーマのテーブルは除外される
+  tablesFilter: [
+    "app.customers",
+    "app.items",
+    "app.projects",
+    "app.accounting_items",
+    "app.order_forecasts",
+    "app.gl_entries",
+    "app.reconciliation_logs",
+    "app.angle_b_forecasts",
+    "app.budgets_revenue",
+    "app.budgets_expense",
+    "app.budgets_target",
+    "app.staffing",
+    "app.sessions",
+  ],
 });
