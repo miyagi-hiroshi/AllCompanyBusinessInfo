@@ -6,13 +6,12 @@ if (!process.env.DATABASE_URL) {
 
 export default defineConfig({
   out: "./migrations",
-  schema: "./shared/schema/app-schema.ts", // 新規テーブルのみ
+  schema: "./shared/schema/app-schema.ts", // appスキーマのテーブルのみを含む
   dialect: "postgresql",
   dbCredentials: {
     url: process.env.DATABASE_URL,
   },
-  // appスキーマのみを管理対象とする
-  // publicスキーマのテーブルは管理対象外となり、削除対象として認識されない
-  schemaFilter: ["app"],
-  tablesFilter: ["app.*"],
+  // tablesFilterを削除し、app-schema.tsに定義されたテーブルのみを管理対象とする
+  // app-schema.tsにはappスキーマのテーブルのみが定義されているため、
+  // publicスキーマのテーブルは削除対象として認識されない
 });

@@ -6,6 +6,11 @@
  * これにより、マイグレーション時に既存テーブルに影響を与えない。
  */
 
+import { pgSchema } from "drizzle-orm/pg-core";
+
+// appスキーマを定義（Drizzle Kitがスキーマを認識するために必要）
+export const appSchema = pgSchema("app");
+
 // appスキーマのテーブルのみをインポート
 import * as accountingItems from "./accountingItem";
 import * as angleBForecasts from "./angleBForecast";
