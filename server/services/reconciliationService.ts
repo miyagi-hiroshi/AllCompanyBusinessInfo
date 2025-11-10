@@ -230,6 +230,9 @@ export class ReconciliationService {
     glSummary: Array<{ accountCode: string; accountName: string; totalAmount: number; count: number }>;
     orderSummary: Array<{ accountCode: string; accountName: string; totalAmount: number; count: number }>;
     differences: Array<{ accountCode: string; accountName: string; difference: number; glAmount: number; orderAmount: number }>;
+    matchedAmount: number;
+    totalGlAmount: number;
+    totalOrderAmount: number;
   }> {
     try {
       // 計上科目マスタを取得して科目名→科目コードのマッピングを作成
@@ -317,7 +320,20 @@ export class ReconciliationService {
         };
       });
       
-      return { glSummary, orderSummary, differences };
+      // 突合済み金額の計算（GLエントリの突合済み金額を集計）
+      let matchedAmount = 0;
+      for (const gl of glEntries) {
+        if (gl.isExcluded === 'true') continue; // 除外データをスキップ
+        if (gl.reconciliationStatus === 'matched') {
+          matchedAmount += parseFloat(gl.amount);
+        }
+      }
+      
+      // 合計金額の計算
+      const totalGlAmount = glSummary.reduce((sum, item) => sum + item.totalAmount, 0);
+      const totalOrderAmount = orderSummary.reduce((sum, item) => sum + item.totalAmount, 0);
+      
+      return { glSummary, orderSummary, differences, matchedAmount, totalGlAmount, totalOrderAmount };
     } catch (error) {
       console.error('科目別サマリー取得エラー:', error);
       throw new AppError('科目別サマリーの取得中にエラーが発生しました', 500);

@@ -26,7 +26,7 @@ interface GLReconciliationPanelProps {
   period: string;
   orderForecasts: OrderForecast[];
   glEntries: GLEntry[];
-  onReconcile: (type: "exact" | "fuzzy") => void;
+  onReconcile: () => void;
   onManualMatch: (orderId: string, glId: string) => void;
   selectedOrderId?: string | null;
   onSelectOrder?: (orderId: string | null) => void;
@@ -274,23 +274,12 @@ export function GLReconciliationPanel({
               <div className="space-y-3">
                 <Button
                   className="w-full"
-                  onClick={() => onReconcile("exact")}
+                  onClick={() => onReconcile()}
                   data-testid="button-exact-match"
                 >
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   厳格突合実行
-                  <span className="ml-2 text-xs opacity-80">（伝票No + 日付 + 金額）</span>
-                </Button>
-                
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => onReconcile("fuzzy")}
-                  data-testid="button-fuzzy-match"
-                >
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  ファジー突合実行
-                  <span className="ml-2 text-xs opacity-80">（日付±3日 + 金額）</span>
+                  <span className="ml-2 text-xs opacity-80">（月度 + 計上科目 + 摘要文 + 金額）</span>
                 </Button>
               </div>
 

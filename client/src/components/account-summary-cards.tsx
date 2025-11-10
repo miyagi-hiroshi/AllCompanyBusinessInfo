@@ -9,6 +9,9 @@ interface AccountSummaryCardsProps {
     glSummary: Array<{ accountCode: string; accountName: string; totalAmount: number; count: number }>;
     orderSummary: Array<{ accountCode: string; accountName: string; totalAmount: number; count: number }>;
     differences: Array<{ accountCode: string; accountName: string; difference: number; glAmount: number; orderAmount: number }>;
+    matchedAmount?: number;
+    totalGlAmount?: number;
+    totalOrderAmount?: number;
   } | null;
   isLoading: boolean;
 }
@@ -35,10 +38,15 @@ export function AccountSummaryCards({ summary, isLoading }: AccountSummaryCardsP
     return null;
   }
 
-  const totalGlAmount = summary.glSummary.reduce((sum, item) => sum + item.totalAmount, 0);
-  const totalOrderAmount = summary.orderSummary.reduce((sum, item) => sum + item.totalAmount, 0);
+  const totalGlAmount = summary.totalGlAmount ?? summary.glSummary.reduce((sum, item) => sum + item.totalAmount, 0);
+  const totalOrderAmount = summary.totalOrderAmount ?? summary.orderSummary.reduce((sum, item) => sum + item.totalAmount, 0);
   const totalDifference = totalGlAmount - totalOrderAmount;
-  const matchRate = totalGlAmount > 0 ? Math.round((totalOrderAmount / totalGlAmount) * 100) : 0;
+  // 金額突合率: 突合済み金額 / GL金額合計 * 100
+  // 突合済み金額が未定義の場合は、後方互換性のため従来の計算式を使用
+  const matchedAmount = summary.matchedAmount ?? 0;
+  const matchRate = totalGlAmount > 0 
+    ? Math.round((matchedAmount / totalGlAmount) * 100) 
+    : 0;
 
   return (
     <div className="space-y-4">
@@ -97,7 +105,7 @@ export function AccountSummaryCards({ summary, isLoading }: AccountSummaryCardsP
 
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium text-muted-foreground">金額整合率</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">金額突合率</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{matchRate}%</div>
@@ -107,6 +115,9 @@ export function AccountSummaryCards({ summary, isLoading }: AccountSummaryCardsP
                 style={{ width: `${matchRate}%` }}
               />
             </div>
+            <p className="text-xs text-muted-foreground mt-1">
+              突合済み金額の割合
+            </p>
           </CardContent>
         </Card>
       </div>

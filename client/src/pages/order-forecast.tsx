@@ -521,7 +521,7 @@ export default function OrderForecastPage() {
     }
   };
 
-  const handleReconcile = async (_type: "exact" | "fuzzy") => {
+  const handleReconcile = async () => {
     // Require month to be specified for reconciliation
     if (!filter.month) {
       toast({
