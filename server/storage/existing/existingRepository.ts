@@ -8,7 +8,7 @@
  */
 
 import { departments, employees, sessions,users } from '@shared/schema/existing';
-import { jobTypes } from '@shared/schema/job/tables';
+import { jobPositions, jobTypes } from '@shared/schema/job/tables';
 import { and, eq, like } from 'drizzle-orm';
 
 import { db } from '../../db';
@@ -62,8 +62,13 @@ export async function getExistingEmployeeByUserId(userId: string) {
     firstName: employees.firstName,
     lastName: employees.lastName,
     departmentId: employees.departmentId,
+    jobPositionLevel: jobPositions.level,
+    jobTypeId: employees.jobTypeId,
     status: employees.status,
-  }).from(employees).where(eq(employees.userId, userId));
+  })
+  .from(employees)
+  .leftJoin(jobPositions, eq(employees.jobPositionId, jobPositions.id))
+  .where(eq(employees.userId, userId));
   
   return result[0] || null;
 }

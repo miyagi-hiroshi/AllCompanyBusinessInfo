@@ -82,6 +82,25 @@ router.post('/login', async (req: Request, res: Response) => {
     // 既存システムから従業員情報を取得
     const employee = await getExistingEmployeeByUserId(user.id);
     
+    // ログイン権限チェック
+    if (!employee) {
+      return res.status(403).json({
+        success: false,
+        message: 'ログイン権限がありません'
+      });
+    }
+
+    const hasLoginPermission = 
+      (employee.jobPositionLevel !== null && employee.jobPositionLevel >= 2) ||
+      (employee.jobTypeId !== null && employee.jobTypeId === 5);
+
+    if (!hasLoginPermission) {
+      return res.status(403).json({
+        success: false,
+        message: 'ログイン権限がありません'
+      });
+    }
+    
     // セッションをDBに保存（2時間有効）
     const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2時間後
     const session = await sessionRepository.create(user.id, expiresAt);

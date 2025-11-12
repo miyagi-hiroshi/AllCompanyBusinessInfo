@@ -21,14 +21,9 @@ export function LoginForm({ onLogin, isLoggingIn }: LoginFormProps) {
     }
   };
 
-  const handleDemoLogin = (demoType: "admin" | "user") => {
-    if (demoType === "admin") {
-      setEmail("admin@infolinx.com");
-      setPassword("admin123");
-    } else {
-      setEmail("user@example.com");
-      setPassword("password");
-    }
+  const handleDemoLogin = () => {
+    setEmail("admin@infolinx.com");
+    setPassword("admin123");
   };
 
   return (
@@ -88,24 +83,15 @@ export function LoginForm({ onLogin, isLoggingIn }: LoginFormProps) {
                 </span>
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleDemoLogin("admin")}
-                disabled={isLoggingIn}
-              >
-                管理者としてログイン
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleDemoLogin("user")}
-                disabled={isLoggingIn}
-              >
-                一般ユーザーとしてログイン
-              </Button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full"
+              onClick={handleDemoLogin}
+              disabled={isLoggingIn}
+            >
+              管理者としてログイン
+            </Button>
           </div>
           
           <div className="mt-4 p-3 bg-muted rounded-lg">

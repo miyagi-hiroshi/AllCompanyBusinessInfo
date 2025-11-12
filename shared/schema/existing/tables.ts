@@ -33,6 +33,7 @@ export const employees = pgTable("employees", {
   firstName: varchar("first_name", { length: 50 }).notNull(),
   lastName: varchar("last_name", { length: 50 }).notNull(),
   departmentId: integer("department_id"), // 外部キー制約なし
+  jobPositionId: integer("job_position_id"), // 外部キー制約なし
   jobTypeId: integer("job_type_id"), // 外部キー制約なし
   status: varchar("status", { length: 20 }).default("active"),
 });
