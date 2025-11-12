@@ -380,21 +380,23 @@ export function ProjectStaffingInput({ selectedYear, selectedProjectIds, selecte
                 {selectedYear}年度 - 従業員とプロジェクトの組み合わせで年度全体の工数を入力
               </CardDescription>
             </div>
-            <div className="flex gap-2">
-              <Button onClick={addRow} variant="outline">
-                <Plus className="w-4 h-4 mr-2" />
-                行追加
-              </Button>
-              <Button 
-                onClick={handleSave}
-                disabled={bulkCreateMutation.isPending || bulkUpdateMutation.isPending || bulkDeleteMutation.isPending}
-              >
-                {bulkCreateMutation.isPending || bulkUpdateMutation.isPending || bulkDeleteMutation.isPending 
-                  ? "保存中..." 
-                  : "保存"
-                }
-              </Button>
-            </div>
+            {selectedProjectIds.length > 0 && (
+              <div className="flex gap-2">
+                <Button onClick={addRow} variant="outline">
+                  <Plus className="w-4 h-4 mr-2" />
+                  行追加
+                </Button>
+                <Button 
+                  onClick={handleSave}
+                  disabled={bulkCreateMutation.isPending || bulkUpdateMutation.isPending || bulkDeleteMutation.isPending}
+                >
+                  {bulkCreateMutation.isPending || bulkUpdateMutation.isPending || bulkDeleteMutation.isPending 
+                    ? "保存中..." 
+                    : "保存"
+                  }
+                </Button>
+              </div>
+            )}
           </div>
         </CardHeader>
         <CardContent>
