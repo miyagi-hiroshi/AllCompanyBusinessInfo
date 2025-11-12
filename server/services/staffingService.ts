@@ -55,6 +55,26 @@ export class StaffingService {
   }
 
   /**
+   * 一括操作（作成・更新・削除）をトランザクション内で実行
+   * 
+   * @param createData - 作成するデータの配列
+   * @param updateData - 更新するデータの配列（idと更新データ）
+   * @param deleteIds - 削除するIDの配列
+   * @returns 操作結果
+   */
+  async bulkOperation(
+    createData: NewStaffing[],
+    updateData: Array<{ id: string; data: Partial<NewStaffing> }>,
+    deleteIds: string[]
+  ): Promise<{
+    created: Staffing[];
+    updated: Staffing[];
+    deleted: number;
+  }> {
+    return await this.staffingRepository.bulkOperation(createData, updateData, deleteIds);
+  }
+
+  /**
    * 工数入力チェックデータを取得
    * 
    * @param fiscalYear - 年度

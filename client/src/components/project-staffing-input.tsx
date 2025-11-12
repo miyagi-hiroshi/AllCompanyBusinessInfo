@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/table";
 import type { Employee } from "@/hooks/useEmployees";
 import { useProjects } from "@/hooks/useMasters";
-import { useBulkCreateStaffing, useBulkDeleteStaffing,useBulkUpdateStaffing } from "@/hooks/useStaffing";
+import { useBulkOperationStaffing } from "@/hooks/useStaffing";
 import { useToast } from "@/hooks/useToast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -61,6 +61,8 @@ interface ProjectStaffingInputProps {
 export function ProjectStaffingInput({ selectedYear, selectedProjectIds, selectedEmployeeId, employees }: ProjectStaffingInputProps) {
   const { toast } = useToast();
   const [staffingRows, setStaffingRows] = useState<StaffingRow[]>([]);
+  // 削除された既存行の従業員-プロジェクトの組み合わせを追跡
+  const [deletedCombinations, setDeletedCombinations] = useState<Set<string>>(new Set());
 
   // Fetch data
   const { data: projects = [] } = useProjects(selectedYear);
@@ -170,6 +172,12 @@ export function ProjectStaffingInput({ selectedYear, selectedProjectIds, selecte
 
   // 行を削除
   const removeRow = (index: number) => {
+    const rowToDelete = staffingRows[index];
+    // 既存データの行（temp_で始まらないID）の場合は削除リストに追加
+    if (!rowToDelete.id.startsWith("temp_") && rowToDelete.employeeId && rowToDelete.projectId) {
+      const combination = `${rowToDelete.employeeId}_${rowToDelete.projectId}`;
+      setDeletedCombinations(prev => new Set(prev).add(combination));
+    }
     setStaffingRows(staffingRows.filter((_, i) => i !== index));
   };
 
@@ -251,9 +259,7 @@ export function ProjectStaffingInput({ selectedYear, selectedProjectIds, selecte
   };
 
   // Mutations
-  const bulkCreateMutation = useBulkCreateStaffing();
-  const bulkUpdateMutation = useBulkUpdateStaffing();
-  const bulkDeleteMutation = useBulkDeleteStaffing();
+  const bulkOperationMutation = useBulkOperationStaffing();
 
   // 保存処理
   const handleSave = async () => {
@@ -296,6 +302,14 @@ export function ProjectStaffingInput({ selectedYear, selectedProjectIds, selecte
       const updateData: Array<{ id: string; data: Partial<NewStaffing> }> = [];
       const deleteIds: string[] = [];
 
+      // 削除された既存行の従業員-プロジェクトの組み合わせに関連するすべての月のデータを削除
+      existingStaffing.forEach(staff => {
+        const combination = `${staff.employeeId}_${staff.projectId}`;
+        if (deletedCombinations.has(combination) && staff.id) {
+          deleteIds.push(staff.id);
+        }
+      });
+
       // 各行について処理
       staffingRows.forEach(row => {
         MONTHS.forEach(month => {
@@ -336,27 +350,19 @@ export function ProjectStaffingInput({ selectedYear, selectedProjectIds, selecte
         });
       });
 
-
-      // 一括操作を実行
-      const promises = [];
+      // 一括操作をトランザクション内で実行
+      const result = await bulkOperationMutation.mutateAsync({
+        create: createData,
+        update: updateData,
+        delete: deleteIds,
+      });
       
-      if (createData.length > 0) {
-        promises.push(bulkCreateMutation.mutateAsync(createData));
-      }
-      
-      if (updateData.length > 0) {
-        promises.push(bulkUpdateMutation.mutateAsync(updateData));
-      }
-      
-      if (deleteIds.length > 0) {
-        promises.push(bulkDeleteMutation.mutateAsync(deleteIds));
-      }
-
-      await Promise.all(promises);
+      // 保存成功後、削除リストをクリア
+      setDeletedCombinations(new Set());
       
       toast({
         title: "保存完了",
-        description: `配員計画を保存しました（新規: ${createData.length}件、更新: ${updateData.length}件、削除: ${deleteIds.length}件）`,
+        description: `配員計画を保存しました（新規: ${result.data.created}件、更新: ${result.data.updated}件、削除: ${result.data.deleted}件）`,
       });
     } catch (error) {
       console.error('保存エラー:', error);
@@ -388,9 +394,9 @@ export function ProjectStaffingInput({ selectedYear, selectedProjectIds, selecte
                 </Button>
                 <Button 
                   onClick={handleSave}
-                  disabled={bulkCreateMutation.isPending || bulkUpdateMutation.isPending || bulkDeleteMutation.isPending}
+                  disabled={bulkOperationMutation.isPending}
                 >
-                  {bulkCreateMutation.isPending || bulkUpdateMutation.isPending || bulkDeleteMutation.isPending 
+                  {bulkOperationMutation.isPending 
                     ? "保存中..." 
                     : "保存"
                   }
@@ -427,29 +433,39 @@ export function ProjectStaffingInput({ selectedYear, selectedProjectIds, selecte
                   {staffingRows.map((row, index) => (
                     <TableRow key={row.id}>
                       <TableCell>
-                        {selectedEmployeeId && selectedEmployeeId !== "all" ? (
-                          // フィルタリング時は従業員名を表示のみ
-                          <span className="text-sm">{row.employeeName}</span>
-                        ) : (
-                          // フィルタリングなしの場合は選択可能
-                          <Select
-                            value={row.employeeId || ""} // 空文字列をデフォルトに
-                            onValueChange={(value) => handleEmployeeChange(index, value)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="従業員を選択" />
-                            </SelectTrigger>
-                <SelectContent>
-                  {employees
-                    .filter((employee) => employee.status !== "terminated")
-                    .map((employee) => (
-                      <SelectItem key={employee.id} value={employee.employeeId}>
-                        {employee.lastName} {employee.firstName}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-                          </Select>
-                        )}
+                        {(() => {
+                          // 既存データの行（temp_で始まらないID）は従業員を変更不可
+                          const isExistingRow = !row.id.startsWith("temp_");
+                          
+                          if (selectedEmployeeId && selectedEmployeeId !== "all") {
+                            // フィルタリング時は従業員名を表示のみ
+                            return <span className="text-sm">{row.employeeName}</span>;
+                          } else if (isExistingRow) {
+                            // 既存データの行は従業員名を表示のみ（変更不可）
+                            return <span className="text-sm">{row.employeeName}</span>;
+                          } else {
+                            // 新規行の場合は選択可能
+                            return (
+                              <Select
+                                value={row.employeeId || ""} // 空文字列をデフォルトに
+                                onValueChange={(value) => handleEmployeeChange(index, value)}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue placeholder="従業員を選択" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {employees
+                                    .filter((employee) => employee.status !== "terminated")
+                                    .map((employee) => (
+                                      <SelectItem key={employee.id} value={employee.employeeId}>
+                                        {employee.lastName} {employee.firstName}
+                                      </SelectItem>
+                                    ))}
+                                </SelectContent>
+                              </Select>
+                            );
+                          }
+                        })()}
                       </TableCell>
                       <TableCell>
                         <Select

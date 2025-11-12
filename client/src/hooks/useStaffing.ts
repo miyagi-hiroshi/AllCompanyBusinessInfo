@@ -137,6 +137,27 @@ export function useBulkDeleteStaffing() {
   });
 }
 
+/**
+ * 一括操作（作成・更新・削除）をトランザクション内で実行
+ */
+export function useBulkOperationStaffing() {
+  return useMutation({
+    mutationFn: async (data: {
+      create: NewStaffing[];
+      update: Array<{ id: string; data: Partial<NewStaffing> }>;
+      delete: string[];
+    }) => {
+      const res = await apiRequest("POST", "/api/staffing/bulk", data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ 
+        queryKey: ["/api/staffing"] 
+      });
+    },
+  });
+}
+
 export interface StaffingCheckData {
   employees: Array<{
     employeeId: string;

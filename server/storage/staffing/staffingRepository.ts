@@ -77,6 +77,57 @@ export class StaffingRepository {
   }
 
   /**
+   * 一括操作（作成・更新・削除）をトランザクション内で実行
+   * 
+   * @param createData - 作成するデータの配列
+   * @param updateData - 更新するデータの配列（idと更新データ）
+   * @param deleteIds - 削除するIDの配列
+   * @returns 操作結果
+   */
+  async bulkOperation(
+    createData: NewStaffing[],
+    updateData: Array<{ id: string; data: Partial<NewStaffing> }>,
+    deleteIds: string[]
+  ): Promise<{
+    created: Staffing[];
+    updated: Staffing[];
+    deleted: number;
+  }> {
+    return await db.transaction(async (tx) => {
+      const created: Staffing[] = [];
+      const updated: Staffing[] = [];
+
+      // 削除（最初に実行）
+      let deletedCount = 0;
+      if (deleteIds.length > 0) {
+        const deleteResults = await tx.delete(staffing).where(inArray(staffing.id, deleteIds)).returning();
+        deletedCount = deleteResults.length;
+      }
+
+      // 更新（次に実行）
+      if (updateData.length > 0) {
+        const updatePromises = updateData.map(({ id, data }) =>
+          tx.update(staffing).set(data).where(eq(staffing.id, id)).returning()
+        );
+        const updateResults = await Promise.all(updatePromises);
+        updated.push(...updateResults.flat());
+      }
+
+      // 作成（最後に実行）
+      if (createData.length > 0) {
+        const createResults = await tx.insert(staffing).values(createData).returning();
+        created.push(...createResults);
+      }
+
+      return {
+        created,
+        updated,
+        deleted: deletedCount,
+      };
+    });
+  }
+
+  /**
    * 指定年度の月別工数集計を取得
    * 
    * @param fiscalYear - 年度

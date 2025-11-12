@@ -125,6 +125,51 @@ router.get('/check', requireAuth, async (req: Request, res: Response) => {
   }
 });
 
+// 一括操作スキーマ
+const bulkOperationSchema = z.object({
+  create: z.array(createStaffingSchema).optional().default([]),
+  update: z.array(z.object({
+    id: z.string(),
+    data: updateStaffingSchema,
+  })).optional().default([]),
+  delete: z.array(z.string()).optional().default([]),
+});
+
+/**
+ * 配員計画一括操作API
+ * POST /api/staffing/bulk
+ */
+router.post('/bulk', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { create, update, delete: deleteIds } = bulkOperationSchema.parse(req.body);
+    
+    const result = await staffingService.bulkOperation(create, update, deleteIds);
+    
+    res.json({
+      success: true,
+      data: {
+        created: result.created.length,
+        updated: result.updated.length,
+        deleted: result.deleted,
+        details: result,
+      },
+    });
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        success: false,
+        message: '入力データが正しくありません',
+        errors: error.errors,
+      });
+    }
+    console.error('配員計画一括操作エラー:', error);
+    res.status(500).json({
+      success: false,
+      message: error instanceof Error ? error.message : '配員計画の一括操作中にエラーが発生しました',
+    });
+  }
+});
+
 /**
  * 配員計画詳細取得API
  * GET /api/staffing/:id
