@@ -540,6 +540,7 @@ function MonthlyStaffingInput({
                 <SelectContent>
                   {productivityProjects
                     .filter((p) => p.fiscalYear === (formData.fiscalYear || selectedYear))
+                    .sort((a, b) => (a.code || '').localeCompare(b.code || ''))
                     .map((project) => (
                       <SelectItem key={project.id} value={project.id}>
                         {project.name}
