@@ -91,6 +91,8 @@ export default function ProjectsPage() {
         fiscalYear: selectedYear.toString(),
         page: currentPage.toString(),
         limit: pageSize.toString(),
+        sortBy: 'code',
+        sortOrder: 'asc',
       });
       const response = await apiRequest("GET", `/api/projects?${params}`, undefined);
       return await response.json();

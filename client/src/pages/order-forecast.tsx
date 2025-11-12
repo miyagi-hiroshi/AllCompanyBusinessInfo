@@ -47,7 +47,9 @@ export default function OrderForecastPage() {
     month: filter.month,
   });
   const { data: customers = [], isLoading: customersLoading } = useCustomers();
-  const { data: projects = [], isLoading: projectsLoading } = useProjects(filter.fiscalYear);
+  const { data: projectsRaw = [], isLoading: projectsLoading } = useProjects(filter.fiscalYear);
+  // プロジェクトをコードの昇順でソート
+  const projects = [...projectsRaw].sort((a, b) => (a.code || '').localeCompare(b.code || ''));
   const { data: accountingItems = [], isLoading: accountingItemsLoading } = useAccountingItems();
 
   // Mutations
@@ -182,8 +184,8 @@ export default function OrderForecastPage() {
       sortable: true, // 並び替え機能を追加
       autocompleteOptions: projects.map((p) => ({
         value: p.id,
-        label: p.code,
-        code: undefined, // codeをundefinedにして重複表示を防ぐ
+        label: p.name,
+        code: p.code,
       })),
     },
     {

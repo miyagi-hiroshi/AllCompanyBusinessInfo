@@ -263,8 +263,17 @@ export function ExcelDataGrid({
   const sortedRows = [...rows];
   if (sortBy && sortOrder) {
     sortedRows.sort((a, b) => {
-      const aValue = a[sortBy];
-      const bValue = b[sortBy];
+      // プロジェクト列の場合はコードで並び替え
+      let aValue: any;
+      let bValue: any;
+      
+      if (sortBy === "projectId") {
+        aValue = a.projectCode;
+        bValue = b.projectCode;
+      } else {
+        aValue = a[sortBy];
+        bValue = b[sortBy];
+      }
       
       // null/undefined を末尾に
       if (aValue == null && bValue == null) return 0;
@@ -538,8 +547,15 @@ export function ExcelDataGrid({
       if (column.type === "autocomplete") {
         if (column.key.includes("customer") && row.customerName) {
           displayValue = row.customerName;
-        } else if (column.key === "projectId" && row.projectCode) {
-          displayValue = row.projectCode;
+        } else if (column.key === "projectId") {
+          // プロジェクトの場合は「コード プロジェクト名」の形式で表示
+          if (row.projectCode && row.projectName) {
+            displayValue = `${row.projectCode} ${row.projectName}`;
+          } else if (row.projectCode) {
+            displayValue = row.projectCode;
+          } else if (row.projectName) {
+            displayValue = row.projectName;
+          }
         } else if (column.key.includes("project") && row.projectName) {
           displayValue = row.projectName;
         } else if (column.key.includes("item") && row.itemName) {
@@ -735,8 +751,10 @@ export function ExcelDataGrid({
             />
           ) : (
             <div className="truncate">
-              {column.key === "projectId" && row.projectCode 
-                ? row.projectCode 
+              {column.key === "projectId" 
+                ? (row.projectCode && row.projectName 
+                    ? `${row.projectCode} ${row.projectName}`
+                    : row.projectCode || row.projectName || column.autocompleteOptions.find((opt) => opt.value === value)?.label || value)
                 : column.autocompleteOptions.find((opt) => opt.value === value)?.label || value}
             </div>
           )}

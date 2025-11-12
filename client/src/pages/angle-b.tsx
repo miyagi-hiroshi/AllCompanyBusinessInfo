@@ -41,7 +41,9 @@ export default function AngleBPage() {
     ...searchFilter,
   });
   const { data: customers = [], isLoading: customersLoading } = useCustomers();
-  const { data: projects = [], isLoading: projectsLoading } = useProjects(filter.fiscalYear);
+  const { data: projectsRaw = [], isLoading: projectsLoading } = useProjects(filter.fiscalYear);
+  // プロジェクトをコードの昇順でソート
+  const projects = [...projectsRaw].sort((a, b) => (a.code || '').localeCompare(b.code || ''));
   const { data: accountingItems = [], isLoading: accountingItemsLoading } = useAccountingItems();
 
   // Mutations
