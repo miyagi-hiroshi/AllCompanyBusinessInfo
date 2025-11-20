@@ -27,7 +27,7 @@ alwaysApply: true
 ## 📝 ファイル命名必須ルール
 
 ### 必須命名規則
-- **コンポーネント**: PascalCase.tsx（例: `CustomerList.tsx`）
+- **コンポーネント**: kebab-case.tsx（例: `customer-list.tsx`）
 - **ユーティリティ**: camelCase.ts（例: `dateUtils.ts`）
 - **フックファイル**: `use[機能名].ts`（例: `useCustomers.ts`）
 
