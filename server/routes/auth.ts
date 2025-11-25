@@ -82,17 +82,22 @@ router.post('/login', async (req: Request, res: Response) => {
     // 既存システムから従業員情報を取得
     const employee = await getExistingEmployeeByUserId(user.id);
     
+    // 管理者ユーザーの場合は常にログインを許可
+    const isAdmin = user.id === 'admin';
+    
     // ログイン権限チェック
-    if (!employee) {
+    if (!isAdmin && !employee) {
       return res.status(403).json({
         success: false,
         message: 'ログイン権限がありません'
       });
     }
 
+    // 管理者ユーザー以外は権限チェック
     const hasLoginPermission = 
-      (employee.jobPositionLevel !== null && employee.jobPositionLevel >= 2) ||
-      (employee.jobTypeId !== null && employee.jobTypeId === 5);
+      isAdmin ||
+      (employee && employee.jobPositionLevel !== null && employee.jobPositionLevel >= 2) ||
+      (employee && employee.jobTypeId !== null && employee.jobTypeId === 5);
 
     if (!hasLoginPermission) {
       return res.status(403).json({
