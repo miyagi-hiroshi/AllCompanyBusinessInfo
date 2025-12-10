@@ -1,7 +1,6 @@
 import { BarChart3, DollarSign, TrendingUp, Users } from "lucide-react";
 import React, { useState } from "react";
 
-import { DashboardChart } from "@/components/dashboard-chart";
 import { DashboardSummaryCard } from "@/components/dashboard-summary-card";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -12,7 +11,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useDashboard } from "@/hooks/useDashboard";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useDashboard, useServiceRevenueComparison } from "@/hooks/useDashboard";
 
 const FISCAL_YEARS = [2023, 2024, 2025, 2026];
 
@@ -21,6 +28,9 @@ export default function DashboardPage() {
   
   // ダッシュボードデータ取得
   const { data: dashboardData, isLoading } = useDashboard(selectedYear);
+  
+  // サービス毎の売上予実比較データ取得
+  const { data: comparisonData, isLoading: isComparisonLoading } = useServiceRevenueComparison(selectedYear);
 
   // 数値フォーマット関数
   const formatPercentage = (value: number | undefined) => {
@@ -28,6 +38,11 @@ export default function DashboardPage() {
       return '0.0%';
     }
     return `${value.toFixed(1)}%`;
+  };
+
+  // 通貨フォーマット関数
+  const formatCurrency = (value: number) => {
+    return `¥${value.toLocaleString()}`;
   };
 
   if (isLoading) {
@@ -73,25 +88,14 @@ export default function DashboardPage() {
 
   const data = dashboardData.data;
 
-
-  // グラフ用データ
-  const chartData = [
-    {
-      name: "売上",
-      予算: data.revenueBudget,
-      実績: data.revenueActual,
-    },
-    {
-      name: "原価・販管費",
-      予算: data.expenseBudget,
-      実績: data.expenseActual,
-    },
-    {
-      name: "利益",
-      予算: data.profitBudget,
-      実績: data.profitActual,
-    },
-  ];
+  // サービス毎の予実比較データ
+  const serviceComparisons = comparisonData?.success ? comparisonData.data : [];
+  
+  // 合計行の計算
+  const totalBudget = serviceComparisons.reduce((sum, item) => sum + item.revenueBudget, 0);
+  const totalActual = serviceComparisons.reduce((sum, item) => sum + item.revenueActual, 0);
+  const totalDifference = totalActual - totalBudget;
+  const totalAchievementRate = totalBudget > 0 ? (totalActual / totalBudget) * 100 : 0;
 
   return (
     <div className="h-full p-6 space-y-6">
@@ -139,9 +143,9 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* KPI指標とグラフ（3列2行レイアウト） */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* 1行目1列目：利益率カード */}
+      {/* KPI指標（2列レイアウト） */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* 利益率カード */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg font-semibold">利益率</CardTitle>
@@ -164,7 +168,7 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* 1行目2列目：原価率カード */}
+        {/* 原価率カード */}
         <Card>
           <CardHeader>
             <CardTitle className="text-lg font-semibold">原価率</CardTitle>
@@ -186,21 +190,58 @@ export default function DashboardPage() {
             </div>
           </CardContent>
         </Card>
-
-        {/* 1行目3列目：グラフ（縦に引き伸ばして2行目も占有） */}
-        <Card className="md:col-start-3 md:row-start-1 md:row-span-2">
-          <DashboardChart
-            data={chartData}
-            title={`${selectedYear}年度 予算vs実績比較`}
-          />
-        </Card>
-
-        {/* 2行目1列目：空 */}
-        <div className="hidden md:block"></div>
-
-        {/* 2行目2列目：空 */}
-        <div className="hidden md:block"></div>
       </div>
+
+      {/* サービス毎の売上予実比較テーブル */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">サービス毎の売上予実比較</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isComparisonLoading ? (
+            <div className="text-center py-8 text-muted-foreground">読み込み中...</div>
+          ) : serviceComparisons.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">データがありません</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>サービス区分</TableHead>
+                    <TableHead className="text-right">売上予算</TableHead>
+                    <TableHead className="text-right">売上実績</TableHead>
+                    <TableHead className="text-right">差異</TableHead>
+                    <TableHead className="text-right">達成率</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {serviceComparisons.map((item) => (
+                    <TableRow key={item.serviceType}>
+                      <TableCell className="font-medium">{item.serviceType}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(item.revenueBudget)}</TableCell>
+                      <TableCell className="text-right">{formatCurrency(item.revenueActual)}</TableCell>
+                      <TableCell className={`text-right ${item.difference >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        {item.difference >= 0 ? '+' : ''}{formatCurrency(item.difference)}
+                      </TableCell>
+                      <TableCell className="text-right">{formatPercentage(item.achievementRate)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {/* 合計行 */}
+                  <TableRow className="font-semibold bg-muted/50">
+                    <TableCell>合計</TableCell>
+                    <TableCell className="text-right">{formatCurrency(totalBudget)}</TableCell>
+                    <TableCell className="text-right">{formatCurrency(totalActual)}</TableCell>
+                    <TableCell className={`text-right ${totalDifference >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {totalDifference >= 0 ? '+' : ''}{formatCurrency(totalDifference)}
+                    </TableCell>
+                    <TableCell className="text-right">{formatPercentage(totalAchievementRate)}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

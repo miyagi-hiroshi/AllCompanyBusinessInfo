@@ -559,4 +559,44 @@ export class OrderForecastRepository {
       total_amount: string;
     } => row.sales_person !== null && row.service_type !== null && row.analysis_type !== null);
   }
+
+  /**
+   * サービス区分ごとの売上実績を集計
+   * 
+   * @param fiscalYear - 年度
+   * @returns サービス区分 => 実績額のMap
+   */
+  async getRevenueByServiceType(fiscalYear: number): Promise<Map<string, number>> {
+    const startPeriod = `${fiscalYear}-04`;
+    const endPeriod = `${fiscalYear + 1}-03`;
+    
+    // 売上科目の名称（accounting_itemは名称で保存されている）
+    const revenueItems = ['保守売上', 'ソフト売上', '商品売上', '消耗品売上', 'その他売上'];
+    
+    const result = await db
+      .select({
+        serviceType: projects.serviceType,
+        totalAmount: sql<string>`COALESCE(SUM(${orderForecasts.amount}::numeric), 0)`,
+      })
+      .from(orderForecasts)
+      .leftJoin(projects, eq(orderForecasts.projectId, projects.id))
+      .where(
+        and(
+          sql`${orderForecasts.accountingPeriod} >= ${startPeriod}`,
+          sql`${orderForecasts.accountingPeriod} <= ${endPeriod}`,
+          sql`${projects.serviceType} IS NOT NULL`,
+          inArray(orderForecasts.accountingItem, revenueItems)
+        )
+      )
+      .groupBy(projects.serviceType);
+
+    const revenueMap = new Map<string, number>();
+    for (const row of result) {
+      if (row.serviceType) {
+        revenueMap.set(row.serviceType, parseFloat(row.totalAmount || '0'));
+      }
+    }
+
+    return revenueMap;
+  }
 }

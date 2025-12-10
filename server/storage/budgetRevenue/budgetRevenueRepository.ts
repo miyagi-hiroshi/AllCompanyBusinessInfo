@@ -102,6 +102,30 @@ export class BudgetRevenueRepository {
     return parseFloat(result[0]?.total?.toString() || '0');
   }
 
+  /**
+   * サービス区分ごとの売上予算を集計
+   * 
+   * @param fiscalYear - 年度
+   * @returns サービス区分 => 予算額のMap
+   */
+  async getBudgetByServiceType(fiscalYear: number): Promise<Map<string, number>> {
+    const result = await db
+      .select({
+        serviceType: budgetsRevenue.serviceType,
+        total: sql<number>`COALESCE(SUM(${budgetsRevenue.budgetAmount}::numeric), 0)`,
+      })
+      .from(budgetsRevenue)
+      .where(eq(budgetsRevenue.fiscalYear, fiscalYear))
+      .groupBy(budgetsRevenue.serviceType);
+
+    const budgetMap = new Map<string, number>();
+    for (const row of result) {
+      budgetMap.set(row.serviceType, parseFloat(row.total?.toString() || '0'));
+    }
+
+    return budgetMap;
+  }
+
   private buildWhereConditions(filter?: BudgetRevenueFilter) {
     if (!filter) {
       return undefined;

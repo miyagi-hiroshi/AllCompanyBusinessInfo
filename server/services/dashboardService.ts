@@ -1,4 +1,4 @@
-import type { DashboardData } from '@shared/schema/budgetTarget/types';
+import type { DashboardData, ServiceRevenueComparison } from '@shared/schema/budgetTarget/types';
 
 import { AccountingItemRepository } from '../storage/accountingItem';
 import { AngleBForecastRepository } from '../storage/angleBForecast';
@@ -21,6 +21,8 @@ export class DashboardService {
   private budgetRevenueService: BudgetRevenueService;
   private budgetExpenseService: BudgetExpenseService;
   private orderForecastService: OrderForecastService;
+  private budgetRevenueRepository: BudgetRevenueRepository;
+  private orderForecastRepository: OrderForecastRepository;
 
   constructor() {
     const budgetRevenueRepository = new BudgetRevenueRepository();
@@ -31,6 +33,8 @@ export class DashboardService {
     const accountingItemRepository = new AccountingItemRepository();
     const angleBForecastRepository = new AngleBForecastRepository();
 
+    this.budgetRevenueRepository = budgetRevenueRepository;
+    this.orderForecastRepository = orderForecastRepository;
     this.budgetRevenueService = new BudgetRevenueService(budgetRevenueRepository);
     this.budgetExpenseService = new BudgetExpenseService(budgetExpenseRepository);
     this.orderForecastService = new OrderForecastService(
@@ -67,17 +71,6 @@ export class DashboardService {
       const profitBudget = revenueBudget - expenseBudget;
       const profitActual = revenueActual - expenseActual;
 
-      // デバッグログ
-      console.log('ダッシュボードデータ計算:', {
-        fiscalYear,
-        revenueBudget,
-        revenueActual,
-        expenseBudget,
-        expenseActual,
-        profitBudget,
-        profitActual
-      });
-
       // KPI指標計算
       const profitMarginBudget = revenueBudget > 0 ? (profitBudget / revenueBudget) * 100 : 0;
       const profitMarginActual = revenueActual > 0 ? (profitActual / revenueActual) * 100 : 0;
@@ -100,6 +93,73 @@ export class DashboardService {
     } catch (error) {
       console.error('ダッシュボードデータ取得エラー:', error);
       throw new Error('ダッシュボードデータの取得中にエラーが発生しました');
+    }
+  }
+
+  /**
+   * サービス毎の売上予実比較データ取得
+   * 
+   * @param fiscalYear - 年度
+   * @returns サービス毎の売上予実比較データ
+   */
+  async getServiceRevenueComparison(fiscalYear: number): Promise<ServiceRevenueComparison[]> {
+    try {
+      // 予算と実績を並列で取得
+      const [budgetMap, revenueMap] = await Promise.all([
+        this.budgetRevenueRepository.getBudgetByServiceType(fiscalYear),
+        this.orderForecastRepository.getRevenueByServiceType(fiscalYear)
+      ]);
+
+      // サービス区分の順序定義
+      const serviceOrder = ['インテグレーション', 'エンジニアリング', 'ソフトウェアマネージド', 'リセール'];
+      
+      // 全てのサービス区分を収集（予算と実績の両方から）
+      const allServiceTypes = new Set<string>();
+      budgetMap.forEach((_, serviceType) => allServiceTypes.add(serviceType));
+      revenueMap.forEach((_, serviceType) => allServiceTypes.add(serviceType));
+
+      // サービス区分ごとにデータを構築
+      const comparisons: ServiceRevenueComparison[] = [];
+      
+      for (const serviceType of serviceOrder) {
+        if (allServiceTypes.has(serviceType)) {
+          const revenueBudget = budgetMap.get(serviceType) || 0;
+          const revenueActual = revenueMap.get(serviceType) || 0;
+          const difference = revenueActual - revenueBudget;
+          const achievementRate = revenueBudget > 0 ? (revenueActual / revenueBudget) * 100 : 0;
+
+          comparisons.push({
+            serviceType,
+            revenueBudget,
+            revenueActual,
+            difference,
+            achievementRate
+          });
+        }
+      }
+
+      // 順序定義にないサービス区分も追加（念のため）
+      for (const serviceType of allServiceTypes) {
+        if (!serviceOrder.includes(serviceType)) {
+          const revenueBudget = budgetMap.get(serviceType) || 0;
+          const revenueActual = revenueMap.get(serviceType) || 0;
+          const difference = revenueActual - revenueBudget;
+          const achievementRate = revenueBudget > 0 ? (revenueActual / revenueBudget) * 100 : 0;
+
+          comparisons.push({
+            serviceType,
+            revenueBudget,
+            revenueActual,
+            difference,
+            achievementRate
+          });
+        }
+      }
+
+      return comparisons;
+    } catch (error) {
+      console.error('サービス毎の売上予実比較データ取得エラー:', error);
+      throw new Error('サービス毎の売上予実比較データの取得中にエラーが発生しました');
     }
   }
 

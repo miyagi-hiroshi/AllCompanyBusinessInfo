@@ -46,4 +46,17 @@ export interface DashboardResponse {
   data: DashboardData;
 }
 
+// サービス毎の売上予実比較用型定義
+export interface ServiceRevenueComparison {
+  serviceType: string;
+  revenueBudget: number;
+  revenueActual: number;
+  difference: number;
+  achievementRate: number;
+}
+
+export interface DashboardServiceComparisonResponse {
+  success: boolean;
+  data: ServiceRevenueComparison[];
+}
 
