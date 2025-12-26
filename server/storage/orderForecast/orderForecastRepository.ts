@@ -490,9 +490,17 @@ export class OrderForecastRepository {
           accountingItem === 'その他売上') {
         summary.revenue += amount;
       }
-      // 仕入高
+      // 売上原価 = 期首製品棚卸高 + 期首商品棚卸高 + 仕入高 - 期末製品棚卸高 - 期末商品棚卸高
       else if (accountingItem === '仕入高') {
         summary.costOfSales += amount;
+      }
+      // 期首棚卸高（加算）
+      else if (accountingItem === '期首製品棚卸高' || accountingItem === '期首商品棚卸高') {
+        summary.costOfSales += amount;
+      }
+      // 期末棚卸高（減算）
+      else if (accountingItem === '期末製品棚卸高' || accountingItem === '期末商品棚卸高') {
+        summary.costOfSales -= amount;
       }
       // 販管費（通信費、消耗品費、支払保守料、外注加工費、その他調整経費）
       else if (accountingItem === '通信費' || accountingItem === '消耗品費' || 

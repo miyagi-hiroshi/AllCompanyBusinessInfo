@@ -214,7 +214,7 @@ export default function ProjectAnalysisPage() {
                       <TableHead className="w-[80px] text-xs py-1 px-2">分析区分</TableHead>
                       <TableHead className="w-[180px] text-xs py-1 px-2">プロジェクト名</TableHead>
                       <TableHead className="text-right w-[100px] text-xs py-1 px-2">売上</TableHead>
-                      <TableHead className="text-right w-[100px] text-xs py-1 px-2">仕入高</TableHead>
+                      <TableHead className="text-right w-[100px] text-xs py-1 px-2">売上原価</TableHead>
                       <TableHead className="text-right w-[100px] text-xs py-1 px-2">販管費</TableHead>
                       <TableHead className="text-right w-[100px] text-xs py-1 px-2">山積み工数</TableHead>
                       <TableHead className="text-right w-[110px] text-xs py-1 px-2">生産性/粗利(目標)</TableHead>
@@ -252,7 +252,7 @@ export default function ProjectAnalysisPage() {
                           {formatCurrency(row.revenue)}
                         </TableCell>
                         
-                        {/* 仕入高列 */}
+                        {/* 売上原価列 */}
                         <TableCell className="text-right font-mono text-xs py-1 px-2">
                           {formatCurrency(row.costOfSales)}
                         </TableCell>

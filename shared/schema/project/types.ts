@@ -10,7 +10,7 @@ export interface ProjectAnalysisSummary {
   serviceType: string;
   analysisType: string;
   revenue: number;           // 売上（510-519）
-  costOfSales: number;      // 仕入高（541）
+  costOfSales: number;      // 売上原価（期首製品棚卸高 + 期首商品棚卸高 + 仕入高 - 期末製品棚卸高 - 期末商品棚卸高）
   sgaExpenses: number;      // 販管費（727,737,740,745,9999）
   workHours: number;        // 山積み工数
   productivity?: number;    // 生産性（分析区分=生産性の場合）

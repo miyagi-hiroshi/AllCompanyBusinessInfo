@@ -352,7 +352,9 @@ export class ProjectService {
         };
         
         // 配員計画データの工数を取得
-        const workHours = workHoursSummary.get(project.id) || 0;
+        const workHoursRaw = workHoursSummary.get(project.id) || 0;
+        // 画面表示と同じ精度（小数点第1位）で丸める
+        const workHours = parseFloat(workHoursRaw.toFixed(1));
 
         // 分析区分別の計算
         const grossProfit = orderSummary.revenue - orderSummary.costOfSales - orderSummary.sgaExpenses;
