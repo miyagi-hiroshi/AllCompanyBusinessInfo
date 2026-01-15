@@ -76,6 +76,19 @@ export default function OrderForecastPage() {
 
   // 基本フィルタ変更時にデータを再取得
   const handleFilterChange = (newFilter: FilterState) => {
+    const hasPendingChanges =
+      localRows.some((row) => row._modified || row.id.startsWith("temp-")) ||
+      deletedIdsRef.current.size > 0;
+    if (hasPendingChanges) {
+      toast({
+        title: "未保存の変更があります",
+        description:
+          "フィルタを変更する前に、まず Ctrl+Enter で保存してください（保存後に再度フィルタ変更してください）。",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setFilter(newFilter);
     setShouldResetPage(true);  // ページをリセット
     setSelectedOrderIdForGL(null);  // GL突合パネルを閉じる
@@ -95,6 +108,19 @@ export default function OrderForecastPage() {
 
   // 詳細検索実行時
   const handleSearch = (newSearchFilter: SearchFilter) => {
+    const hasPendingChanges =
+      localRows.some((row) => row._modified || row.id.startsWith("temp-")) ||
+      deletedIdsRef.current.size > 0;
+    if (hasPendingChanges) {
+      toast({
+        title: "未保存の変更があります",
+        description:
+          "検索条件を変更する前に、まず Ctrl+Enter で保存してください（保存後に再度検索してください）。",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSearchFilter(newSearchFilter);
     setSelectedOrderIdForGL(null);  // GL突合パネルを閉じる
     
@@ -454,7 +480,7 @@ export default function OrderForecastPage() {
           // Update existing order
           if (existing) {
             // 取引先は非必須なので、空の場合はundefinedにする
-            const updateData: any = {
+            const updateData: Partial<OrderForecast> = {
               projectId: row.projectId as string,
               projectCode: row.projectCode as string,
               projectName: row.projectName as string,

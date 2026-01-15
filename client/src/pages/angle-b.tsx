@@ -65,6 +65,19 @@ export default function AngleBPage() {
   const currentPeriod = getPeriodFromFilter(filter);
 
   const handleFilterChange = (newFilter: FilterState) => {
+    const hasPendingChanges =
+      localRows.some((row) => row._modified || row.id.startsWith("temp-")) ||
+      deletedIdsRef.current.size > 0;
+    if (hasPendingChanges) {
+      toast({
+        title: "未保存の変更があります",
+        description:
+          "フィルタを変更する前に、まず Ctrl+Enter で保存してください（保存後に再度フィルタ変更してください）。",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setFilter(newFilter);
     
     // フィルタ説明文を生成
@@ -82,6 +95,19 @@ export default function AngleBPage() {
 
   // 詳細検索実行時
   const handleSearch = (newSearchFilter: SearchFilter) => {
+    const hasPendingChanges =
+      localRows.some((row) => row._modified || row.id.startsWith("temp-")) ||
+      deletedIdsRef.current.size > 0;
+    if (hasPendingChanges) {
+      toast({
+        title: "未保存の変更があります",
+        description:
+          "検索条件を変更する前に、まず Ctrl+Enter で保存してください（保存後に再度検索してください）。",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setSearchFilter(newSearchFilter);
     
     // 検索条件の説明文を生成
