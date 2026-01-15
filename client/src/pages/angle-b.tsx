@@ -23,9 +23,14 @@ import { sortAccountingItemsByOrder } from "@/lib/accountingItemOrder";
 export default function AngleBPage() {
   const [filter, setFilter] = useState<FilterState>(() => {
     const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth() + 1; // 1-12
+    // システム日付が含まれる会計年度を計算
+    // 4月～12月: その年の年度、1月～3月: 前年の年度
+    const currentFiscalYear = currentMonth >= 4 ? currentYear : currentYear - 1;
     return {
-      fiscalYear: now.getFullYear(),
-      month: now.getMonth() + 1,
+      fiscalYear: currentFiscalYear,
+      month: currentMonth,
     };
   });
   

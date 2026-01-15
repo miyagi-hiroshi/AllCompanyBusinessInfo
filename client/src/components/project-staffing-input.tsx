@@ -4,7 +4,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { useEffect,useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -379,13 +379,7 @@ export function ProjectStaffingInput({ selectedYear, selectedProjectIds, selecte
       {/* 入力テーブル */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>プロジェクト別配員計画</CardTitle>
-              <CardDescription>
-                {selectedYear}年度 - 従業員とプロジェクトの組み合わせで年度全体の工数を入力
-              </CardDescription>
-            </div>
+          <div className="flex items-center justify-end">
             {selectedProjectIds.length > 0 && (
               <div className="flex gap-2">
                 <Button onClick={addRow} variant="outline">
@@ -419,10 +413,10 @@ export function ProjectStaffingInput({ selectedYear, selectedProjectIds, selecte
               <Table>
                 <TableHeader className="sticky top-0 bg-background z-10">
                   <TableRow>
-                    <TableHead className="w-[150px]">従業員名</TableHead>
+                    <TableHead className="w-[120px]">従業員名</TableHead>
                     <TableHead className="w-[200px]">プロジェクト名</TableHead>
                     {MONTHS.map((month) => (
-                      <TableHead key={month.value} className="text-center min-w-[80px]">
+                      <TableHead key={month.value} className="text-center min-w-[110px]">
                         {month.label}
                       </TableHead>
                     ))}
@@ -491,7 +485,7 @@ export function ProjectStaffingInput({ selectedYear, selectedProjectIds, selecte
                       {MONTHS.map((month) => {
                         const value = row.monthlyHours[month.value] || "";
                         return (
-                          <TableCell key={month.value}>
+                          <TableCell key={month.value} className="px-2 py-4">
                             <Input
                               type="number"
                               step="0.01"
@@ -500,7 +494,7 @@ export function ProjectStaffingInput({ selectedYear, selectedProjectIds, selecte
                               value={value}
                               onChange={(e) => handleMonthlyHoursChange(index, month.value, e.target.value)}
                               placeholder="0.00"
-                              className="text-center"
+                              className="text-center w-full"
                             />
                           </TableCell>
                         );
