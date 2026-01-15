@@ -21,10 +21,11 @@ export function LoginForm({ onLogin, isLoggingIn }: LoginFormProps) {
     }
   };
 
-  const handleDemoLogin = () => {
-    setEmail("admin@infolinx.com");
-    setPassword("admin123");
-  };
+  // 管理者ログイン機能を一時的に無効化
+  // const handleDemoLogin = () => {
+  //   setEmail("admin@infolinx.com");
+  //   setPassword("admin123");
+  // };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -72,7 +73,8 @@ export function LoginForm({ onLogin, isLoggingIn }: LoginFormProps) {
             </Button>
           </form>
           
-          <div className="mt-6 space-y-2">
+          {/* 管理者ログイン機能を一時的に無効化 */}
+          {/* <div className="mt-6 space-y-2">
             <div className="relative">
               <div className="absolute inset-0 flex items-center">
                 <span className="w-full border-t" />
@@ -92,7 +94,7 @@ export function LoginForm({ onLogin, isLoggingIn }: LoginFormProps) {
             >
               管理者としてログイン
             </Button>
-          </div>
+          </div> */}
           
           <div className="mt-4 p-3 bg-muted rounded-lg">
             <p className="text-sm text-muted-foreground">
