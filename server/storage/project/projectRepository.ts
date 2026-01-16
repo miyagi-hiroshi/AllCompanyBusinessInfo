@@ -169,14 +169,30 @@ export class ProjectRepository {
   
   /**
    * プロジェクトコードの重複チェック
+   * 
+   * @param code - プロジェクトコード
+   * @param fiscalYear - 年度
+   * @param excludeId - 除外するプロジェクトID（更新時）
+   * @returns 重複している場合はtrue
    */
-  async isCodeExists(code: string, excludeId?: string): Promise<boolean> {
+  async isCodeExists(code: string, fiscalYear: number, excludeId?: string): Promise<boolean> {
     if (excludeId) {
-      const result = await db.select().from(projects).where(and(eq(projects.code, code), ne(projects.id, excludeId)));
+      const result = await db.select()
+        .from(projects)
+        .where(and(
+          eq(projects.code, code),
+          eq(projects.fiscalYear, fiscalYear),
+          ne(projects.id, excludeId)
+        ));
       return result.length > 0;
     }
     
-    const result = await db.select().from(projects).where(eq(projects.code, code));
+    const result = await db.select()
+      .from(projects)
+      .where(and(
+        eq(projects.code, code),
+        eq(projects.fiscalYear, fiscalYear)
+      ));
     return result.length > 0;
   }
   

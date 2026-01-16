@@ -20,26 +20,20 @@ async function modifyAppTables() {
     // ここにテーブル変更のSQLを記述
     // ========================================
     
-    // 例: customersテーブルにemailカラムを追加
-    // await pool.query(`
-    //   ALTER TABLE app.customers 
-    //   ADD COLUMN email TEXT
-    // `);
-    // console.log('✅ customersテーブルにemailカラムを追加');
+    // projectsテーブルのUNIQUE制約を変更
+    // 既存のUNIQUE(code)制約を削除
+    await pool.query(`
+      ALTER TABLE app.projects 
+      DROP CONSTRAINT IF EXISTS projects_code_key
+    `);
+    console.log('✅ projectsテーブルの既存UNIQUE(code)制約を削除');
     
-    // 例: customersテーブルからemailカラムを削除
-    // await pool.query(`
-    //   ALTER TABLE app.customers 
-    //   DROP COLUMN email
-    // `);
-    // console.log('✅ customersテーブルからemailカラムを削除');
-    
-    // 例: customersテーブルのnameカラムをVARCHAR(255)に変更
-    // await pool.query(`
-    //   ALTER TABLE app.customers 
-    //   ALTER COLUMN name TYPE VARCHAR(255)
-    // `);
-    // console.log('✅ customersテーブルのnameカラムをVARCHAR(255)に変更');
+    // 複合ユニーク制約(code, fiscal_year)を追加
+    await pool.query(`
+      ALTER TABLE app.projects 
+      ADD CONSTRAINT projects_code_fiscal_year_key UNIQUE (code, fiscal_year)
+    `);
+    console.log('✅ projectsテーブルに複合ユニーク制約(code, fiscal_year)を追加');
     
     console.log('\n🎉 テーブル変更が完了しました！');
     console.log('変更内容を必ず確認してください。');

@@ -194,10 +194,11 @@ export default function ProjectsPage() {
   const copyMutation = useMutation({
     mutationFn: async (targetYear: number) => {
       const res = await apiRequest("POST", "/api/projects/copy-from-previous-year", { targetYear });
-      return res.json() as Promise<{ success: boolean; count: number; projects: Project[] }>;
+      const result = await res.json();
+      return result.data as { count: number; projects: Project[] };
     },
     onSuccess: (result) => {
-      void queryClient.invalidateQueries({ queryKey: ["/api/projects"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/projects", selectedYear] });
       toast({
         title: "コピー完了",
         description: `${result.count}件のプロジェクトをコピーしました`,

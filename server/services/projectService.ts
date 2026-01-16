@@ -123,9 +123,9 @@ export class ProjectService {
    */
   async createProject(data: CreateProjectData): Promise<Project> {
     try {
-      // プロジェクトコードの重複チェック
-      const existingProject = await this.projectRepository.findByCode(data.code);
-      if (existingProject) {
+      // プロジェクトコードの重複チェック（年度を含める）
+      const codeExists = await this.projectRepository.isCodeExists(data.code, data.fiscalYear);
+      if (codeExists) {
         throw new AppError('プロジェクトコードが既に存在します', 409);
       }
 
@@ -163,10 +163,11 @@ export class ProjectService {
         throw new AppError('プロジェクトが見つかりません', 404);
       }
 
-      // プロジェクトコードの重複チェック（更新時）
+      // プロジェクトコードの重複チェック（更新時、年度を含める）
       if (data.code && data.code !== existingProject.code) {
-        const duplicateProject = await this.projectRepository.findByCode(data.code);
-        if (duplicateProject) {
+        const fiscalYear = data.fiscalYear ?? existingProject.fiscalYear;
+        const codeExists = await this.projectRepository.isCodeExists(data.code, fiscalYear, id);
+        if (codeExists) {
           throw new AppError('プロジェクトコードが既に存在します', 409);
         }
       }
@@ -245,12 +246,13 @@ export class ProjectService {
    * プロジェクトコード重複チェック
    * 
    * @param code - プロジェクトコード
+   * @param fiscalYear - 年度
    * @param excludeId - 除外するプロジェクトID（更新時）
    * @returns 重複チェック結果
    */
-  async checkCodeExists(code: string, excludeId?: string): Promise<boolean> {
+  async checkCodeExists(code: string, fiscalYear: number, excludeId?: string): Promise<boolean> {
     try {
-      return await this.projectRepository.isCodeExists(code, excludeId);
+      return await this.projectRepository.isCodeExists(code, fiscalYear, excludeId);
     } catch (error) {
       console.error('プロジェクトコード重複チェックエラー:', error);
       throw new AppError('プロジェクトコードの重複チェック中にエラーが発生しました', 500);
@@ -296,6 +298,78 @@ export class ProjectService {
     } catch (error) {
       console.error('プロジェクト統計情報取得エラー:', error);
       throw new AppError('プロジェクト統計情報の取得中にエラーが発生しました', 500);
+    }
+  }
+
+  /**
+   * 前年度からプロジェクトをコピー
+   * 
+   * @param targetYear - コピー先の年度
+   * @returns コピーされたプロジェクト情報と件数
+   * @throws AppError - 前年度のプロジェクトが見つからない場合、対象年度に既存プロジェクトが存在する場合
+   */
+  async copyFromPreviousYear(targetYear: number): Promise<{ count: number; projects: Project[] }> {
+    try {
+      const previousYear = targetYear - 1;
+      
+      // 前年度のプロジェクトを取得
+      const previousProjects = await this.projectRepository.findByFiscalYear(previousYear);
+      
+      if (previousProjects.length === 0) {
+        throw new AppError(`前年度（${previousYear}年）のプロジェクトが見つかりません`, 404);
+      }
+      
+      // コピー先年度に既にプロジェクトが存在するかチェック
+      const existingProjects = await this.projectRepository.findByFiscalYear(targetYear);
+      if (existingProjects.length > 0) {
+        throw new AppError(
+          `対象年度（${targetYear}年）に既にプロジェクトが存在します。先に削除してください`,
+          409
+        );
+      }
+      
+      const copiedProjects: Project[] = [];
+      
+      // 各プロジェクトをコピー
+      for (const project of previousProjects) {
+        // プロジェクトコードはそのまま使用（年度が異なるため重複しない）
+        const newCode = project.code;
+        
+        // コードの重複チェック（年度を含める）
+        const codeExists = await this.projectRepository.isCodeExists(newCode, targetYear);
+        if (codeExists) {
+          // コードが重複する場合はスキップ
+          continue;
+        }
+        
+        // 新しいプロジェクトを作成
+        const newProject = await this.projectRepository.create({
+          code: newCode,
+          name: project.name,
+          fiscalYear: targetYear,
+          customerId: project.customerId,
+          customerName: project.customerName,
+          salesPerson: project.salesPerson,
+          serviceType: project.serviceType,
+          analysisType: project.analysisType,
+          status: 'active',
+          budget: project.budget,
+          actualCost: null, // 実績コストはリセット
+        });
+        
+        copiedProjects.push(newProject);
+      }
+      
+      return {
+        count: copiedProjects.length,
+        projects: copiedProjects,
+      };
+    } catch (error) {
+      if (error instanceof AppError) {
+        throw error;
+      }
+      console.error('前年度からのコピーエラー:', error);
+      throw new AppError('前年度からのコピー中にエラーが発生しました', 500);
     }
   }
 

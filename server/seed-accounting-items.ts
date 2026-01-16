@@ -43,7 +43,7 @@ async function seedAccountingItems() {
     const existingCodes = existingResult.rows.map(row => row.code);
     console.log(`📋 既存のコード: ${existingCodes.join(', ')}`);
     
-    // 必要な計上区分データ（例：基本的なもの）
+    // 必要な計上区分データ（現在のDBに存在するデータと一致）
     const requiredItems = [
       { code: '511', name: '保守売上' },
       { code: '512', name: 'ソフト売上' },
@@ -55,11 +55,11 @@ async function seedAccountingItems() {
       { code: '737', name: '消耗品費' },
       { code: '740', name: '支払保守料' },
       { code: '745', name: '外注加工費' },
-      { code: '750', name: '人件費' },
-      { code: '760', name: '福利厚生費' },
-      { code: '770', name: '旅費交通費' },
-      { code: '780', name: '接待交際費' },
-      { code: '790', name: '研修費' }
+      { code: '1100', name: '期首製品棚卸高' },
+      { code: '1200', name: '期首商品棚卸高' },
+      { code: '1300', name: '期末製品棚卸高' },
+      { code: '1400', name: '期末商品棚卸高' },
+      { code: '9999', name: 'その他調整経費' }
     ];
     
     let addedCount = 0;

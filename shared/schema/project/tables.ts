@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { integer, pgSchema, text, timestamp, varchar } from "drizzle-orm/pg-core";
+import { integer, pgSchema, text, timestamp, unique, varchar } from "drizzle-orm/pg-core";
 
 // appスキーマを定義
 const appSchema = pgSchema("app");
@@ -7,7 +7,7 @@ const appSchema = pgSchema("app");
 // プロジェクトマスタ (Project Master)
 export const projects = appSchema.table("projects", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  code: text("code").notNull().unique(),
+  code: text("code").notNull(),
   name: text("name").notNull(),
   fiscalYear: integer("fiscal_year").notNull(), // 年度 (例: 2024, 2025)
   customerId: varchar("customer_id").notNull(), // 取引先ID
@@ -19,4 +19,6 @@ export const projects = appSchema.table("projects", {
   budget: text("budget"), // 予算
   actualCost: text("actual_cost"), // 実績コスト
   createdAt: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => ({
+  codeFiscalYearUnique: unique().on(table.code, table.fiscalYear),
+}));

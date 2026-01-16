@@ -41,6 +41,11 @@ const searchProjectSchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
 });
 
+// 前年度コピーリクエストスキーマ
+const copyFromPreviousYearSchema = z.object({
+  targetYear: z.number().int().positive(),
+});
+
 /**
  * 営業担当者一覧取得API
  * GET /api/projects/sales-persons
@@ -262,9 +267,9 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
     const data = createProjectSchema.parse(req.body);
     const _user = (req as any).user;
     
-    // プロジェクトコードの重複チェック
-    const existingProject = await projectRepository.findByCode(data.code);
-    if (existingProject) {
+    // プロジェクトコードの重複チェック（年度を含める）
+    const codeExists = await projectRepository.isCodeExists(data.code, data.fiscalYear);
+    if (codeExists) {
       return res.status(409).json({
         success: false,
         message: 'プロジェクトコードが既に存在します',
@@ -291,6 +296,39 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: 'プロジェクトの作成中にエラーが発生しました',
+    });
+  }
+});
+
+/**
+ * 前年度からプロジェクトをコピーAPI
+ * POST /api/projects/copy-from-previous-year
+ */
+router.post('/copy-from-previous-year', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { targetYear } = copyFromPreviousYearSchema.parse(req.body);
+    
+    const result = await projectService.copyFromPreviousYear(targetYear);
+    
+    res.json({
+      success: true,
+      data: {
+        count: result.count,
+        projects: result.projects,
+      },
+    });
+  } catch (error: any) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({
+        success: false,
+        message: '入力値が正しくありません',
+        errors: error.errors,
+      });
+    }
+    
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || '前年度からのコピー中にエラーが発生しました',
     });
   }
 });
@@ -356,9 +394,24 @@ router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
 router.get('/check-code/:code', requireAuth, async (req: Request, res: Response) => {
   try {
     const { code } = req.params;
-    const { excludeId } = req.query;
+    const { excludeId, fiscalYear } = req.query;
     
-    const exists = await projectService.checkCodeExists(code, excludeId as string);
+    if (!fiscalYear || typeof fiscalYear !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: '年度パラメータが必要です',
+      });
+    }
+    
+    const fiscalYearNum = parseInt(fiscalYear);
+    if (isNaN(fiscalYearNum)) {
+      return res.status(400).json({
+        success: false,
+        message: '年度が正しくありません',
+      });
+    }
+    
+    const exists = await projectService.checkCodeExists(code, fiscalYearNum, excludeId as string);
     
     res.json({
       success: true,
