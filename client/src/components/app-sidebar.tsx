@@ -1,4 +1,4 @@
-import { BarChart3, Building2, ClipboardCheck, DollarSign, FileText, FileUp, FolderKanban, GitMerge, Home, LogOut, TrendingUp, User,Users } from "lucide-react";
+import { BarChart3, BookOpen, Building2, ClipboardCheck, DollarSign, FileText, FileUp, FolderKanban, GitMerge, Home, LogOut, TrendingUp, User,Users } from "lucide-react";
 import { useLocation } from "wouter";
 
 import { Button } from "@/components/ui/button";
@@ -189,6 +189,23 @@ export function AppSidebar() {
                     <User className="h-4 w-4" />
                     <span className="truncate">{user ? `${user.firstName} ${user.lastName}`.trim() : "User"}</span>
                   </div>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full justify-start"
+                    asChild
+                  >
+                    <a
+                      href="https://docs.google.com/document/d/1hgRMUm3wt_qckef8BjNWBLoQNlvKtQ6QRWdgt5hTTO0/edit?usp=sharing"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      <BookOpen className="h-4 w-4" />
+                      <span>操作マニュアル</span>
+                    </a>
+                  </Button>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                   <Button
