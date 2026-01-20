@@ -183,7 +183,7 @@ export default function ForecastImportPage() {
                   <li>列2: 計上科目（計上科目マスタの名称、例: 保守売上、ソフト売上、仕入高）</li>
                   <li>列3: 計上年月（YYYY-MM形式、例: 2026-01）</li>
                   <li>列4: 摘要文</li>
-                  <li>列5: 金額（カンマ区切り可、例: 500000 または 500,000）</li>
+                  <li>列5: 金額（カンマ区切りを使用する場合はダブルクォートで囲む。例: 500000 または "500,000"）</li>
                 </ul>
                 <div className="mt-3 pt-3 border-t border-border">
                   <p className="font-medium mb-2">CSV例:</p>
@@ -192,9 +192,17 @@ export default function ForecastImportPage() {
 036,保守売上,2026-01,ヘルプデスク費用,300000`}
                   </pre>
                 </div>
-                <p className="mt-3 text-muted-foreground">
-                  <strong>注意:</strong> ヘッダー行は不要です。各項目はダブルクォートで囲んでも囲まなくても構いません。
-                </p>
+                <div className="mt-3 pt-3 border-t border-border space-y-2">
+                  <p className="font-medium text-sm">ファイル形式に関する詳細:</p>
+                  <ul className="list-disc list-inside space-y-1 text-xs text-muted-foreground">
+                    <li><strong>ヘッダー行:</strong> ヘッダー行があっても問題ありません。ヘッダー行はエラーとしてスキップされます。</li>
+                    <li><strong>ダブルクォート:</strong> 各項目はダブルクォートで囲んでも囲まなくても構いません。</li>
+                    <li><strong>文字コード:</strong> UTF-8（推奨）、Shift_JIS、EUC-JP、ISO-2022-JP に対応。UTF-8が推奨です。</li>
+                    <li><strong>改行コード:</strong> CRLF（Windows）、LF（Unix/Linux/Mac）、CR（旧Mac）に対応。自動検出されます。</li>
+                    <li><strong>BOM（Byte Order Mark）:</strong> UTF-8 BOM付きファイルにも対応。BOMの有無は問いません。</li>
+                    <li><strong>最終行の改行:</strong> 最終行に改行があってもなくても問題ありません。空行は自動的にスキップされます。</li>
+                  </ul>
+                </div>
               </div>
 
               {/* 取込実行ボタン */}
