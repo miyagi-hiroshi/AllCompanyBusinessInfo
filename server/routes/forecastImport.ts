@@ -82,8 +82,9 @@ router.post('/order-forecasts', requireAuth, csvUpload.single('file'), async (re
     }
 
     // ユーザー情報を取得
-    const userId = req.user?.userId || '';
-    const employeeId = req.user?.employeeId;
+    const user = (req as any).user;
+    const userId = user?.id || '';
+    const employeeId = user?.employee?.id?.toString();
 
     // CSV取込処理
     const result = await forecastImportService.importOrderForecastsFromCSV(
@@ -140,8 +141,9 @@ router.post('/angle-b-forecasts', requireAuth, csvUpload.single('file'), async (
     }
 
     // ユーザー情報を取得
-    const userId = req.user?.userId || '';
-    const employeeId = req.user?.employeeId;
+    const user = (req as any).user;
+    const userId = user?.id || '';
+    const employeeId = user?.employee?.id?.toString();
 
     // CSV取込処理
     const result = await forecastImportService.importAngleBForecastsFromCSV(
