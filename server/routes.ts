@@ -11,6 +11,7 @@ import budgetsTargetRoutes from "./routes/budgetsTarget";
 import customersRoutes from "./routes/customers";
 import dashboardRoutes from "./routes/dashboard";
 import employeesRoutes from "./routes/employees";
+import forecastImportRoutes from "./routes/forecastImport";
 import glEntriesRoutes from "./routes/glEntries";
 import itemsRoutes from "./routes/items";
 import orderForecastsRoutes from "./routes/orderForecasts";
@@ -30,6 +31,7 @@ export function registerRoutes(app: Express): Server {
   app.use('/api/projects', projectsRoutes);
   app.use('/api/order-forecasts', orderForecastsRoutes);
   app.use('/api/angle-b-forecasts', angleBForecastsRoutes);
+  app.use('/api/forecast-import', forecastImportRoutes);
   app.use('/api/gl-entries', glEntriesRoutes);
   app.use('/api/reconciliation', reconciliationRoutes);
   app.use('/api/accounting-items', accountingItemsRoutes);

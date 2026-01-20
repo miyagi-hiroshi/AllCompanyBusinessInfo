@@ -55,6 +55,11 @@ const menuItems = {
       icon: FileText,
     },
     {
+      title: "受注見込み・角度B案件CSV取込",
+      url: "/forecast-import",
+      icon: FileUp,
+    },
+    {
       title: "月別工数入力",
       url: "/staffing",
       icon: Users,

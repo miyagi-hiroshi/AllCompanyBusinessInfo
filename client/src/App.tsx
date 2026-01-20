@@ -14,6 +14,7 @@ import AngleBPage from "@/pages/angle-b";
 import BudgetPage from "@/pages/budget";
 import CustomersPage from "@/pages/customers";
 import DashboardPage from "@/pages/dashboard";
+import ForecastImportPage from "@/pages/forecast-import";
 import GLImportPage from "@/pages/gl-import";
 import GLReconciliationPage from "@/pages/gl-reconciliation";
 import NotFound from "@/pages/not-found";
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/sales-person-summary" component={SalesPersonSummaryPage} />
       <Route path="/gl-import" component={GLImportPage} />
       <Route path="/gl-reconciliation" component={GLReconciliationPage} />
+      <Route path="/forecast-import" component={ForecastImportPage} />
       <Route path="/order-forecast" component={OrderForecastPage} />
       <Route path="/staffing" component={StaffingPage} />
       <Route path="/staffing-project" component={StaffingProjectPage} />

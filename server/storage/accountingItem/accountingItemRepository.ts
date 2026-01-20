@@ -115,6 +115,17 @@ export class AccountingItemRepository {
   }
 
   /**
+   * 名称で会計項目を取得
+   * 
+   * @param name - 会計項目名称
+   * @returns 会計項目（存在しない場合はnull）
+   */
+  async findByName(name: string): Promise<AccountingItem | null> {
+    const result = await db.select().from(accountingItems).where(eq(accountingItems.name, name));
+    return result[0] || null;
+  }
+
+  /**
    * 会計項目を作成
    * 
    * @param data - 作成する会計項目データ

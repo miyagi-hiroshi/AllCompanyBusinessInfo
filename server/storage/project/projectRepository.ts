@@ -125,6 +125,19 @@ export class ProjectRepository {
   }
   
   /**
+   * プロジェクトコードと年度でプロジェクトを取得
+   */
+  async findByCodeAndFiscalYear(code: string, fiscalYear: number): Promise<Project | null> {
+    const result = await db.select()
+      .from(projects)
+      .where(and(
+        eq(projects.code, code),
+        eq(projects.fiscalYear, fiscalYear)
+      ));
+    return result[0] || null;
+  }
+  
+  /**
    * 年度でプロジェクトを取得
    */
   async findByFiscalYear(fiscalYear: number): Promise<Project[]> {
