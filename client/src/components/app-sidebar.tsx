@@ -45,9 +45,9 @@ const menuItems = {
   ],
   input: [
     {
-      title: "GL取込",
-      url: "/gl-import",
-      icon: FileUp,
+      title: "角度B案件登録",
+      url: "/angle-b",
+      icon: TrendingUp,
     },
     {
       title: "受発注見込み入力",
@@ -55,18 +55,18 @@ const menuItems = {
       icon: FileText,
     },
     {
-      title: "受注見込み・角度B案件CSV取込",
+      title: "CSV案件取込",
       url: "/forecast-import",
       icon: FileUp,
     },
     {
-      title: "月別工数入力",
-      url: "/staffing",
+      title: "プロジェクト別工数入力",
+      url: "/staffing-project",
       icon: Users,
     },
     {
-      title: "プロジェクト別工数入力",
-      url: "/staffing-project",
+      title: "月別工数入力",
+      url: "/staffing",
       icon: Users,
     },
     {
@@ -75,9 +75,9 @@ const menuItems = {
       icon: ClipboardCheck,
     },
     {
-      title: "角度B案件登録",
-      url: "/angle-b",
-      icon: TrendingUp,
+      title: "GL取込",
+      url: "/gl-import",
+      icon: FileUp,
     },
     {
       title: "予算登録",
