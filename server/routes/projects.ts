@@ -8,6 +8,7 @@ import { BudgetTargetRepository } from '../storage/budgetTarget';
 import { CustomerRepository } from '../storage/customer';
 import { OrderForecastRepository } from '../storage/orderForecast';
 import { ProjectRepository } from '../storage/project';
+import { ProjectAnalysisSnapshotRepository } from '../storage/projectAnalysisSnapshot';
 import { StaffingRepository } from '../storage/staffing';
 
 const router = express.Router();
@@ -17,6 +18,7 @@ const orderForecastRepository = new OrderForecastRepository();
 const staffingRepository = new StaffingRepository();
 const budgetTargetRepository = new BudgetTargetRepository();
 const projectService = new ProjectService(projectRepository, customerRepository, orderForecastRepository, staffingRepository, budgetTargetRepository);
+const projectAnalysisSnapshotRepository = new ProjectAnalysisSnapshotRepository();
 
 // プロジェクト作成スキーマ
 const createProjectSchema = insertProjectSchema;
@@ -170,6 +172,132 @@ router.get('/analysis-summary', requireAuth, async (req: Request, res: Response)
     res.status(error.statusCode || 500).json({
       success: false,
       message: error.message || 'プロジェクト分析サマリーの取得中にエラーが発生しました',
+    });
+  }
+});
+
+/**
+ * プロジェクト分析スナップショット作成API
+ * POST /api/projects/analysis-snapshots
+ */
+router.post('/analysis-snapshots', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { fiscalYear, name, snapshotData } = req.body;
+    const employeeId = req.user!.employeeId;
+
+    if (fiscalYear === undefined || !name || !snapshotData) {
+      return res.status(400).json({
+        success: false,
+        message: '年度、スナップショット名、スナップショットデータが必要です',
+      });
+    }
+
+    const snapshot = await projectAnalysisSnapshotRepository.create({
+      fiscalYear: typeof fiscalYear === 'number' ? fiscalYear : parseInt(String(fiscalYear)),
+      name: String(name),
+      snapshotData: snapshotData,
+      createdByEmployeeId: String(employeeId),
+    });
+
+    res.json({
+      success: true,
+      data: snapshot,
+    });
+  } catch (error: any) {
+    console.error('スナップショット作成エラー:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'スナップショットの作成中にエラーが発生しました',
+    });
+  }
+});
+
+/**
+ * プロジェクト分析スナップショット一覧取得API
+ * GET /api/projects/analysis-snapshots
+ */
+router.get('/analysis-snapshots', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const fiscalYear = req.query.fiscalYear 
+      ? parseInt(req.query.fiscalYear as string) 
+      : undefined;
+    
+    const snapshots = await projectAnalysisSnapshotRepository.findAll(fiscalYear);
+
+    res.json({
+      success: true,
+      data: snapshots,
+    });
+  } catch (error: any) {
+    console.error('スナップショット一覧取得エラー:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'スナップショット一覧の取得中にエラーが発生しました',
+    });
+  }
+});
+
+/**
+ * プロジェクト分析スナップショット詳細取得API
+ * GET /api/projects/analysis-snapshots/:id
+ */
+router.get('/analysis-snapshots/:id', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const snapshot = await projectAnalysisSnapshotRepository.findById(id);
+
+    if (!snapshot) {
+      return res.status(404).json({
+        success: false,
+        message: 'スナップショットが見つかりません',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: snapshot,
+    });
+  } catch (error: any) {
+    console.error('スナップショット詳細取得エラー:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'スナップショットの取得中にエラーが発生しました',
+    });
+  }
+});
+
+/**
+ * プロジェクト分析スナップショット比較API
+ * GET /api/projects/analysis-snapshots/compare/:id1/:id2
+ */
+router.get('/analysis-snapshots/compare/:id1/:id2', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { id1, id2 } = req.params;
+    
+    const [snapshot1, snapshot2] = await Promise.all([
+      projectAnalysisSnapshotRepository.findById(id1),
+      projectAnalysisSnapshotRepository.findById(id2),
+    ]);
+
+    if (!snapshot1 || !snapshot2) {
+      return res.status(404).json({
+        success: false,
+        message: 'スナップショットが見つかりません',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        snapshot1,
+        snapshot2,
+      },
+    });
+  } catch (error: any) {
+    console.error('スナップショット比較エラー:', error);
+    res.status(error.statusCode || 500).json({
+      success: false,
+      message: error.message || 'スナップショットの比較中にエラーが発生しました',
     });
   }
 });

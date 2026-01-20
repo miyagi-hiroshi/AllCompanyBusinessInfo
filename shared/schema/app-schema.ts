@@ -24,6 +24,7 @@ import * as glEntries from "./glEntry";
 import * as items from "./item";
 import * as orderForecasts from "./orderForecast";
 import * as projects from "./project";
+import * as projectAnalysisSnapshots from "./projectAnalysisSnapshot";
 import * as reconciliationLogs from "./reconciliationLog";
 import * as staffing from "./staffing";
 
@@ -43,6 +44,7 @@ export const schema = {
   ...budgetsExpense,
   ...budgetsTarget,
   ...staffing,
+  ...projectAnalysisSnapshots,
   // sessionsテーブル（appスキーマ）
   sessions,
 };

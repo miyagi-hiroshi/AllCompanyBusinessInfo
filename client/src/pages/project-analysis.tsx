@@ -1,7 +1,32 @@
-import { BarChart3 } from "lucide-react";
-import { useState } from "react";
+import { BarChart3, Camera, Check, ChevronsUpDown, GitCompare } from "lucide-react";
+import { useMemo, useState } from "react";
 
+import { ProjectAnalysisSnapshotCompare } from "@/components/project-analysis-snapshot-compare";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -18,7 +43,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { type ProjectAnalysisSummary,useProjectAnalysis } from "@/hooks/useProjectAnalysis";
+import { type ProjectAnalysisSummary, useProjectAnalysis } from "@/hooks/useProjectAnalysis";
+import {
+  useCreateProjectAnalysisSnapshot,
+  useProjectAnalysisSnapshots,
+} from "@/hooks/useProjectAnalysisSnapshots";
+import { useToast } from "@/hooks/useToast";
 import { cn } from "@/lib/utils";
 
 const FISCAL_YEARS = [2023, 2024, 2025, 2026];
@@ -31,9 +61,23 @@ const ANALYSIS_TYPE_ORDER = ['生産性', '粗利'];
 
 export default function ProjectAnalysisPage() {
   const [selectedYear, setSelectedYear] = useState<number>(2025);
+  const [selectedSnapshots, setSelectedSnapshots] = useState<string[]>(['current']);
+  const [isSnapshotDialogOpen, setIsSnapshotDialogOpen] = useState(false);
+  const [snapshotName, setSnapshotName] = useState<string>("");
+  const [isMultiSelectOpen, setIsMultiSelectOpen] = useState(false);
+  const [isCompareDialogOpen, setIsCompareDialogOpen] = useState(false);
+
+  const { toast } = useToast();
 
   // プロジェクト分析サマリー取得
   const { data: analysisData, isLoading } = useProjectAnalysis(selectedYear);
+
+  // スナップショット一覧取得
+  const { data: snapshotsData } = useProjectAnalysisSnapshots(selectedYear);
+  const snapshots = snapshotsData?.data || [];
+
+  // スナップショット作成Mutation
+  const createSnapshotMutation = useCreateProjectAnalysisSnapshot();
 
   // 数値フォーマット関数
   const formatCurrency = (value: number) => {
@@ -173,6 +217,147 @@ export default function ProjectAnalysisPage() {
     return rows;
   };
 
+  // スナップショット作成ハンドラー
+  const handleCreateSnapshot = () => {
+    if (!analysisData?.data?.projects || analysisData.data.projects.length === 0) {
+      toast({
+        title: "エラー",
+        description: "分析結果がありません",
+        variant: "destructive",
+      });
+      return;
+    }
+    setIsSnapshotDialogOpen(true);
+  };
+
+  // スナップショット作成実行
+  const handleCreateSnapshotSubmit = async () => {
+    if (!snapshotName.trim()) {
+      toast({
+        title: "エラー",
+        description: "スナップショット名を入力してください",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!analysisData?.data?.projects) {
+      return;
+    }
+
+    try {
+      const rows = flattenData(analysisData.data.projects);
+      await createSnapshotMutation.mutateAsync({
+        fiscalYear: selectedYear,
+        name: snapshotName.trim(),
+        snapshotData: { rows },
+      });
+
+      toast({
+        title: "成功",
+        description: "スナップショットを作成しました",
+      });
+
+      setSnapshotName("");
+      setIsSnapshotDialogOpen(false);
+    } catch (_error) {
+      toast({
+        title: "エラー",
+        description: "スナップショットの作成に失敗しました",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // スナップショット選択ハンドラー
+  const handleSnapshotToggle = (value: string) => {
+    if (value === 'current') {
+      // 「現在」のトグル
+      if (selectedSnapshots.includes('current')) {
+        setSelectedSnapshots(selectedSnapshots.filter(id => id !== 'current'));
+      } else {
+        // 「現在」を選択する場合は、他の選択をクリア
+        setSelectedSnapshots(['current']);
+      }
+    } else {
+      // スナップショットのトグル
+      if (selectedSnapshots.includes(value)) {
+        setSelectedSnapshots(selectedSnapshots.filter(id => id !== value));
+      } else {
+        // スナップショットを選択する場合は、「現在」を除外
+        const newSelected = selectedSnapshots.filter(id => id !== 'current');
+        newSelected.push(value);
+        setSelectedSnapshots(newSelected);
+      }
+    }
+  };
+
+  // 表示用データの取得
+  const displayRows = useMemo(() => {
+    if (selectedSnapshots.length === 0 || selectedSnapshots.includes('current')) {
+      // 「現在」が選択されている場合、または何も選択されていない場合
+      return flattenData(analysisData?.data?.projects || []);
+    } else {
+      // スナップショットが選択されている場合
+      const selectedSnapshotId = selectedSnapshots.find(id => id !== 'current');
+      if (selectedSnapshotId) {
+        const snapshot = snapshots.find(s => s.id === selectedSnapshotId);
+        return snapshot?.snapshotData.rows || [];
+      }
+      return [];
+    }
+  }, [selectedSnapshots, analysisData, snapshots]);
+
+  // マルチセレクトの選択肢
+  const snapshotOptions = useMemo(() => {
+    const options = [
+      { label: '現在', value: 'current' },
+      ...snapshots.map(snapshot => ({
+        label: `${snapshot.name} (${new Date(snapshot.createdAt).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })})`,
+        value: snapshot.id,
+      })),
+    ];
+    return options;
+  }, [snapshots]);
+
+  // 比較分析ボタンの有効化判定
+  const canCompare = useMemo(() => {
+    const snapshotIds = selectedSnapshots.filter(id => id !== 'current');
+    return snapshotIds.length === 2;
+  }, [selectedSnapshots]);
+
+  // 比較分析実行
+  const handleCompare = () => {
+    const snapshotIds = selectedSnapshots.filter(id => id !== 'current');
+    if (snapshotIds.length === 2) {
+      setIsCompareDialogOpen(true);
+    }
+  };
+
+  // 比較対象のスナップショットID取得（作成日時でソート：古い→新しい）
+  const compareSnapshotIds = useMemo(() => {
+    const snapshotIds = selectedSnapshots.filter(id => id !== 'current');
+    if (snapshotIds.length !== 2) {
+      return ['', ''];
+    }
+    
+    // 選択されたスナップショットを取得
+    const selectedSnapshotsData = snapshots.filter(s => snapshotIds.includes(s.id));
+    
+    if (selectedSnapshotsData.length !== 2) {
+      // スナップショットが見つからない場合はフォールバック
+      return snapshotIds;
+    }
+    
+    // createdAtでソート（古い順）
+    const sortedSnapshots = [...selectedSnapshotsData].sort(
+      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+    );
+    
+    // 古い方が左（snapshot1）、新しい方が右（snapshot2）
+    return [sortedSnapshots[0].id, sortedSnapshots[1].id];
+  }, [selectedSnapshots, snapshots]);
+
   return (
     <div className="h-full overflow-auto">
       <div className="p-4 space-y-3">
@@ -182,19 +367,159 @@ export default function ProjectAnalysisPage() {
             <BarChart3 className="h-5 w-5 text-primary" />
             <h1 className="text-xl font-bold">{selectedYear}年度 プロジェクト分析</h1>
           </div>
-          <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
-            <SelectTrigger className="w-[120px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {FISCAL_YEARS.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
-                  {year}年度
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-2">
+            {/* 年度選択 */}
+            <Select value={selectedYear.toString()} onValueChange={(value) => {
+              setSelectedYear(parseInt(value));
+              // 年度変更時に選択を「現在」にリセット
+              setSelectedSnapshots(['current']);
+            }}>
+              <SelectTrigger className="w-[120px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {FISCAL_YEARS.map((year) => (
+                  <SelectItem key={year} value={year.toString()}>
+                    {year}年度
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* スナップショット取得ボタン */}
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!analysisData?.data?.projects || analysisData.data.projects.length === 0}
+              onClick={handleCreateSnapshot}
+            >
+              <Camera className="h-4 w-4 mr-2" />
+              スナップショット取得
+            </Button>
+
+            {/* マルチセレクト */}
+            <Popover open={isMultiSelectOpen} onOpenChange={setIsMultiSelectOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="w-[200px] justify-between">
+                  {selectedSnapshots.length === 0 ? (
+                    "現在"
+                  ) : selectedSnapshots.length === 1 ? (
+                    selectedSnapshots[0] === 'current' 
+                      ? '現在'
+                      : snapshotOptions.find(opt => opt.value === selectedSnapshots[0])?.label || '選択中'
+                  ) : (
+                    `${selectedSnapshots.length}件選択中`
+                  )}
+                  <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[300px] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="検索..." />
+                  <CommandList>
+                    <CommandEmpty>見つかりません</CommandEmpty>
+                    <CommandGroup>
+                      {/* 「現在」オプション */}
+                      <CommandItem
+                        value="current"
+                        onSelect={() => handleSnapshotToggle("current")}
+                      >
+                        <div className={cn(
+                          "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                          selectedSnapshots.includes("current")
+                            ? "bg-primary text-primary-foreground"
+                            : "opacity-50 [&_svg]:invisible"
+                        )}>
+                          <Check className="h-4 w-4" />
+                        </div>
+                        現在
+                      </CommandItem>
+
+                      {/* スナップショット履歴（動的生成） */}
+                      {snapshots.map((snapshot) => (
+                        <CommandItem
+                          key={snapshot.id}
+                          value={snapshot.id}
+                          onSelect={() => handleSnapshotToggle(snapshot.id)}
+                        >
+                          <div className={cn(
+                            "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                            selectedSnapshots.includes(snapshot.id)
+                              ? "bg-primary text-primary-foreground"
+                              : "opacity-50 [&_svg]:invisible"
+                          )}>
+                            <Check className="h-4 w-4" />
+                          </div>
+                          {snapshot.name} ({new Date(snapshot.createdAt).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })})
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+
+                {/* 比較分析ボタン（PopoverContent内） */}
+                <div className="border-t p-2">
+                  <Button
+                    className="w-full"
+                    disabled={!canCompare}
+                    onClick={handleCompare}
+                  >
+                    <GitCompare className="mr-2 h-4 w-4" />
+                    比較分析
+                  </Button>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
+
+        {/* スナップショット作成ダイアログ */}
+        <Dialog open={isSnapshotDialogOpen} onOpenChange={setIsSnapshotDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>スナップショット作成</DialogTitle>
+              <DialogDescription>
+                現在の分析結果をスナップショットとして保存します
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div>
+                <Label htmlFor="snapshot-name">スナップショット名</Label>
+                <Input
+                  id="snapshot-name"
+                  value={snapshotName}
+                  onChange={(e) => setSnapshotName(e.target.value)}
+                  placeholder="例: 2025年1月時点"
+                  className="mt-2"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setIsSnapshotDialogOpen(false)}
+              >
+                キャンセル
+              </Button>
+              <Button
+                onClick={handleCreateSnapshotSubmit}
+                disabled={createSnapshotMutation.isPending || !snapshotName.trim()}
+              >
+                {createSnapshotMutation.isPending ? "作成中..." : "作成"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* 比較分析ダイアログ */}
+        {compareSnapshotIds[0] && compareSnapshotIds[1] && (
+          <ProjectAnalysisSnapshotCompare
+            snapshotId1={compareSnapshotIds[0]}
+            snapshotId2={compareSnapshotIds[1]}
+            open={isCompareDialogOpen}
+            onOpenChange={setIsCompareDialogOpen}
+          />
+        )}
 
         {/* 統一テーブル */}
         {isLoading ? (
@@ -222,7 +547,7 @@ export default function ProjectAnalysisPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {flattenData(analysisData?.data?.projects || []).map((row, index) => (
+                    {displayRows.map((row, index) => (
                       <TableRow 
                         key={index} 
                         className={row.type === 'subtotal' ? 'font-bold bg-muted/50' : ''}

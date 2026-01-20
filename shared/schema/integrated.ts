@@ -17,6 +17,7 @@ import * as glEntries from "./glEntry";
 import * as items from "./item";
 import * as orderForecasts from "./orderForecast";
 import * as projects from "./project";
+import * as projectAnalysisSnapshots from "./projectAnalysisSnapshot";
 import * as reconciliationLogs from "./reconciliationLog";
 import * as staffing from "./staffing";
 
@@ -38,6 +39,7 @@ export const schema = {
   ...budgetsExpense,
   ...budgetsTarget,
   ...staffing,
+  ...projectAnalysisSnapshots,
 };
 
 // 既存システムのテーブル（参照専用）
@@ -54,6 +56,7 @@ export * from "./glEntry";
 export * from "./item";
 export * from "./orderForecast";
 export * from "./project";
+export * from "./projectAnalysisSnapshot";
 export * from "./reconciliationLog";
 export * from "./staffing";
 
