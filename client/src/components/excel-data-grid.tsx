@@ -788,7 +788,14 @@ export function ExcelDataGrid({
           <Input
             type={column.type === "number" ? "number" : column.type === "date" ? "date" : "text"}
             step={column.type === "number" ? "1" : undefined}
-            value={typeof value === "boolean" ? String(value) : (value || "")}
+            value={
+              column.type === "number" && value != null && value !== ""
+                ? (() => {
+                    const numValue = typeof value === "number" ? value : parseFloat(String(value));
+                    return !isNaN(numValue) ? Math.floor(numValue).toString() : String(value || "");
+                  })()
+                : typeof value === "boolean" ? String(value) : String(value || "")
+            }
             onChange={(e) => handleCellChange(rowIndex, column.key, e.target.value)}
             onBlur={() => setEditingCell(null)}
             autoFocus
