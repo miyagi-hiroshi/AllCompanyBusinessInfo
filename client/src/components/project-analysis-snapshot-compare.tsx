@@ -17,39 +17,64 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useCompareProjectAnalysisSnapshots } from "@/hooks/useProjectAnalysisSnapshots";
+import { useCompareProjectAnalysisSnapshots, useProjectAnalysisSnapshot } from "@/hooks/useProjectAnalysisSnapshots";
 import { cn } from "@/lib/utils";
 
 interface ProjectAnalysisSnapshotCompareProps {
   snapshotId1: string;
   snapshotId2: string;
+  currentData?: Array<{
+    type: 'project' | 'subtotal';
+    serviceType: string;
+    projectName?: string;
+    projectCode?: string;
+    analysisType: string;
+    revenue: number;
+    costOfSales: number;
+    sgaExpenses: number;
+    workHours: number;
+    targetValue?: number;
+    actualValue?: number;
+  }>;
+  currentLabel?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  formatCurrency: (value: number) => string;
+  formatHours: (value: number) => string;
+  formatProductivity: (value: number) => string;
+  getAchievementColor: (actualValue: number, targetValue?: number) => string;
 }
 
 export function ProjectAnalysisSnapshotCompare({
   snapshotId1,
   snapshotId2,
+  currentData,
+  currentLabel = '現在',
   open,
   onOpenChange,
+  formatCurrency,
+  formatHours,
+  formatProductivity,
+  getAchievementColor: _getAchievementColor,
 }: ProjectAnalysisSnapshotCompareProps) {
+  const isCurrent1 = snapshotId1 === 'current';
+  const isCurrent2 = snapshotId2 === 'current';
+
   const { data: compareData, isLoading } = useCompareProjectAnalysisSnapshots(
-    snapshotId1,
-    snapshotId2
+    isCurrent1 ? '' : snapshotId1,
+    isCurrent2 ? '' : snapshotId2,
+    {
+      enabled: !isCurrent1 && !isCurrent2, // 「現在」が含まれている場合はAPIを呼ばない
+    }
   );
 
-  // 数値フォーマット関数
-  const formatCurrency = (value: number) => {
-    return `¥${value.toLocaleString()}`;
-  };
-
-  const formatHours = (value: number) => {
-    return `${value.toFixed(1)}人月`;
-  };
-
-  const formatProductivity = (value: number) => {
-    return `¥${Math.round(value).toLocaleString()}/人月`;
-  };
+  // 「現在」+ スナップショットの場合、個別にスナップショットを取得
+  const { data: snapshot1Data } = useProjectAnalysisSnapshot(
+    !isCurrent1 && snapshotId1 ? snapshotId1 : ''
+  );
+  const { data: snapshot2Data } = useProjectAnalysisSnapshot(
+    !isCurrent2 && snapshotId2 ? snapshotId2 : ''
+  );
 
   // 差分計算関数
   const calculateDiff = (value1: number, value2: number): number => {
@@ -68,13 +93,38 @@ export function ProjectAnalysisSnapshotCompare({
 
   // 比較用データの準備
   const comparisonRows = useMemo(() => {
-    if (!compareData?.data) {
-      return [];
+    let rows1: SnapshotDataRow[] = [];
+    let rows2: SnapshotDataRow[] = [];
+    let label1 = '';
+    let label2 = '';
+    
+    if (isCurrent1 && currentData) {
+      rows1 = currentData as SnapshotDataRow[];
+      label1 = currentLabel;
+    } else if (compareData?.data?.snapshot1) {
+      rows1 = compareData.data.snapshot1.snapshotData.rows;
+      label1 = compareData.data.snapshot1.name;
+    } else if (snapshot1Data?.data) {
+      // 「現在」+ スナップショットの場合、個別に取得したデータを使用
+      rows1 = snapshot1Data.data.snapshotData.rows;
+      label1 = snapshot1Data.data.name;
     }
-
-    const { snapshot1, snapshot2 } = compareData.data;
-    const rows1 = snapshot1.snapshotData.rows;
-    const rows2 = snapshot2.snapshotData.rows;
+    
+    if (isCurrent2 && currentData) {
+      rows2 = currentData as SnapshotDataRow[];
+      label2 = currentLabel;
+    } else if (compareData?.data?.snapshot2) {
+      rows2 = compareData.data.snapshot2.snapshotData.rows;
+      label2 = compareData.data.snapshot2.name;
+    } else if (snapshot2Data?.data) {
+      // 「現在」+ スナップショットの場合、個別に取得したデータを使用
+      rows2 = snapshot2Data.data.snapshotData.rows;
+      label2 = snapshot2Data.data.name;
+    }
+    
+    if (rows1.length === 0 && rows2.length === 0) {
+      return { rows: [], label1: '', label2: '' };
+    }
 
     // 両方のスナップショットの行をマージ
     // プロジェクト行はIDでマッチング、小計行はサービス区分+分析区分でマッチング
@@ -115,8 +165,8 @@ export function ProjectAnalysisSnapshotCompare({
       }
     });
 
-    return mergedRows;
-  }, [compareData]);
+    return { rows: mergedRows, label1, label2 };
+  }, [compareData, currentData, isCurrent1, isCurrent2, currentLabel, snapshot1Data, snapshot2Data]);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -127,19 +177,19 @@ export function ProjectAnalysisSnapshotCompare({
             スナップショット比較分析
           </DialogTitle>
           <DialogDescription>
-            {compareData?.data && (
+            {comparisonRows.label1 && comparisonRows.label2 && (
               <>
-                {compareData.data.snapshot1.name} vs {compareData.data.snapshot2.name}
+                {comparisonRows.label1} vs {comparisonRows.label2}
               </>
             )}
           </DialogDescription>
         </DialogHeader>
 
-        {isLoading ? (
+        {(isLoading && !isCurrent1 && !isCurrent2) || (snapshot1Data?.data === undefined && !isCurrent1 && snapshotId1) || (snapshot2Data?.data === undefined && !isCurrent2 && snapshotId2) ? (
           <div className="py-8 text-center text-muted-foreground">
             読み込み中...
           </div>
-        ) : !compareData?.data ? (
+        ) : comparisonRows.rows.length === 0 ? (
           <div className="py-8 text-center text-muted-foreground">
             データがありません
           </div>
@@ -153,16 +203,16 @@ export function ProjectAnalysisSnapshotCompare({
                   <TableHead className="w-[180px] text-xs py-1 px-2">プロジェクト名</TableHead>
                   <TableHead className="text-right w-[100px] text-xs py-1 px-2">項目</TableHead>
                   <TableHead className="text-right w-[120px] text-xs py-1 px-2">
-                    {compareData.data.snapshot1.name}
+                    {comparisonRows.label1 || 'スナップショット1'}
                   </TableHead>
                   <TableHead className="text-right w-[120px] text-xs py-1 px-2">
-                    {compareData.data.snapshot2.name}
+                    {comparisonRows.label2 || 'スナップショット2'}
                   </TableHead>
                   <TableHead className="text-right w-[100px] text-xs py-1 px-2">差分</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {comparisonRows.map((merged) => {
+                {comparisonRows.rows.map((merged) => {
                   const row1 = merged.row1;
                   const row2 = merged.row2;
                   

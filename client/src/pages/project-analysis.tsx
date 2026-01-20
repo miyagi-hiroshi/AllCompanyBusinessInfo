@@ -274,20 +274,20 @@ export default function ProjectAnalysisPage() {
     if (value === 'current') {
       // 「現在」のトグル
       if (selectedSnapshots.includes('current')) {
+        // 「現在」を解除する場合
         setSelectedSnapshots(selectedSnapshots.filter(id => id !== 'current'));
       } else {
-        // 「現在」を選択する場合は、他の選択をクリア
-        setSelectedSnapshots(['current']);
+        // 「現在」を追加する場合（既存の選択を保持）
+        setSelectedSnapshots([...selectedSnapshots, 'current']);
       }
     } else {
       // スナップショットのトグル
       if (selectedSnapshots.includes(value)) {
+        // スナップショットを解除する場合
         setSelectedSnapshots(selectedSnapshots.filter(id => id !== value));
       } else {
-        // スナップショットを選択する場合は、「現在」を除外
-        const newSelected = selectedSnapshots.filter(id => id !== 'current');
-        newSelected.push(value);
-        setSelectedSnapshots(newSelected);
+        // スナップショットを追加する場合（「現在」を含めて既存の選択を保持）
+        setSelectedSnapshots([...selectedSnapshots, value]);
       }
     }
   };
@@ -322,40 +322,58 @@ export default function ProjectAnalysisPage() {
 
   // 比較分析ボタンの有効化判定
   const canCompare = useMemo(() => {
+    const hasCurrent = selectedSnapshots.includes('current');
     const snapshotIds = selectedSnapshots.filter(id => id !== 'current');
-    return snapshotIds.length === 2;
+    
+    // 「現在」+ スナップショット1件、またはスナップショット2件
+    return (hasCurrent && snapshotIds.length === 1) || snapshotIds.length === 2;
   }, [selectedSnapshots]);
 
   // 比較分析実行
   const handleCompare = () => {
+    const hasCurrent = selectedSnapshots.includes('current');
     const snapshotIds = selectedSnapshots.filter(id => id !== 'current');
-    if (snapshotIds.length === 2) {
+    
+    if ((hasCurrent && snapshotIds.length === 1) || snapshotIds.length === 2) {
       setIsCompareDialogOpen(true);
     }
   };
 
   // 比較対象のスナップショットID取得（作成日時でソート：古い→新しい）
   const compareSnapshotIds = useMemo(() => {
+    const hasCurrent = selectedSnapshots.includes('current');
     const snapshotIds = selectedSnapshots.filter(id => id !== 'current');
-    if (snapshotIds.length !== 2) {
-      return ['', ''];
+    
+    if (hasCurrent && snapshotIds.length === 1) {
+      // 「現在」+ スナップショット1件の場合
+      const snapshot = snapshots.find(s => snapshotIds.includes(s.id));
+      if (!snapshot) {
+        return ['current', ''];
+      }
+      
+      // 「現在」を常に最新のデータとして扱い、スナップショットより新しいと仮定
+      // 古い方が左、新しい方が右
+      // 「現在」は常に最新なので、スナップショットが古い場合は左に配置
+      return [snapshot.id, 'current'];
+    } else if (snapshotIds.length === 2) {
+      // スナップショット2件の場合（既存ロジック）
+      const selectedSnapshotsData = snapshots.filter(s => snapshotIds.includes(s.id));
+      
+      if (selectedSnapshotsData.length !== 2) {
+        // スナップショットが見つからない場合はフォールバック
+        return snapshotIds;
+      }
+      
+      // createdAtでソート（古い順）
+      const sortedSnapshots = [...selectedSnapshotsData].sort(
+        (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+      );
+      
+      // 古い方が左（snapshot1）、新しい方が右（snapshot2）
+      return [sortedSnapshots[0].id, sortedSnapshots[1].id];
     }
     
-    // 選択されたスナップショットを取得
-    const selectedSnapshotsData = snapshots.filter(s => snapshotIds.includes(s.id));
-    
-    if (selectedSnapshotsData.length !== 2) {
-      // スナップショットが見つからない場合はフォールバック
-      return snapshotIds;
-    }
-    
-    // createdAtでソート（古い順）
-    const sortedSnapshots = [...selectedSnapshotsData].sort(
-      (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
-    );
-    
-    // 古い方が左（snapshot1）、新しい方が右（snapshot2）
-    return [sortedSnapshots[0].id, sortedSnapshots[1].id];
+    return ['', ''];
   }, [selectedSnapshots, snapshots]);
 
   return (
@@ -516,8 +534,16 @@ export default function ProjectAnalysisPage() {
           <ProjectAnalysisSnapshotCompare
             snapshotId1={compareSnapshotIds[0]}
             snapshotId2={compareSnapshotIds[1]}
+            currentData={compareSnapshotIds[0] === 'current' || compareSnapshotIds[1] === 'current' 
+              ? flattenData(analysisData?.data?.projects || [])
+              : undefined}
+            currentLabel="現在"
             open={isCompareDialogOpen}
             onOpenChange={setIsCompareDialogOpen}
+            formatCurrency={formatCurrency}
+            formatHours={formatHours}
+            formatProductivity={formatProductivity}
+            getAchievementColor={getAchievementColor}
           />
         )}
 

@@ -107,7 +107,11 @@ export function useCreateProjectAnalysisSnapshot() {
  * @param id2 - スナップショットID2
  * @returns スナップショット比較のクエリ結果
  */
-export function useCompareProjectAnalysisSnapshots(id1: string, id2: string) {
+export function useCompareProjectAnalysisSnapshots(
+  id1: string,
+  id2: string,
+  options?: { enabled?: boolean }
+) {
   return useQuery<CompareResponse>({
     queryKey: ['/api/projects/analysis-snapshots/compare', id1, id2],
     queryFn: async () => {
@@ -118,7 +122,7 @@ export function useCompareProjectAnalysisSnapshots(id1: string, id2: string) {
       );
       return await res.json();
     },
-    enabled: !!id1 && !!id2,
+    enabled: (options?.enabled ?? true) && !!id1 && !!id2,
   });
 }
 
