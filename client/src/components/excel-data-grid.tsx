@@ -210,8 +210,8 @@ export function ExcelDataGrid({
     setActiveCell(null);
     
     toast({
-      title: "行を削除しました",
-      description: `${deletableRows.length}行を削除しました`,
+      title: "削除対象に設定しました",
+      description: `${deletableRows.length}行を削除対象に設定しました。保存ボタン（Ctrl+Enter）で確定してください。`,
     });
   };
 

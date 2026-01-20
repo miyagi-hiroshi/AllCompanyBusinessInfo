@@ -511,14 +511,28 @@ export default function OrderForecastPage() {
       }
 
       // Delete explicitly deleted rows (tracked in deletedIdsRef)
-      for (const deletedId of Array.from(deletedIdsRef.current)) {
-        await deleteMutation.mutateAsync({ id: deletedId, filter });
+      const deletedIds = Array.from(deletedIdsRef.current);
+      let deletedCount = 0;
+      const deleteErrors: string[] = [];
+      
+      for (const deletedId of deletedIds) {
+        try {
+          await deleteMutation.mutateAsync({ id: deletedId, filter });
+          deletedCount++;
+        } catch (error) {
+          console.error('削除エラー:', error);
+          deleteErrors.push(deletedId);
+        }
       }
+      
       // Clear deleted IDs after successful deletion
-      deletedIdsRef.current.clear();
+      if (deleteErrors.length === 0) {
+        deletedIdsRef.current.clear();
+      }
 
       // Refetch and update local rows with fresh data
       const { data: freshData } = await refetchOrders();
+      
       if (freshData) {
         const freshRows: GridRowData[] = freshData.map((order) => ({
           id: order.id,
@@ -541,10 +555,29 @@ export default function OrderForecastPage() {
         setLocalRows(freshRows);
       }
       
-      toast({
-        title: "保存しました",
-        description: `${modifiedRows.length}件のデータを保存しました`,
-      });
+      // 保存・削除の件数をまとめて表示
+      const changeMessages: string[] = [];
+      if (modifiedRows.length > 0) {
+        changeMessages.push(`${modifiedRows.length}件を更新`);
+      }
+      if (deletedCount > 0) {
+        changeMessages.push(`${deletedCount}件を削除`);
+      }
+      
+      if (changeMessages.length > 0) {
+        toast({
+          title: "保存しました",
+          description: changeMessages.join("、"),
+        });
+      }
+      
+      if (deleteErrors.length > 0) {
+        toast({
+          title: "削除エラー",
+          description: `${deleteErrors.length}件の削除に失敗しました`,
+          variant: "destructive",
+        });
+      }
     } catch (_error) {
       toast({
         title: "保存に失敗しました",
