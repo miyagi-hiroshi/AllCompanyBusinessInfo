@@ -3,16 +3,13 @@ import { useQuery } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { useEffect,useState } from "react";
 
+import {
+  type AutocompleteOption,
+  AutocompleteSelect,
+} from "@/components/autocomplete-select";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Table,
   TableBody,
@@ -74,6 +71,24 @@ export function ProjectStaffingInput({ selectedYear, selectedProjectIds, selecte
   const selectedProjects = productivityProjects.filter(p => 
     p.fiscalYear === selectedYear && selectedProjectIds.includes(p.id)
   );
+
+  // AutocompleteSelect用の従業員オプションを生成（テーブル内の新規行用）
+  const employeeOptions: AutocompleteOption[] = employees
+    .filter((employee) => employee.status !== "terminated")
+    .map((employee) => ({
+      value: employee.employeeId,
+      label: `${employee.lastName} ${employee.firstName}`,
+      code: employee.employeeId,
+    }));
+
+  // AutocompleteSelect用のプロジェクトオプションを生成（テーブル内用）
+  const projectOptions: AutocompleteOption[] = productivityProjects
+    .filter((p) => p.fiscalYear === selectedYear)
+    .sort((a, b) => a.code.localeCompare(b.code))
+    .map((project) => ({
+      value: project.id,
+      label: project.name,
+    }));
 
   // 既存のstaffingデータを取得（プロジェクトが選択されている場合のみ）
   // プロジェクト別入力専用のクエリキーを使用してキャッシュの競合を回避
@@ -440,47 +455,27 @@ export function ProjectStaffingInput({ selectedYear, selectedProjectIds, selecte
                           } else {
                             // 新規行の場合は選択可能
                             return (
-                              <Select
-                                value={row.employeeId || ""} // 空文字列をデフォルトに
-                                onValueChange={(value) => handleEmployeeChange(index, value)}
-                              >
-                                <SelectTrigger>
-                                  <SelectValue placeholder="従業員を選択" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  {employees
-                                    .filter((employee) => employee.status !== "terminated")
-                                    .map((employee) => (
-                                      <SelectItem key={employee.id} value={employee.employeeId}>
-                                        {employee.lastName} {employee.firstName}
-                                      </SelectItem>
-                                    ))}
-                                </SelectContent>
-                              </Select>
+                              <AutocompleteSelect
+                                value={row.employeeId || ""}
+                                onChange={(value) => handleEmployeeChange(index, value)}
+                                options={employeeOptions}
+                                placeholder="従業員を選択"
+                                searchPlaceholder="従業員を検索..."
+                                className="w-full"
+                              />
                             );
                           }
                         })()}
                       </TableCell>
                       <TableCell>
-                        <Select
+                        <AutocompleteSelect
                           value={row.projectId}
-                          onValueChange={(value) => handleProjectChange(index, value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="プロジェクトを選択" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {/* 既存データのプロジェクトと選択されたプロジェクトの両方を表示 */}
-                            {productivityProjects
-                              .filter((p) => p.fiscalYear === selectedYear)
-                              .sort((a, b) => a.code.localeCompare(b.code))
-                              .map((project) => (
-                                <SelectItem key={project.id} value={project.id}>
-                                  {project.name}
-                                </SelectItem>
-                              ))}
-                          </SelectContent>
-                        </Select>
+                          onChange={(value) => handleProjectChange(index, value)}
+                          options={projectOptions}
+                          placeholder="プロジェクトを選択"
+                          searchPlaceholder="プロジェクトを検索..."
+                          className="w-full"
+                        />
                       </TableCell>
                       {MONTHS.map((month) => {
                         const value = row.monthlyHours[month.value] || "";

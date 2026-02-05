@@ -1,6 +1,10 @@
 import { Calendar, CalendarDays, FolderKanban, Users } from "lucide-react";
 import { useState } from "react";
 
+import {
+  type AutocompleteOption,
+  AutocompleteSelect,
+} from "@/components/autocomplete-select";
 import { ProjectStaffingInput } from "@/components/project-staffing-input";
 import { MultiSelect } from "@/components/ui/multi-select";
 import {
@@ -23,6 +27,19 @@ export default function StaffingProjectPage() {
   const { data: projects = [] } = useProjects(selectedYear);
   const { data: employees = [] } = useEmployees();
   const productivityProjects = projects.filter(p => p.analysisType === "生産性");
+
+  // AutocompleteSelect用の従業員オプションを生成（「全従業員」を先頭に追加）
+  const employeeOptions: AutocompleteOption[] = [
+    { value: "all", label: "全従業員" },
+    ...employees
+      .filter((employee) => employee.status !== "terminated")
+      .sort((a, b) => parseInt(a.id) - parseInt(b.id))
+      .map((employee) => ({
+        value: employee.employeeId,
+        label: `${employee.lastName} ${employee.firstName}`,
+        code: employee.employeeId,
+      })),
+  ];
 
   return (
     <div className="flex flex-col h-screen">
@@ -78,25 +95,15 @@ export default function StaffingProjectPage() {
             {/* 対象従業員選択 */}
             <div className="flex items-center gap-2">
               <Users className="h-4 w-4 text-muted-foreground" />
-              <Select
+              <AutocompleteSelect
                 value={selectedEmployeeId}
-                onValueChange={setSelectedEmployeeId}
-              >
-                <SelectTrigger id="employee-select" className="w-[200px]">
-                  <SelectValue placeholder="全従業員" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全従業員</SelectItem>
-                  {employees
-                    .filter((employee) => employee.status !== "terminated")
-                    .sort((a, b) => parseInt(a.id) - parseInt(b.id))
-                    .map((employee) => (
-                      <SelectItem key={employee.id} value={employee.employeeId}>
-                        {employee.lastName} {employee.firstName}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
+                onChange={(value) => setSelectedEmployeeId(value)}
+                options={employeeOptions}
+                placeholder="全従業員"
+                searchPlaceholder="従業員を検索..."
+                className="w-[200px]"
+                testId="employee-select"
+              />
             </div>
           </div>
         </div>

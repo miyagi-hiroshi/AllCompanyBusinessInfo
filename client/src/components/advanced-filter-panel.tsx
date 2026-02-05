@@ -2,6 +2,10 @@ import type { Project } from "@shared/schema";
 import { Calendar, CalendarDays, FolderKanban } from "lucide-react";
 
 import {
+  type AutocompleteOption,
+  AutocompleteSelect,
+} from "@/components/autocomplete-select";
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -41,6 +45,16 @@ export function AdvancedFilterPanel({ filter, onChange, projects }: AdvancedFilt
   const filteredProjects = projects
     .filter(p => p.fiscalYear === filter.fiscalYear)
     .sort((a, b) => a.code.localeCompare(b.code));
+
+  // AutocompleteSelect用のオプションを生成（「全てのプロジェクト」を先頭に追加）
+  const projectOptions: AutocompleteOption[] = [
+    { value: "all", label: "全てのプロジェクト" },
+    ...filteredProjects.map((p) => ({
+      value: p.id,
+      label: p.name,
+      code: p.code,
+    })),
+  ];
 
   const handleFiscalYearChange = (year: string) => {
     onChange({
@@ -120,28 +134,15 @@ export function AdvancedFilterPanel({ filter, onChange, projects }: AdvancedFilt
       {/* プロジェクト選択（任意） */}
       <div className="flex items-center gap-2">
         <FolderKanban className="h-4 w-4 text-muted-foreground" />
-        <Select 
-          value={filter.projectId || "all"} 
-          onValueChange={handleProjectChange}
-        >
-          <SelectTrigger className="w-[220px]" data-testid="select-project">
-            <SelectValue placeholder="プロジェクトを選択" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all" data-testid="option-project-all">
-              全てのプロジェクト
-            </SelectItem>
-            {filteredProjects.map((project) => (
-              <SelectItem 
-                key={project.id} 
-                value={project.id} 
-                data-testid={`option-project-${project.id}`}
-              >
-                {project.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <AutocompleteSelect
+          value={filter.projectId || "all"}
+          onChange={(value) => handleProjectChange(value)}
+          options={projectOptions}
+          placeholder="プロジェクトを選択"
+          searchPlaceholder="プロジェクトを検索..."
+          className="w-[280px]"
+          testId="select-project"
+        />
       </div>
     </div>
   );

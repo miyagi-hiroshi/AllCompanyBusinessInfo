@@ -3,6 +3,10 @@ import { Calendar, CalendarDays, FolderKanban, Pencil, Plus, Trash2 } from "luci
 import { useState } from "react";
 
 import {
+  type AutocompleteOption,
+  AutocompleteSelect,
+} from "@/components/autocomplete-select";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -414,6 +418,21 @@ function MonthlyStaffingInput({
   updateMutation: any;
   deleteMutation: any;
 }) {
+  // AutocompleteSelect用のプロジェクトオプションを生成（プロジェクト名のみ表示）
+  const projectOptions: AutocompleteOption[] = productivityProjects
+    .filter((p) => p.fiscalYear === (formData.fiscalYear || selectedYear))
+    .sort((a, b) => (a.code || '').localeCompare(b.code || ''))
+    .map((project) => ({
+      value: project.id,
+      label: project.name,
+    }));
+
+  // AutocompleteSelect用の従業員オプションを生成（姓名のみ表示）
+  const employeeOptions: AutocompleteOption[] = employees.map((employee) => ({
+    value: employee.employeeId,
+    label: `${employee.lastName} ${employee.firstName}`,
+  }));
+
   return (
     <div className="space-y-6">
       <Card>
@@ -533,36 +552,25 @@ function MonthlyStaffingInput({
             </div>
             <div className="space-y-2">
               <Label htmlFor="staffing-project">プロジェクト</Label>
-              <Select value={formData.projectId} onValueChange={handleProjectChange}>
-                <SelectTrigger id="staffing-project" data-testid="select-project">
-                  <SelectValue placeholder="プロジェクトを選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  {productivityProjects
-                    .filter((p) => p.fiscalYear === (formData.fiscalYear || selectedYear))
-                    .sort((a, b) => (a.code || '').localeCompare(b.code || ''))
-                    .map((project) => (
-                      <SelectItem key={project.id} value={project.id}>
-                        {project.name}
-                      </SelectItem>
-                    ))}
-                </SelectContent>
-              </Select>
+              <AutocompleteSelect
+                value={formData.projectId || ""}
+                onChange={(value) => handleProjectChange(value)}
+                options={projectOptions}
+                placeholder="プロジェクトを選択"
+                searchPlaceholder="プロジェクトを検索..."
+                testId="select-project"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="staffing-employee">従業員</Label>
-              <Select value={formData.employeeId ? String(formData.employeeId) : ""} onValueChange={handleEmployeeChange}>
-                <SelectTrigger id="staffing-employee" data-testid="select-employee">
-                  <SelectValue placeholder="従業員を選択" />
-                </SelectTrigger>
-                <SelectContent>
-                  {employees.map((employee) => (
-                    <SelectItem key={employee.id} value={employee.employeeId}>
-                      {employee.lastName} {employee.firstName}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <AutocompleteSelect
+                value={formData.employeeId ? String(formData.employeeId) : ""}
+                onChange={(value) => handleEmployeeChange(value)}
+                options={employeeOptions}
+                placeholder="従業員を選択"
+                searchPlaceholder="従業員を検索..."
+                testId="select-employee"
+              />
             </div>
             <div className="space-y-2">
               <Label htmlFor="staffing-work-hours">工数（人月）</Label>
