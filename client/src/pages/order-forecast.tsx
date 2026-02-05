@@ -40,6 +40,9 @@ export default function OrderForecastPage() {
   const [pageSize, setPageSize] = useState(50);  // デフォルト50件
   const [shouldResetPage, setShouldResetPage] = useState(false);
   
+  // 保存中フラグ（二重送信防止）
+  const [isSaving, setIsSaving] = useState(false);
+  
   const { toast } = useToast();
 
   // Fetch data from backend with combined filters
@@ -387,6 +390,10 @@ export default function OrderForecastPage() {
   };
 
   const handleSave = async () => {
+    // 二重送信防止
+    if (isSaving) return;
+    setIsSaving(true);
+    
     try {
       // Find modified rows
       const modifiedRows = localRows.filter((row) => row._modified);
@@ -584,6 +591,8 @@ export default function OrderForecastPage() {
         description: "データの保存中にエラーが発生しました",
         variant: "destructive",
       });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -735,6 +744,7 @@ export default function OrderForecastPage() {
           onSave={handleSave}
           pageSize={pageSize}
           onPageSizeChange={setPageSize}
+          isSaving={isSaving}
         />
       </main>
     </div>

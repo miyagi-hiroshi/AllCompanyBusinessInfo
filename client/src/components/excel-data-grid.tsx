@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, ArrowUpDown, Copy, Plus, Save, Search, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Copy, Loader2, Plus, Save, Search, Trash2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 
@@ -45,6 +45,7 @@ interface ExcelDataGridProps {
   enableKeyboardShortcuts?: boolean;
   pageSize?: number;
   onPageSizeChange?: (size: number) => void;
+  isSaving?: boolean;
 }
 
 export function ExcelDataGrid({
@@ -56,6 +57,7 @@ export function ExcelDataGrid({
   enableKeyboardShortcuts = true,
   pageSize = 50,
   onPageSizeChange,
+  isSaving = false,
 }: ExcelDataGridProps) {
   const [activeCell, setActiveCell] = useState<{ rowIndex: number; colKey: string } | null>(null);
   const [editingCell, setEditingCell] = useState<{ rowIndex: number; colKey: string } | null>(null);
@@ -95,15 +97,12 @@ export function ExcelDataGrid({
     "ctrl+enter",
     (e) => {
       e.preventDefault();
-      if (onSave) {
+      if (onSave && !isSaving) {
         onSave();
-        toast({
-          title: "保存しました",
-          description: "変更が保存されました",
-        });
+        // トーストはhandleSave内で表示されるため、ここでは表示しない
       }
     },
-    { enabled: enableKeyboardShortcuts }
+    { enabled: enableKeyboardShortcuts && !isSaving }
   );
 
   // Ctrl+Shift+ArrowDown: Add row
@@ -893,10 +892,15 @@ export function ExcelDataGrid({
               variant="default"
               size="sm"
               onClick={onSave}
+              disabled={isSaving}
               data-testid="button-save"
             >
-              <Save className="h-4 w-4 mr-1" />
-              保存
+              {isSaving ? (
+                <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-1" />
+              )}
+              {isSaving ? "保存中..." : "保存"}
               <kbd className="ml-2 pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-primary-border px-1.5 font-mono text-[10px] font-medium text-primary-foreground opacity-100">
                 <span className="text-xs">Ctrl</span>
                 <span className="text-xs">↵</span>
