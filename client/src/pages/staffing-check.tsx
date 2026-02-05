@@ -23,11 +23,8 @@ import { cn } from "@/lib/utils";
 
 const FISCAL_YEARS = [2023, 2024, 2025, 2026];
 
-// 月名の配列（年度順: 4月=1, 5月=2, ..., 3月=12）
-const MONTH_NAMES = [
-  "4月", "5月", "6月", "7月", "8月", "9月",
-  "10月", "11月", "12月", "1月", "2月", "3月"
-];
+// 年度順の暦月配列（4月=4, 5月=5, ..., 3月=3）
+const FISCAL_MONTHS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3];
 
 export default function StaffingCheckPage() {
   const [selectedYear, setSelectedYear] = useState<number>(2025);
@@ -35,20 +32,15 @@ export default function StaffingCheckPage() {
   // 工数入力チェックデータ取得
   const { data: checkData, isLoading } = useStaffingCheck(selectedYear);
 
-  // 現在の月を取得（年度の月順序: 4月=1, 5月=2, ..., 3月=12）
-  const currentDate = new Date();
-  const currentMonth = currentDate.getMonth() + 1; // 1-12
-  const currentFiscalMonth = currentMonth >= 4 ? currentMonth - 3 : currentMonth + 9; // 年度月に変換
-
   // 工数フォーマット関数
   const formatHours = (value: number) => {
     return `${value.toFixed(1)}人月`;
   };
 
-  // セル色分けロジック
-  const getCellColor = (hours: number, month: number): string => {
+  // セル色分けロジック（暦月ベース: month=4は4月、month=1は1月）
+  const getCellColor = (hours: number, calendarMonth: number): string => {
     const currentYear = new Date().getFullYear();
-    const currentMonth = new Date().getMonth() + 1;
+    const currentMonth = new Date().getMonth() + 1; // 暦月: 1-12
     
     // 選択された年度の判定
     const currentFiscalYear = currentMonth >= 4 ? currentYear : currentYear - 1;
@@ -65,8 +57,26 @@ export default function StaffingCheckPage() {
       // 未来年度: 全ての月は未来
       isFuture = true;
     } else if (isCurrentFiscalYear) {
-      // 現在年度: 現在の月より未来の月のみ
-      isFuture = month >= currentFiscalMonth + 1;
+      // 現在年度: 暦月で比較（年度をまたぐケースを考慮）
+      if (currentMonth >= 4) {
+        // 現在が4-12月（年度前半）の場合
+        if (calendarMonth >= 4) {
+          // 4-12月: 暦月で比較
+          isFuture = calendarMonth > currentMonth;
+        } else {
+          // 1-3月: 常に未来
+          isFuture = true;
+        }
+      } else {
+        // 現在が1-3月（年度後半）の場合
+        if (calendarMonth >= 4) {
+          // 4-12月: 常に過去
+          isFuture = false;
+        } else {
+          // 1-3月: 暦月で比較
+          isFuture = calendarMonth > currentMonth;
+        }
+      }
     }
 
     if (!isFuture) {
@@ -122,9 +132,9 @@ export default function StaffingCheckPage() {
                   <TableHeader className="sticky top-0 bg-background z-10">
                     <TableRow>
                       <TableHead className="w-[180px] text-xs py-1 px-2">従業員名</TableHead>
-                      {MONTH_NAMES.map((monthName, index) => (
-                        <TableHead key={index} className="text-center w-[80px] text-xs py-1 px-2">
-                          {monthName}
+                      {FISCAL_MONTHS.map((calendarMonth) => (
+                        <TableHead key={calendarMonth} className="text-center w-[80px] text-xs py-1 px-2">
+                          {calendarMonth}月
                         </TableHead>
                       ))}
                       <TableHead className="text-center w-[100px] text-xs py-1 px-2">空き工数</TableHead>

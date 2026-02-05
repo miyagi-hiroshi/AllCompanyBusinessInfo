@@ -103,29 +103,30 @@ export class StaffingService {
     const currentYear = currentDate.getFullYear();
     const currentMonth = currentDate.getMonth() + 1; // 1-12
     
+    // 年度順の暦月配列（4月=4, 5月=5, ..., 3月=3）
+    const fiscalMonths = [4, 5, 6, 7, 8, 9, 10, 11, 12, 1, 2, 3];
+    
+    // 選択された年度が現在年度か判定
+    // 現在が4月〜12月の場合: 現在年度 = currentYear, 過去年度 = < currentYear
+    // 現在が1月〜3月の場合: 現在年度 = currentYear - 1, 過去年度 = < currentYear - 1
+    const currentFiscalYear = currentMonth >= 4 ? currentYear : currentYear - 1;
+    const isCurrentFiscalYear = fiscalYear === currentFiscalYear;
+    const isPastFiscalYear = fiscalYear < currentFiscalYear;
+    const isFutureFiscalYear = fiscalYear > currentFiscalYear;
+    
     // 従業員ごとのデータを構築
     const employees = engineers.map(engineer => {
       const employeeData = aggregationData.filter(data => data.employeeId === engineer.employeeId.toString());
       
-      // 12ヶ月分のデータを初期化（4月=1, 5月=2, ..., 3月=12）
-      const monthlyHours = Array.from({ length: 12 }, (_, index) => {
-        const fiscalMonth = index + 1; // 年度月: 4月=1, 5月=2, ..., 3月=12
-        // データベースには既に年度月で保存されているので、そのまま使用
-        const monthData = employeeData.find(data => data.month === fiscalMonth);
+      // 12ヶ月分のデータを初期化（暦月ベース: 4月=4, 5月=5, ..., 3月=3）
+      const monthlyHours = fiscalMonths.map((calendarMonth) => {
+        // データベースには暦月で保存されているので、そのまま使用
+        const monthData = employeeData.find(data => data.month === calendarMonth);
         return {
-          month: fiscalMonth,
+          month: calendarMonth,
           totalHours: monthData ? parseFloat(monthData.totalHours.toString()) : 0
         };
       });
-      
-      // 選択された年度が現在年度か判定
-      // 現在が4月〜12月の場合: 現在年度 = currentYear, 過去年度 = < currentYear
-      // 現在が1月〜3月の場合: 現在年度 = currentYear - 1, 過去年度 = < currentYear - 1
-      const currentFiscalYear = currentMonth >= 4 ? currentYear : currentYear - 1;
-      const isCurrentFiscalYear = fiscalYear === currentFiscalYear;
-      const isPastFiscalYear = fiscalYear < currentFiscalYear;
-      const isFutureFiscalYear = fiscalYear > currentFiscalYear;
-      
       
       let availableHours = 0;
       
@@ -138,9 +139,29 @@ export class StaffingService {
         const futureHoursSum = monthlyHours.reduce((sum, m) => sum + m.totalHours, 0);
         availableHours = futureMonthsCount - futureHoursSum;
       } else if (isCurrentFiscalYear) {
-        // 現在年度: 現在の月より未来の月のみを空き工数として計算
-        const currentFiscalMonth = currentMonth >= 4 ? currentMonth - 3 : currentMonth + 9;
-        const futureMonths = monthlyHours.filter(m => m.month >= currentFiscalMonth + 1);
+        // 現在年度: 現在の月より未来の月のみを空き工数として計算（暦月ベース）
+        const futureMonths = monthlyHours.filter(m => {
+          // 暦月で未来かどうかを判定（年度をまたぐケースを考慮）
+          if (currentMonth >= 4) {
+            // 現在が4-12月（年度前半）の場合
+            if (m.month >= 4) {
+              // 4-12月: 暦月で比較
+              return m.month > currentMonth;
+            } else {
+              // 1-3月: 常に未来
+              return true;
+            }
+          } else {
+            // 現在が1-3月（年度後半）の場合
+            if (m.month >= 4) {
+              // 4-12月: 常に過去
+              return false;
+            } else {
+              // 1-3月: 暦月で比較
+              return m.month > currentMonth;
+            }
+          }
+        });
         const futureMonthsCount = futureMonths.length;
         const futureHoursSum = futureMonths.reduce((sum, m) => sum + m.totalHours, 0);
         availableHours = futureMonthsCount - futureHoursSum;
