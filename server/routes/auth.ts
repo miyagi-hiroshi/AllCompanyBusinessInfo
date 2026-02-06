@@ -93,11 +93,19 @@ router.post('/login', async (req: Request, res: Response) => {
       });
     }
 
+    // 退職者チェック（在籍中のみログイン可）
+    if (!isAdmin && employee && employee.status !== 'active') {
+      return res.status(403).json({
+        success: false,
+        message: 'ログインできません'
+      });
+    }
+
     // 管理者ユーザー以外は権限チェック
-    const hasLoginPermission = 
+    const hasLoginPermission =
       isAdmin ||
       (employee && employee.jobPositionLevel !== null && employee.jobPositionLevel >= 2) ||
-      (employee && employee.jobTypeId !== null && employee.jobTypeId === 5);
+      (employee && employee.jobTypeId !== null && (employee.jobTypeId === 5 || employee.jobTypeId === 1));
 
     if (!hasLoginPermission) {
       return res.status(403).json({
