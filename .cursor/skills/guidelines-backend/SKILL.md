@@ -1,7 +1,6 @@
 ---
-description: バックエンド推奨事項
-globs: ["server/**/*.ts"]
-alwaysApply: false
+name: guidelines-backend
+description: バックエンド推奨事項（ルーティング順序、N+1対策、cronerによる定期実行タスク設定）。サーバー側実装の設計判断や定期ジョブ実装時に使用
 ---
 
 # バックエンド推奨事項
@@ -9,18 +8,20 @@ alwaysApply: false
 ## 🏗️ アーキテクチャ設計
 
 ### ルーティング設計
+
 - **ルートハンドラ**: シンプルに保つ、ビジネスロジックはサービス層に分離
 - **ルーティング順序**: 具体的なパスを先に定義、パラメータ付きルートは後で定義
 - **ルーティング競合回避**: サブルーターで`router.use('/', handler)`を使用する場合、具体的なパス（`/types`, `/groups`など）を先に定義し、最後に汎用パス（`/`）を定義する
 
 ```typescript
 // ルーティング例
-router.use('/types', typeRoutes);
-router.use('/groups', groupRoutes);
-router.use('/', mainRoutes);
+router.use("/types", typeRoutes);
+router.use("/groups", groupRoutes);
+router.use("/", mainRoutes);
 ```
 
 ### データベース設計
+
 - **トランザクション**: 複数テーブル更新時の一貫性保証
 - **N+1問題**: JOINまたはバッチクエリで回避
 - **インデックス**: 検索条件に基づく最適なインデックス設計
@@ -28,18 +29,21 @@ router.use('/', mainRoutes);
 ## 🔒 セキュリティ
 
 ### 推奨セキュリティ対策
+
 - **セキュリティヘッダー**: CSP、HSTS、X-Frame-Options等の包括的設定
 - **入力値サニタイゼーション**: XSS、SQLインジェクション対策の多層防御
 - **ログ監視**: セキュリティイベントのリアルタイム監視とアラート
 - **定期的な脆弱性チェック**: 依存関係の自動脆弱性スキャンとパッチ適用
 
 ### セキュリティチェック
+
 - 定期的なセキュリティ監査の実施
 - ペネトレーションテストの実施
 
 ## 🔗 API設計
 
 ### エンドポイント設計
+
 - **RESTful設計**: REST原則に従った設計
 - **バージョニング**: APIバージョンの管理
 - **ドキュメント**: OpenAPI/SwaggerによるAPI仕様書
@@ -54,21 +58,23 @@ router.use('/', mainRoutes);
 ## ⏰ 定期実行タスク
 
 ### cronerライブラリの使用
+
 - **ライブラリ**: croner（node-cronから移行済み）
 - **非同期処理**: イベントループをブロックしない最適化された非同期処理
 - **エラーハンドリング**: 各ジョブで個別にエラーをキャッチ
 - **メモリ効率**: 長時間実行でもメモリリークが少ない
 
 ### 実装パターン
+
 ```typescript
-import { Cron } from 'croner';
+import { Cron } from "croner";
 
 const job = new Cron(schedule, {
-  timezone: 'Asia/Tokyo',
+  timezone: "Asia/Tokyo",
   maxRuns: Infinity,
   catch: (error) => {
-    console.error('Job error:', error);
-  }
+    console.error("Job error:", error);
+  },
 });
 
 job.schedule(async () => {
@@ -77,6 +83,7 @@ job.schedule(async () => {
 ```
 
 ### スケジュールタスク管理
+
 - **ログクリーンアップ**: 毎日午前2時（30日保持）
 - **記事アーカイブ**: 毎日午前1時
 - **施設予約クリーンアップ**: 毎日午前4時（10日保持）

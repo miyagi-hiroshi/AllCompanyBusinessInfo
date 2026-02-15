@@ -1,7 +1,6 @@
 ---
-description: データアクセス層責務分離
-globs: ["server/**/*.ts"]
-alwaysApply: true
+name: architecture-storage
+description: Drizzle ORMリポジトリパターンの設計指針。リポジトリクラス作成、DB操作設計、関連テーブルの複雑度判断時に使用
 ---
 
 # ストレージアーキテクチャ設計
@@ -9,6 +8,7 @@ alwaysApply: true
 ## 🏗️ データアクセス層アーキテクチャ
 
 ### ディレクトリ構造設計
+
 ```
 server/storage/
 ├── user/
@@ -23,6 +23,7 @@ server/storage/
 ```
 
 ### 機能分離パターン
+
 - **機能ごとディレクトリ**: user/, customer/, project/など
 - **テーブル単位**: 1テーブル = 1リポジトリ
 - **責務分離**: データアクセス層のみを担当
@@ -30,16 +31,19 @@ server/storage/
 ### 複雑な関連テーブル対応指針
 
 #### 1対多の関連テーブル
+
 - **親テーブル**: メインリポジトリで管理
 - **子テーブル**: 専用リポジトリを作成
 - **関連操作**: 親リポジトリから子リポジトリを呼び出し
 
 #### 多対多の関連テーブル
+
 - **中間テーブル**: 専用リポジトリを作成
 - **関連データ取得**: JOINクエリで一括取得
 - **整合性管理**: トランザクション内で関連操作を実行
 
 #### 判断基準
+
 - **単一テーブルのみ操作** → 1リポジトリ
 - **関連テーブルが複雑** → 関連テーブルごとにリポジトリ分割
 - **関連データの整合性が重要** → サービス層でトランザクション管理
@@ -47,6 +51,7 @@ server/storage/
 ### 関連テーブルの複雑度基準
 
 #### 複雑な関連テーブルの定義
+
 - **3つ以上のテーブルが関連** → 複雑
 - **多対多の関係が含まれる** → 複雑
 - **JOINが3つ以上** → 複雑
@@ -55,11 +60,13 @@ server/storage/
 - **トランザクションが必要** → 複雑
 
 #### 複雑度別対応例
+
 ```typescript
 // 単純な関連（1リポジトリで対応）
 export class UserRepository {
   async findUserWithProfile(userId: string) {
-    return await db.select()
+    return await db
+      .select()
       .from(users)
       .leftJoin(userProfiles, eq(users.id, userProfiles.userId))
       .where(eq(users.id, userId));
@@ -84,7 +91,8 @@ export class UserProfileRepository {
 export class UserRoleRepository {
   // ユーザーロール情報
   async findByUserId(userId: string) {
-    return await db.select()
+    return await db
+      .select()
       .from(userRoles)
       .leftJoin(roles, eq(userRoles.roleId, roles.id))
       .where(eq(userRoles.userId, userId));
@@ -95,26 +103,28 @@ export class UserRoleRepository {
 ## 🔧 リポジトリパターン設計
 
 ### リポジトリ構造
+
 - **ファイル命名**: `{機能名}Repository.ts`
 - **クラス命名**: `{機能名}Repository`
 - **メソッド命名**: CRUD操作に応じた命名
 
 ### 実装パターン
+
 ```typescript
 export class UserRepository {
   /**
    * ユーザーテーブル（users）を操作するリポジトリ
    */
-  
+
   async findAll(): Promise<User[]> {
     return await db.select().from(users);
   }
-  
+
   async findById(id: string): Promise<User | null> {
     const result = await db.select().from(users).where(eq(users.id, id));
     return result[0] || null;
   }
-  
+
   async create(data: InsertUser): Promise<User> {
     const result = await db.insert(users).values(data).returning();
     return result[0];
@@ -125,13 +135,15 @@ export class UserRepository {
 ## 📊 型定義設計
 
 ### 型分離パターン
+
 - **共通型**: `@shared/schema/{機能名}/types`からインポート
 - **固有型**: `types.ts`で機能固有の型を定義
 - **リポジトリ型**: メソッドの引数・戻り値型
 
 ### 型定義例
+
 ```typescript
-import { User, InsertUser } from '@shared/schema/user/types';
+import { User, InsertUser } from "@shared/schema/user/types";
 
 export interface UserFilter {
   status?: string;
@@ -148,20 +160,22 @@ export interface UserSearchOptions {
 ## 🔄 依存関係設計
 
 ### 依存関係の原則
+
 - **上位層依存**: サービス層からリポジトリ層を呼び出し
 - **横断依存禁止**: リポジトリ間の直接依存は禁止
 - **共通処理**: 共通のデータアクセス処理は基底クラスで実装
 
 ### 依存関係例
+
 ```typescript
 // サービス層からリポジトリ層を呼び出し
 export class UserService {
   constructor(private userRepository: UserRepository) {}
-  
+
   async createUser(data: CreateUserData): Promise<User> {
     // ビジネスロジック
     const userData = this.validateUserData(data);
-    
+
     // データアクセス層を呼び出し
     return await this.userRepository.create(userData);
   }
@@ -171,22 +185,24 @@ export class UserService {
 ## 📝 ドキュメント設計
 
 ### JSDocコメント
+
 - **クラス**: どのテーブルを操作するかを明確化
 - **メソッド**: パラメータ、戻り値、例外の説明
 - **型**: 用途と制約の説明
 
 ### ドキュメント例
+
 ```typescript
 /**
  * ユーザーテーブル（users）を操作するリポジトリ
- * 
+ *
  * @description ユーザー情報のCRUD操作を提供
  * @table users - ユーザー基本情報テーブル
  */
 export class UserRepository {
   /**
    * ユーザーIDで検索
-   * 
+   *
    * @param id - ユーザーID
    * @returns ユーザー情報（存在しない場合はnull）
    * @throws DatabaseError - データベースエラー

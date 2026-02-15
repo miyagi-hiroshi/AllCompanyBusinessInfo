@@ -7,32 +7,37 @@ alwaysApply: true
 
 ## 🚨 ルール優先順位（上から下へ）
 
-### 必須ルール（Rules）- 最優先
+### 必須ルール（Rules）- 常時適用
 1. **rules-security.mdc**: セキュリティ必須ルール（最優先）
-2. **rules-static-analysis.mdc**: 静的解析必須ルール
-3. **rules-code-quality.mdc**: コード品質管理必須ルール
+2. **rules-static-analysis.mdc**: 静的解析必須ルール（要約）
+3. **rules-code-quality.mdc**: コード品質管理必須ルール（要約）
 4. **rules-api.mdc**: API呼び出し必須ルール
 5. **rules-authentication.mdc**: 認証必須ルール
 6. **rules-database.mdc**: データベース必須ルール
 7. **rules-coding.mdc**: コーディング必須ルール
-8. **rules-design.mdc**: デザイン実装必須ルール
-9. **rules-table-modification.mdc**: テーブル変更時の手順ルール
-10. **rules-browser-verification.mdc**: ブラウザ確認手順ルール
+8. **rules-design.mdc**: デザイン実装必須ルール（要約）
 
-### アーキテクチャ設計（Architecture）- 設計指針
-11. **architecture-layers.mdc**: アーキテクチャ層設計
-12. **architecture-backend.mdc**: バックエンド責務分離
-13. **architecture-frontend.mdc**: フロントエンドアーキテクチャ設計
-14. **architecture-middleware.mdc**: ミドルウェア責務分離
-15. **architecture-storage.mdc**: データアクセス層責務分離
-16. **architecture-shared.mdc**: 共通アーキテクチャ設計
+### アーキテクチャ設計（Architecture）- 常時適用
+9. **architecture-layers.mdc**: アーキテクチャ層設計（3層概要）
 
-### 推奨ガイドライン（Guidelines）- 参考
-17. **guidelines-frontend.mdc**: フロントエンド推奨事項
-18. **guidelines-backend.mdc**: バックエンド推奨事項
-19. **guidelines-performance.mdc**: パフォーマンス推奨事項
-20. **guidelines-error-handling.mdc**: エラーハンドリング推奨事項
-21. **guidelines-date-time.mdc**: 日付・時刻推奨事項
+### タスク時スキル参照
+以下の場合は該当スキルを参照すること：
+
+- **テーブル変更時** → `table-modification` スキル
+- **ブラウザ確認時** → `browser-verification` スキル
+- **デザイン詳細** → `design-implementation` スキル
+- **静的解析詳細** → `static-analysis-workflow` スキル
+- **コード品質詳細** → `code-quality-workflow` スキル
+- **新規API追加・バックエンド設計** → `architecture-backend` スキル
+- **新規画面・フロントエンド設計** → `architecture-frontend` スキル
+- **ミドルウェア設計** → `architecture-middleware` スキル
+- **リポジトリ・DB操作設計** → `architecture-storage` スキル
+- **共通型・スキーマ設計** → `architecture-shared` スキル
+- **フロントエンド設計判断** → `guidelines-frontend` スキル
+- **バックエンド設計判断** → `guidelines-backend` スキル
+- **パフォーマンス改善** → `guidelines-performance` スキル
+- **エラーハンドリング設計** → `guidelines-error-handling` スキル
+- **日付・時刻実装** → `guidelines-date-time` スキル
 
 ## 📋 ルール適用時の注意事項
 
@@ -82,29 +87,18 @@ alwaysApply: true
 
 ## ✅ ルール遵守チェックリスト
 
-### 必須ルール遵守
+### 必須ルール遵守（常時）
 - [ ] セキュリティルールの遵守
-- [ ] 静的解析ルールの遵守
-- [ ] コード品質管理ルールの遵守
+- [ ] 静的解析ルールの遵守（詳細は `static-analysis-workflow` スキル参照）
+- [ ] コード品質管理ルールの遵守（詳細は `code-quality-workflow` スキル参照）
 - [ ] APIルールの遵守
 - [ ] 認証ルールの遵守
 - [ ] データベースルールの遵守
 - [ ] コーディングルールの遵守
-- [ ] デザイン実装ルールの遵守
-- [ ] テーブル変更手順の遵守
-- [ ] ブラウザ確認手順の遵守
-
-### 推奨ガイドライン適用
-- [ ] フロントエンドガイドラインの適用
-- [ ] バックエンドガイドラインの適用
-- [ ] パフォーマンスガイドラインの適用
-- [ ] エラーハンドリングガイドラインの適用
-- [ ] 日付・時刻ガイドラインの適用
-
-### アーキテクチャ設計適用
+- [ ] デザイン実装ルールの遵守（詳細は `design-implementation` スキル参照）
 - [ ] アーキテクチャ層設計の適用
-- [ ] バックエンド責務分離の適用
-- [ ] フロントエンドアーキテクチャ設計の適用
-- [ ] ミドルウェア責務分離の適用
-- [ ] データアクセス層責務分離の適用
-- [ ] 共通アーキテクチャ設計の適用
+
+### タスク時スキル参照
+- [ ] テーブル変更時 → `table-modification` スキルを参照
+- [ ] ブラウザ確認時 → `browser-verification` スキルを参照
+- [ ] 新規設計・リファクタ時 → 該当の architecture 系 / guidelines 系スキルを参照

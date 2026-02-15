@@ -1,18 +1,19 @@
 ---
-description: ミドルウェア責務分離
-globs: ["server/**/*.ts"]
-alwaysApply: true
+name: architecture-middleware
+description: Express.jsミドルウェアの責務分離と実装済みミドルウェア一覧。ミドルウェア追加・修正、認証/CSRF/レート制限/監査ログの設計時に使用
 ---
 
 ## 🏗️ ミドルウェア責務分離
 
 ### ディレクトリ構造
+
 - **server/middleware/**: グローバルミドルウェア（全ルートに適用）
 - **server/routes/middleware/**: ルート固有ミドルウェア（特定ルートのみ適用）
 
 ### 実装済みミドルウェア
 
 #### グローバルミドルウェア（server/middleware/）
+
 - **auth.ts**: 認証・認可ミドルウェア
   - `isAuthenticated`: 基本的な認証チェック
   - `requireAuth`: グローバル認証（ユーザーID設定含む）
@@ -58,22 +59,26 @@ alwaysApply: true
 ### 責務分離の原則
 
 #### 認証・認可
+
 - **認証**: ユーザー認証、セッション管理、従業員ID設定
 - **認可**: 操作権限チェック、リソースアクセス制御、スコープ別権限管理
 
 #### セキュリティ
+
 - **入力検証**: バリデーション、サニタイゼーション
 - **ファイルセキュリティ**: ファイル検証、危険拡張子ブロック
 - **CSRF保護**: トークン生成・検証
 - **レート制限**: 用途別制限設定
 
 #### ログ・監視
+
 - **操作ログ**: データ変更操作の記録
 - **ログインログ**: 認証試行の記録
 - **セキュリティ監視**: 異常パターンの検知・通知
 - **監査ログ**: データベース永続化による操作履歴の追跡
 
 #### エラーハンドリング
+
 - **統一エラー処理**: 全APIで一貫したエラーレスポンス
 - **カスタムエラー**: AppErrorクラスによる詳細なエラー管理
 - **バリデーションエラー**: Zodスキーマエラーの統一処理
@@ -82,6 +87,7 @@ alwaysApply: true
 ### 実装ガイドライン
 
 #### 新規ミドルウェア作成時
+
 - グローバル適用: `server/middleware/`に配置
 - ルート固有: `server/routes/middleware/`に配置
 - 責務を明確に分離し、単一責任の原則に従う
@@ -89,59 +95,62 @@ alwaysApply: true
 - ログ出力でデバッグ情報を提供
 
 ### エラーハンドリング実装例
+
 ```typescript
 export function customMiddleware(req: Request, res: Response, next: NextFunction) {
   try {
     // ミドルウェアの処理
     const result = processRequest(req);
-    
+
     // 成功時のログ
-    logger.info('Middleware processing completed', {
+    logger.info("Middleware processing completed", {
       requestId: req.id,
       userId: req.user?.id,
-      result: result
+      result: result,
     });
-    
+
     next();
   } catch (error) {
     // エラー時のログ
-    logger.error('Middleware processing failed', {
+    logger.error("Middleware processing failed", {
       requestId: req.id,
       userId: req.user?.id,
       error: error.message,
-      stack: error.stack
+      stack: error.stack,
     });
-    
+
     // エラーレスポンス
     res.status(500).json({
       success: false,
-      message: 'Internal server error'
+      message: "Internal server error",
     });
   }
 }
 ```
 
 ### ログ出力具体例
+
 ```typescript
 // 認証ミドルウェアのログ例
-logger.info('Authentication check started', {
+logger.info("Authentication check started", {
   requestId: req.id,
   path: req.path,
   method: req.method,
-  ip: req.ip
+  ip: req.ip,
 });
 
 // セキュリティミドルウェアのログ例
-logger.warn('Suspicious activity detected', {
+logger.warn("Suspicious activity detected", {
   requestId: req.id,
   userId: req.user?.id,
-  activity: 'Multiple failed login attempts',
+  activity: "Multiple failed login attempts",
   ip: req.ip,
-  userAgent: req.get('User-Agent')
+  userAgent: req.get("User-Agent"),
 });
 ```
 
 #### 既存ミドルウェア使用時
+
 - **認証**: `requireAuth`を使用
 - **権限チェック**: `requireOperationPermission`を使用
 - **ファイルアップロード**: 用途別の`createSecureUpload`を使用

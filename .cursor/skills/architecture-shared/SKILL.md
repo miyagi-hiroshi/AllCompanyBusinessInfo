@@ -1,7 +1,6 @@
 ---
-description: 共通アーキテクチャ設計
-globs: ["shared/**/*.ts", "server/**/*.ts", "client/**/*.ts"]
-alwaysApply: true
+name: architecture-shared
+description: 共通型定義の配置判断とDrizzleスキーマ設計。型を@shared/types/と@shared/schema/のどちらに配置するか、Zodバリデーション設計時に使用
 ---
 
 # 共通アーキテクチャ設計
@@ -9,6 +8,7 @@ alwaysApply: true
 ## 🎯 型定義アーキテクチャ
 
 ### 型の配置と管理
+
 - **共通型**: sharedディレクトリで共通化
 - **APIレスポンス**: 厳密な型定義
 - **データベース型**: Drizzle ORMスキーマとの連携
@@ -17,18 +17,21 @@ alwaysApply: true
 ### 型配置判断基準
 
 #### `@shared/types/`に配置すべき型
+
 - **APIレスポンス型**: フロントエンド・バックエンド間で共通
 - **ページネーション型**: 複数機能で使用
 - **共通フィルター型**: 検索・絞り込みで使用
 - **認証・認可型**: ユーザー情報、権限情報
 
 #### `@shared/schema/{機能名}/types`に配置すべき型
+
 - **ドメイン固有型**: 特定のビジネスロジックに特化
 - **データベース型**: Drizzleスキーマから自動生成
 - **バリデーション型**: Zodスキーマから自動生成
 - **機能固有フィルター型**: 特定機能でのみ使用
 
 #### 判断基準
+
 - **複数機能で使用** → `@shared/types/`
 - **特定機能のみ使用** → `@shared/schema/{機能名}/types`
 - **データベース関連** → `@shared/schema/{機能名}/types`
@@ -37,17 +40,20 @@ alwaysApply: true
 ### 型配置の使用頻度基準
 
 #### 使用頻度の判断基準
+
 - **3つ以上の機能で使用** → `@shared/types/`
 - **2つの機能で使用** → 機能の関連性で判断
 - **1つの機能のみ使用** → `@shared/schema/{機能名}/types`
 
 #### 機能の関連性判断基準
+
 - **同じドメイン（例：顧客管理、プロジェクト管理）** → `@shared/types/`
 - **同じAPIエンドポイントグループ** → `@shared/types/`
 - **同じデータ構造を共有** → `@shared/types/`
 - **異なるドメイン** → `@shared/schema/{機能名}/types`
 
 #### 型配置判断例
+
 ```typescript
 // @shared/types/ に配置すべき型
 export interface ApiResponse<T> {
@@ -82,7 +88,7 @@ export interface Customer {
 export interface CustomerFilter {
   search?: string;
   industry?: string;
-  status?: 'active' | 'inactive';
+  status?: "active" | "inactive";
 }
 
 // 判断が困難な場合の例
@@ -91,7 +97,7 @@ export interface Project {
   id: string;
   name: string;
   customerId: string;
-  status: 'planning' | 'active' | 'completed';
+  status: "planning" | "active" | "completed";
 }
 
 // → プロジェクト管理と顧客管理の両方で使用
@@ -99,6 +105,7 @@ export interface Project {
 ```
 
 ### 型定義設計パターン
+
 ```typescript
 // shared/types/customer.ts
 export interface Customer {
@@ -137,11 +144,13 @@ export interface PaginatedResponse<T> {
 ## 🔗 API設計アーキテクチャ
 
 ### エンドポイント設計パターン
+
 - **パス設計**: `/api/feature-name`形式
 - **サブ機能**: `/api/feature-name/sub-feature`形式
 - **バージョニング**: `/api/v1/feature-name`形式（将来拡張用）
 
 ### リクエスト・レスポンス設計
+
 ```typescript
 // リクエスト型
 export interface CreateRequest<T> {
@@ -173,6 +182,7 @@ export interface ErrorResponse {
 ## 📊 スキーマアーキテクチャ
 
 ### ディレクトリ構造
+
 ```
 shared/
 ├── schema/
@@ -192,56 +202,62 @@ shared/
 ```
 
 ### スキーマ分離ルール
+
 - **テーブル定義**: `@shared/schema/テーブル名/tables`でDrizzleテーブル定義
 - **型定義**: `@shared/schema/テーブル名/types`でビジネス型定義
 - **エクスポート**: `@shared/schema/テーブル名/index`で集約エクスポート
 - **共通型**: `@shared/types/`でAPI・共通型定義
 
 ### Drizzle ORMとの連携
+
 - **スキーマ型**: Drizzleスキーマから型を自動生成
 - **Zodスキーマ**: バリデーション用スキーマとの連携
 - **型安全性**: コンパイル時型チェック
 
 ### 型定義パターン
+
 ```typescript
 // Drizzleスキーマから型を生成
-import { users } from '@shared/schema/user/tables';
+import { users } from "@shared/schema/user/tables";
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
 // Zodスキーマでバリデーション
-import { z } from 'zod';
-import { createInsertSchema } from 'drizzle-zod';
+import { z } from "zod";
+import { createInsertSchema } from "drizzle-zod";
 
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
-  updatedAt: true
+  updatedAt: true,
 });
 
 export type CreateUserData = z.infer<typeof insertUserSchema>;
 ```
 
 ### インポートパターン
+
 ```typescript
 // スキーマ関連のインポート
-import { users } from '@shared/schema/user/tables';
-import { customers } from '@shared/schema/customer/tables';
+import { users } from "@shared/schema/user/tables";
+import { customers } from "@shared/schema/customer/tables";
 
 // 共通型のインポート
-import { ApiResponse, PaginatedResponse } from '@shared/types/api';
-import { User, Customer } from '@shared/types/common';
+import { ApiResponse, PaginatedResponse } from "@shared/types/api";
+import { User, Customer } from "@shared/types/common";
 ```
 
 ## 🔄 状態管理アーキテクチャ
 
 ### 共通状態型
+
 - **ユーザー状態**: 認証・認可情報
 - **アプリケーション状態**: グローバル設定
 - **キャッシュ状態**: サーバーデータキャッシュ
 
 ### 状態型設計
+
 ```typescript
 // ユーザー状態
 export interface UserState {
@@ -253,8 +269,8 @@ export interface UserState {
 
 // アプリケーション状態
 export interface AppState {
-  theme: 'light' | 'dark';
-  language: 'ja' | 'en';
+  theme: "light" | "dark";
+  language: "ja" | "en";
   notifications: Notification[];
 }
 
@@ -270,16 +286,18 @@ export interface CacheState<T> {
 ## 🔐 認証・認可型アーキテクチャ
 
 ### 認証・認可型
+
 - **ユーザー権限**: ロールベースアクセス制御
 - **セッション情報**: セッション管理
 - **CSRF保護**: トークン管理
 
 ### セキュリティ型設計
+
 ```typescript
 // 権限型
 export interface Permission {
   resource: string;
-  action: 'read' | 'write' | 'delete' | 'admin';
+  action: "read" | "write" | "delete" | "admin";
 }
 
 export interface Role {
@@ -306,11 +324,13 @@ export interface CsrfToken {
 ## 📝 バリデーションアーキテクチャ
 
 ### Zodスキーマ設計
+
 - **入力検証**: ユーザー入力の検証
 - **API検証**: リクエスト・レスポンス検証
 - **データベース検証**: データ整合性検証
 
 ### バリデーション型設計
+
 ```typescript
 // 共通バリデーション
 export const emailSchema = z.string().email();
@@ -326,7 +346,7 @@ export interface ValidationError {
 
 export interface ValidationErrorResponse {
   success: false;
-  message: 'Validation failed';
+  message: "Validation failed";
   errors: ValidationError[];
 }
 ```
@@ -334,25 +354,27 @@ export interface ValidationErrorResponse {
 ## 📦 共通データ型アーキテクチャ
 
 ### 共通ユーティリティ型
+
 - **日時型**: タイムゾーン対応
 - **通貨型**: 金額計算
 - **フォーマット型**: 表示用フォーマット
 
 ### ユーティリティ型設計
+
 ```typescript
 // 日時型
 export type DateTime = Date | string;
-export type Timezone = 'UTC' | 'Asia/Tokyo';
+export type Timezone = "UTC" | "Asia/Tokyo";
 
 // 通貨型
 export interface Money {
   amount: number;
-  currency: 'JPY' | 'USD' | 'EUR';
+  currency: "JPY" | "USD" | "EUR";
 }
 
 // フォーマット型
 export interface DateFormat {
-  format: 'YYYY-MM-DD' | 'MM/DD/YYYY' | 'DD/MM/YYYY';
+  format: "YYYY-MM-DD" | "MM/DD/YYYY" | "DD/MM/YYYY";
   timezone: Timezone;
 }
 ```
