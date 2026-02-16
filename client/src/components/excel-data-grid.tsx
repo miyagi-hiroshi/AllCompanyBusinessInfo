@@ -4,6 +4,7 @@ import { useHotkeys } from "react-hotkeys-hook";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useSidebar } from "@/components/ui/sidebar";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/useToast";
 import { cn } from "@/lib/utils";
@@ -59,6 +60,7 @@ export function ExcelDataGrid({
   onPageSizeChange,
   isSaving = false,
 }: ExcelDataGridProps) {
+  const { state: sidebarState } = useSidebar();
   const [activeCell, setActiveCell] = useState<{ rowIndex: number; colKey: string } | null>(null);
   const [editingCell, setEditingCell] = useState<{ rowIndex: number; colKey: string } | null>(null);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
@@ -996,7 +998,12 @@ export function ExcelDataGrid({
       </div>
 
       {/* Status Bar - Fixed at bottom */}
-      <div className="fixed bottom-0 left-0 md:left-[var(--sidebar-width)] right-0 z-50 flex items-center justify-between px-4 py-2 border-t bg-muted/30 text-xs text-muted-foreground backdrop-blur-sm transition-[left] duration-200 ease-linear group-data-[collapsible=icon]:md:left-0">
+      <div
+        className={cn(
+          "fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-2 border-t bg-muted/30 text-xs text-muted-foreground backdrop-blur-sm transition-[left] duration-200 ease-linear",
+          sidebarState === "expanded" ? "md:left-[var(--sidebar-width)]" : "md:left-0"
+        )}
+      >
         <div className="flex items-center gap-4">
           <span>総行数: {sortedRows.length}</span>
           <span>変更済: {sortedRows.filter((r) => r._modified).length}</span>

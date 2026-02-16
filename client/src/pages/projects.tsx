@@ -32,6 +32,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useSidebar } from "@/components/ui/sidebar";
 import {
   Table,
   TableBody,
@@ -43,6 +44,7 @@ import {
 import { useEmployees } from "@/hooks/useMasters";
 import { useToast } from "@/hooks/useToast";
 import { apiRequest,queryClient } from "@/lib/queryClient";
+import { cn } from "@/lib/utils";
 
 const SERVICE_TYPES = [
   "インテグレーション",
@@ -59,6 +61,7 @@ type AnalysisType = typeof ANALYSIS_TYPES[number];
 const FISCAL_YEARS = [2023, 2024, 2025, 2026];
 
 export default function ProjectsPage() {
+  const { state: sidebarState } = useSidebar();
   const { toast } = useToast();
   const [selectedYear, setSelectedYear] = useState<number>(2025);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -628,14 +631,38 @@ export default function ProjectsPage() {
       </Dialog>
 
       {/* Footer Status Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-card/95 backdrop-blur-md border-t border-border px-6 py-2 flex items-center justify-between z-30">
+      <div
+        className={cn(
+          "fixed bottom-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-2 border-t bg-muted/30 text-xs text-muted-foreground backdrop-blur-sm transition-[left] duration-200 ease-linear",
+          sidebarState === "expanded" ? "md:left-[var(--sidebar-width)]" : "md:left-0"
+        )}
+      >
         <div className="flex items-center gap-4">
-          <span className="text-sm text-muted-foreground">
-            全{totalCount}件中 {(currentPage - 1) * pageSize + 1}～{Math.min(currentPage * pageSize, totalCount)}件を表示
-          </span>
-          
+          <span>総行数: {totalCount}</span>
+        </div>
+
+        {/* ページネーション */}
+        <div className="flex items-center gap-3">
+          {/* 表示件数選択 */}
+          <div className="flex items-center gap-2">
+            <span>表示件数:</span>
+            <select
+              value={pageSize}
+              onChange={(e) => {
+                setPageSize(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="h-7 px-2 text-xs border rounded bg-background"
+            >
+              <option value={20}>20件</option>
+              <option value={50}>50件</option>
+              <option value={100}>100件</option>
+            </select>
+          </div>
+
+          {/* ページネーション */}
           {totalPages > 1 && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               <Button
                 size="sm"
                 variant="outline"
@@ -645,7 +672,35 @@ export default function ProjectsPage() {
               >
                 前へ
               </Button>
-              
+
+              {/* ページ番号 */}
+              <div className="flex gap-1">
+                {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+
+                  return (
+                    <Button
+                      key={pageNum}
+                      size="sm"
+                      variant={currentPage === pageNum ? "default" : "outline"}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className="h-7 w-7 p-0"
+                    >
+                      {pageNum}
+                    </Button>
+                  );
+                })}
+              </div>
+
               <Button
                 size="sm"
                 variant="outline"
@@ -655,27 +710,14 @@ export default function ProjectsPage() {
               >
                 次へ
               </Button>
-              
-              <span className="ml-2 text-sm">{currentPage} / {totalPages}ページ</span>
+
+              <span className="ml-2">{currentPage} / {totalPages}ページ</span>
             </div>
           )}
         </div>
-        
+
         <div className="flex items-center gap-2">
-          <span className="text-xs text-muted-foreground">表示件数:</span>
-          <select
-            value={pageSize}
-            onChange={(e) => {
-              setPageSize(Number(e.target.value));
-              setCurrentPage(1);
-            }}
-            className="h-7 text-sm border border-input bg-background px-2 rounded"
-          >
-            <option value="10">10件</option>
-            <option value="20">20件</option>
-            <option value="50">50件</option>
-            <option value="100">100件</option>
-          </select>
+          <span className="text-xs">全{totalCount}件中 {(currentPage - 1) * pageSize + 1}～{Math.min(currentPage * pageSize, totalCount)}件を表示</span>
         </div>
       </div>
 
