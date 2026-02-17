@@ -25,6 +25,7 @@ alwaysApply: true
 
 - **テーブル変更時** → `table-modification` スキル
 - **ブラウザ確認時** → `browser-verification` スキル
+- **修正後のブラウザ確認・デグレ確認・証跡キャプチャ** → `post-fix-browser-verification` スキル
 - **デザイン詳細** → `design-implementation` スキル
 - **静的解析詳細** → `static-analysis-workflow` スキル
 - **コード品質詳細** → `code-quality-workflow` スキル
@@ -101,4 +102,5 @@ alwaysApply: true
 ### タスク時スキル参照
 - [ ] テーブル変更時 → `table-modification` スキルを参照
 - [ ] ブラウザ確認時 → `browser-verification` スキルを参照
+- [ ] 修正後の動作確認・デグレ確認時 → `post-fix-browser-verification` スキルを参照
 - [ ] 新規設計・リファクタ時 → 該当の architecture 系 / guidelines 系スキルを参照
