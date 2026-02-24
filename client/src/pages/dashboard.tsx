@@ -62,9 +62,10 @@ export default function DashboardPage() {
           ))}
         </div>
         
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Skeleton className="h-80" />
-          <Skeleton className="h-80" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-32" />
+          ))}
         </div>
       </div>
     );
@@ -187,6 +188,38 @@ export default function DashboardPage() {
                   {formatPercentage(data.costRateActual)}
                 </p>
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* プロジェクト分析ー生産性カード */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">プロジェクト分析ー生産性</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-2xl font-bold">
+                {data.productivityPerManMonth > 0
+                  ? `${formatCurrency(Math.round(data.productivityPerManMonth))}/人月`
+                  : "-"}
+              </p>
+              <p className="text-xs text-muted-foreground">分析区分: 生産性</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* プロジェクト分析ー粗利カード */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-semibold">プロジェクト分析ー粗利</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <p className="text-2xl font-bold">
+                {formatCurrency(data.grossProfitTotalByAnalysis ?? 0)}
+              </p>
+              <p className="text-xs text-muted-foreground">分析区分: 粗利</p>
             </div>
           </CardContent>
         </Card>

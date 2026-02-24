@@ -4,12 +4,16 @@ import { AccountingItemRepository } from '../storage/accountingItem';
 import { AngleBForecastRepository } from '../storage/angleBForecast';
 import { BudgetExpenseRepository } from '../storage/budgetExpense';
 import { BudgetRevenueRepository } from '../storage/budgetRevenue';
+import { BudgetTargetRepository } from '../storage/budgetTarget';
+import { CustomerRepository } from '../storage/customer';
 import { GLEntryRepository } from '../storage/glEntry';
 import { OrderForecastRepository } from '../storage/orderForecast';
 import { ProjectRepository } from '../storage/project';
+import { StaffingRepository } from '../storage/staffing';
 import { BudgetExpenseService } from './budgetExpenseService';
 import { BudgetRevenueService } from './budgetRevenueService';
 import { OrderForecastService } from './orderForecastService';
+import { ProjectService } from './projectService';
 
 /**
  * ダッシュボード管理サービスクラス
@@ -21,6 +25,7 @@ export class DashboardService {
   private budgetRevenueService: BudgetRevenueService;
   private budgetExpenseService: BudgetExpenseService;
   private orderForecastService: OrderForecastService;
+  private projectService: ProjectService;
   private budgetRevenueRepository: BudgetRevenueRepository;
   private orderForecastRepository: OrderForecastRepository;
 
@@ -29,6 +34,9 @@ export class DashboardService {
     const budgetExpenseRepository = new BudgetExpenseRepository();
     const orderForecastRepository = new OrderForecastRepository();
     const projectRepository = new ProjectRepository();
+    const customerRepository = new CustomerRepository();
+    const staffingRepository = new StaffingRepository();
+    const budgetTargetRepository = new BudgetTargetRepository();
     const glEntryRepository = new GLEntryRepository();
     const accountingItemRepository = new AccountingItemRepository();
     const angleBForecastRepository = new AngleBForecastRepository();
@@ -43,6 +51,13 @@ export class DashboardService {
       glEntryRepository,
       accountingItemRepository,
       angleBForecastRepository
+    );
+    this.projectService = new ProjectService(
+      projectRepository,
+      customerRepository,
+      orderForecastRepository,
+      staffingRepository,
+      budgetTargetRepository
     );
   }
 
@@ -77,6 +92,24 @@ export class DashboardService {
       const costRateBudget = revenueBudget > 0 ? (expenseBudget / revenueBudget) * 100 : 0;
       const costRateActual = revenueActual > 0 ? (expenseActual / revenueActual) * 100 : 0;
 
+      // 分析区分別サマリ（人月あたりの生産性・粗利合計）
+      const analysisSummaries = await this.projectService.getProjectAnalysisSummary(fiscalYear);
+
+      const productivityProjects = analysisSummaries.filter((s) => s.analysisType === '生産性');
+      const totalGrossProfitProductivity = productivityProjects.reduce(
+        (sum, s) => sum + (s.revenue - s.costOfSales - s.sgaExpenses),
+        0
+      );
+      const totalWorkHours = productivityProjects.reduce((sum, s) => sum + s.workHours, 0);
+      const productivityPerManMonth =
+        totalWorkHours > 0 ? totalGrossProfitProductivity / totalWorkHours : 0;
+
+      const grossProfitProjects = analysisSummaries.filter((s) => s.analysisType === '粗利');
+      const grossProfitTotalByAnalysis = grossProfitProjects.reduce(
+        (sum, s) => sum + (s.grossProfit ?? s.revenue - s.costOfSales - s.sgaExpenses),
+        0
+      );
+
       return {
         fiscalYear,
         revenueBudget,
@@ -88,7 +121,9 @@ export class DashboardService {
         profitMarginBudget,
         profitMarginActual,
         costRateBudget,
-        costRateActual
+        costRateActual,
+        productivityPerManMonth,
+        grossProfitTotalByAnalysis
       };
     } catch (error) {
       console.error('ダッシュボードデータ取得エラー:', error);

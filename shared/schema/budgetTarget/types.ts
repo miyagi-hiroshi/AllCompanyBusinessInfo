@@ -39,6 +39,8 @@ export interface DashboardData {
   profitMarginActual: number;  // 利益率（実績）
   costRateBudget: number;     // 原価率（予算）
   costRateActual: number;     // 原価率（実績）
+  productivityPerManMonth: number;     // 生産性PJの粗利合計÷工数合計（円/人月）
+  grossProfitTotalByAnalysis: number; // 粗利PJの粗利合計（円）
 }
 
 export interface DashboardResponse {
