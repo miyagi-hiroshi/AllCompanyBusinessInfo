@@ -48,11 +48,15 @@ export function GLCSVImportDialog() {
       onError: (error: any) => {
         const errorMessage = error?.message || "CSVファイルの取込中にエラーが発生しました";
         const isExistingDataError = errorMessage.includes("既存のGLデータが");
-        
+
         toast({
           variant: "destructive",
           title: "CSV取込エラー",
-          description: errorMessage + (isExistingDataError ? " 先に「GL データ削除」ボタンで月度データを削除してから取り込んでください。" : ""),
+          description:
+            errorMessage +
+            (isExistingDataError
+              ? " 先に「GL データ削除」ボタンで月度データを削除してから取り込んでください。"
+              : ""),
         });
       },
     });
@@ -89,17 +93,14 @@ export function GLCSVImportDialog() {
                 hover:file:bg-primary/90"
             />
             {selectedFile && (
-              <p className="text-sm text-muted-foreground">
-                選択: {selectedFile.name}
-              </p>
+              <p className="text-sm text-muted-foreground">選択: {selectedFile.name}</p>
             )}
           </div>
           <div className="bg-muted p-3 rounded-md text-sm">
             <p className="font-medium mb-2">対象科目コード：</p>
             <p className="text-muted-foreground">
-              511 保守売上、512 ソフト売上、513 商品売上、514 消耗品売上、
-              541 仕入高、515 その他売上、727 通信費、737 消耗品費、
-              740 支払保守料、745 外注加工費
+              511 保守売上、512 ソフト売上、513 商品売上、514 消耗品売上、 541 仕入高、515
+              その他売上、727 通信費、737 消耗品費、 740 支払保守料、745 外注加工費
             </p>
           </div>
         </div>
@@ -115,4 +116,3 @@ export function GLCSVImportDialog() {
     </Dialog>
   );
 }
-

@@ -17,7 +17,7 @@ export function useAngleBForecasts(filter: AngleBForecastFilter) {
   const params = new URLSearchParams({
     fiscalYear: filter.fiscalYear.toString(),
   });
-  
+
   // 会計年度と月から計上年月を生成してフィルタリング
   if (filter.month) {
     // 月が指定されている場合は、その月の計上年月で絞り込み
@@ -26,7 +26,7 @@ export function useAngleBForecasts(filter: AngleBForecastFilter) {
     const accountingPeriod = `${year}-${String(filter.month).padStart(2, "0")}`;
     params.append("accountingPeriod", accountingPeriod);
   }
-  
+
   if (filter.projectId) {
     params.append("projectId", filter.projectId);
   }
@@ -42,12 +42,12 @@ export function useAngleBForecasts(filter: AngleBForecastFilter) {
   if (filter.searchText) {
     params.append("searchText", filter.searchText);
   }
-  
+
   return useQuery<AngleBForecast[]>({
     queryKey: [
-      "/api/angle-b-forecasts", 
-      filter.fiscalYear, 
-      filter.month ?? null, 
+      "/api/angle-b-forecasts",
+      filter.fiscalYear,
+      filter.month ?? null,
       filter.projectId ?? null,
       filter.salesPerson ?? null,
       filter.accountingItem ?? null,
@@ -71,8 +71,8 @@ export function useCreateAngleBForecast() {
       return await res.json();
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/angle-b-forecasts"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/angle-b-forecasts"],
       });
     },
   });
@@ -80,12 +80,12 @@ export function useCreateAngleBForecast() {
 
 export function useUpdateAngleBForecast() {
   return useMutation({
-    mutationFn: async ({ 
-      id, 
+    mutationFn: async ({
+      id,
       data,
-      filter: _filter
-    }: { 
-      id: string; 
+      filter: _filter,
+    }: {
+      id: string;
       data: Partial<AngleBForecast>;
       filter: AngleBForecastFilter;
     }) => {
@@ -93,8 +93,8 @@ export function useUpdateAngleBForecast() {
       return await res.json();
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/angle-b-forecasts"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/angle-b-forecasts"],
       });
     },
   });
@@ -107,8 +107,8 @@ export function useDeleteAngleBForecast() {
       return res.ok;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/angle-b-forecasts"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/angle-b-forecasts"],
       });
     },
   });
@@ -121,13 +121,12 @@ export function usePromoteAngleBForecast() {
       return await res.json();
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/angle-b-forecasts"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/angle-b-forecasts"],
       });
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/order-forecasts"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/order-forecasts"],
       });
     },
   });
 }
-

@@ -2,10 +2,7 @@ import type { NewStaffing, Staffing } from "@shared/schema";
 import { Calendar, CalendarDays, FolderKanban, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
-import {
-  type AutocompleteOption,
-  AutocompleteSelect,
-} from "@/components/autocomplete-select";
+import { type AutocompleteOption, AutocompleteSelect } from "@/components/autocomplete-select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -89,9 +86,9 @@ export default function StaffingPage() {
     fiscalYear: selectedYear,
     month: selectedMonth,
   });
-  
+
   // 生産性プロジェクトのみをフィルタリング
-  const productivityProjects = projects.filter(p => p.analysisType === "生産性");
+  const productivityProjects = projects.filter((p) => p.analysisType === "生産性");
 
   // Mutations
   const createMutation = useCreateStaffing();
@@ -170,7 +167,7 @@ export default function StaffingPage() {
             setDialogOpen(false);
           },
           onError: (error) => {
-            console.error('更新エラー:', error);
+            console.error("更新エラー:", error);
             toast({
               title: "エラー",
               description: "配員計画の更新に失敗しました",
@@ -189,7 +186,7 @@ export default function StaffingPage() {
           setDialogOpen(false);
         },
         onError: (error) => {
-          console.error('作成エラー:', error);
+          console.error("作成エラー:", error);
           toast({
             title: "エラー",
             description: "配員計画の作成に失敗しました",
@@ -231,7 +228,7 @@ export default function StaffingPage() {
       projectName: project?.name || "",
     });
   };
-  
+
   const handleEmployeeChange = (employeeIdStr: string) => {
     const employee = employees.find((e) => e.employeeId === employeeIdStr);
     const fullName = employee ? `${employee.lastName} ${employee.firstName}` : "";
@@ -271,7 +268,11 @@ export default function StaffingPage() {
                 value={selectedYear.toString()}
                 onValueChange={(value) => setSelectedYear(parseInt(value))}
               >
-                <SelectTrigger id="fiscal-year-select" className="w-[120px]" data-testid="select-fiscal-year">
+                <SelectTrigger
+                  id="fiscal-year-select"
+                  className="w-[120px]"
+                  data-testid="select-fiscal-year"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -328,33 +329,33 @@ export default function StaffingPage() {
       {/* Main Content */}
       <main className="flex-1 overflow-hidden p-6">
         <MonthlyStaffingInput
-        selectedYear={selectedYear}
-        selectedMonth={selectedMonth}
-        selectedProjectIds={selectedProjectIds}
-        productivityProjects={productivityProjects}
-        projects={projects}
-        employees={employees}
-        staffingData={staffingData}
-        isLoading={isLoading}
-        _employeeTotals={employeeTotals}
-        dialogOpen={dialogOpen}
-        setDialogOpen={setDialogOpen}
-        editMode={editMode}
-        selectedStaffing={selectedStaffing}
-        setSelectedStaffing={setSelectedStaffing}
-        formData={formData}
-        setFormData={setFormData}
-        deleteOpen={deleteOpen}
-        setDeleteOpen={setDeleteOpen}
-        openCreateDialog={openCreateDialog}
-        openEditDialog={openEditDialog}
-        handleSave={handleSave}
-        handleDelete={handleDelete}
-        handleProjectChange={handleProjectChange}
-        handleEmployeeChange={handleEmployeeChange}
-        createMutation={createMutation}
-        updateMutation={updateMutation}
-        deleteMutation={deleteMutation}
+          selectedYear={selectedYear}
+          selectedMonth={selectedMonth}
+          selectedProjectIds={selectedProjectIds}
+          productivityProjects={productivityProjects}
+          projects={projects}
+          employees={employees}
+          staffingData={staffingData}
+          isLoading={isLoading}
+          _employeeTotals={employeeTotals}
+          dialogOpen={dialogOpen}
+          setDialogOpen={setDialogOpen}
+          editMode={editMode}
+          selectedStaffing={selectedStaffing}
+          setSelectedStaffing={setSelectedStaffing}
+          formData={formData}
+          setFormData={setFormData}
+          deleteOpen={deleteOpen}
+          setDeleteOpen={setDeleteOpen}
+          openCreateDialog={openCreateDialog}
+          openEditDialog={openEditDialog}
+          handleSave={handleSave}
+          handleDelete={handleDelete}
+          handleProjectChange={handleProjectChange}
+          handleEmployeeChange={handleEmployeeChange}
+          createMutation={createMutation}
+          updateMutation={updateMutation}
+          deleteMutation={deleteMutation}
         />
       </main>
     </div>
@@ -421,7 +422,7 @@ function MonthlyStaffingInput({
   // AutocompleteSelect用のプロジェクトオプションを生成（プロジェクト名のみ表示）
   const projectOptions: AutocompleteOption[] = productivityProjects
     .filter((p) => p.fiscalYear === (formData.fiscalYear || selectedYear))
-    .sort((a, b) => (a.code || '').localeCompare(b.code || ''))
+    .sort((a, b) => (a.code || "").localeCompare(b.code || ""))
     .map((project) => ({
       value: project.id,
       label: project.name,
@@ -442,7 +443,11 @@ function MonthlyStaffingInput({
               <CardTitle>配員計画</CardTitle>
               <CardDescription>
                 {selectedYear}年度 {selectedMonth}月
-                {selectedProjectIds.length > 0 && ` - ${selectedProjectIds.map(id => projects.find(p => p.id === id)?.name).filter(Boolean).join(", ")}`}
+                {selectedProjectIds.length > 0 &&
+                  ` - ${selectedProjectIds
+                    .map((id) => projects.find((p) => p.id === id)?.name)
+                    .filter(Boolean)
+                    .join(", ")}`}
               </CardDescription>
             </div>
             <Button onClick={openCreateDialog} data-testid="button-create-staffing">
@@ -455,7 +460,9 @@ function MonthlyStaffingInput({
           {isLoading ? (
             <div className="text-center py-8 text-muted-foreground">読み込み中...</div>
           ) : staffingData.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">配員計画が登録されていません</div>
+            <div className="text-center py-8 text-muted-foreground">
+              配員計画が登録されていません
+            </div>
           ) : (
             <div className="max-h-[600px] overflow-y-auto">
               <Table>
@@ -478,8 +485,12 @@ function MonthlyStaffingInput({
                         </div>
                       </TableCell>
                       <TableCell>{staff.employeeName}</TableCell>
-                      <TableCell className="text-right font-mono">{Number(staff.workHours).toFixed(2)}人月</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{staff.remarks || "-"}</TableCell>
+                      <TableCell className="text-right font-mono">
+                        {Number(staff.workHours).toFixed(2)}人月
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {staff.remarks || "-"}
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <Button
@@ -527,7 +538,9 @@ function MonthlyStaffingInput({
                   id="staffing-fiscal-year"
                   type="number"
                   value={formData.fiscalYear}
-                  onChange={(e) => setFormData({ ...formData, fiscalYear: parseInt(e.target.value) })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, fiscalYear: parseInt(e.target.value) })
+                  }
                   data-testid="input-fiscal-year"
                 />
               </div>
@@ -598,7 +611,11 @@ function MonthlyStaffingInput({
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)} data-testid="button-cancel">
+            <Button
+              variant="outline"
+              onClick={() => setDialogOpen(false)}
+              data-testid="button-cancel"
+            >
               キャンセル
             </Button>
             <Button onClick={handleSave} data-testid="button-submit">
@@ -628,4 +645,3 @@ function MonthlyStaffingInput({
     </div>
   );
 }
-

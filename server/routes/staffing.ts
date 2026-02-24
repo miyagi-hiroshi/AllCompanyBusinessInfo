@@ -1,10 +1,10 @@
-import { insertStaffingSchema } from '@shared/schema/integrated';
-import express, { type Request, Response } from 'express';
-import { z } from 'zod';
+import { insertStaffingSchema } from "@shared/schema/integrated";
+import express, { type Request, Response } from "express";
+import { z } from "zod";
 
-import { requireAuth } from '../middleware/auth';
-import { StaffingService } from '../services/staffingService';
-import { StaffingRepository } from '../storage/staffing';
+import { requireAuth } from "../middleware/auth";
+import { StaffingService } from "../services/staffingService";
+import { StaffingRepository } from "../storage/staffing";
 
 const router = express.Router();
 const staffingRepository = new StaffingRepository();
@@ -20,8 +20,11 @@ const updateStaffingSchema = insertStaffingSchema.partial();
 const searchStaffingSchema = z.object({
   projectId: z.preprocess(
     (val) => {
-      if (typeof val === 'string' && val.includes(',')) {
-        return val.split(',').map(s => s.trim()).filter(Boolean);
+      if (typeof val === "string" && val.includes(",")) {
+        return val
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
       }
       return val;
     },
@@ -31,21 +34,24 @@ const searchStaffingSchema = z.object({
   month: z.string().transform(Number).optional(),
   employeeId: z.string().optional(),
   employeeName: z.string().optional(),
-  page: z.string().transform(Number).optional().default('1'),
-  limit: z.string().transform(Number).optional().default('100'),
-  sortBy: z.enum(['fiscalYear', 'month', 'employeeId', 'employeeName', 'workHours', 'createdAt']).optional().default('month'),
-  sortOrder: z.enum(['asc', 'desc']).optional().default('asc'),
+  page: z.string().transform(Number).optional().default("1"),
+  limit: z.string().transform(Number).optional().default("100"),
+  sortBy: z
+    .enum(["fiscalYear", "month", "employeeId", "employeeName", "workHours", "createdAt"])
+    .optional()
+    .default("month"),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("asc"),
 });
 
 /**
  * 配員計画一覧取得API
  * GET /api/staffing
  */
-router.get('/', requireAuth, async (req: Request, res: Response) => {
+router.get("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const query = searchStaffingSchema.parse(req.query);
     const offset = (query.page - 1) * query.limit;
-    
+
     const [staffing, totalCount] = await Promise.all([
       staffingRepository.findAll({
         filter: {
@@ -83,14 +89,14 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '検索パラメータが正しくありません',
+        message: "検索パラメータが正しくありません",
         errors: error.errors,
       });
     }
-    console.error('配員計画一覧取得エラー:', error);
+    console.error("配員計画一覧取得エラー:", error);
     res.status(500).json({
       success: false,
-      message: '配員計画一覧の取得中にエラーが発生しました',
+      message: "配員計画一覧の取得中にエラーが発生しました",
     });
   }
 });
@@ -99,28 +105,31 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
  * 工数入力チェックデータ取得API
  * GET /api/staffing/check
  */
-router.get('/check', requireAuth, async (req: Request, res: Response) => {
+router.get("/check", requireAuth, async (req: Request, res: Response) => {
   try {
     const { fiscalYear } = req.query;
-    
+
     if (!fiscalYear || isNaN(Number(fiscalYear))) {
       return res.status(400).json({
         success: false,
-        message: '年度パラメータが必要です',
+        message: "年度パラメータが必要です",
       });
     }
-    
+
     const checkData = await staffingService.getStaffingCheckData(Number(fiscalYear));
-    
+
     res.json({
       success: true,
       data: checkData,
     });
   } catch (error) {
-    console.error('工数入力チェックデータ取得エラー:', error);
+    console.error("工数入力チェックデータ取得エラー:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : '工数入力チェックデータの取得中にエラーが発生しました',
+      message:
+        error instanceof Error
+          ? error.message
+          : "工数入力チェックデータの取得中にエラーが発生しました",
     });
   }
 });
@@ -128,10 +137,15 @@ router.get('/check', requireAuth, async (req: Request, res: Response) => {
 // 一括操作スキーマ
 const bulkOperationSchema = z.object({
   create: z.array(createStaffingSchema).optional().default([]),
-  update: z.array(z.object({
-    id: z.string(),
-    data: updateStaffingSchema,
-  })).optional().default([]),
+  update: z
+    .array(
+      z.object({
+        id: z.string(),
+        data: updateStaffingSchema,
+      })
+    )
+    .optional()
+    .default([]),
   delete: z.array(z.string()).optional().default([]),
 });
 
@@ -139,12 +153,12 @@ const bulkOperationSchema = z.object({
  * 配員計画一括操作API
  * POST /api/staffing/bulk
  */
-router.post('/bulk', requireAuth, async (req: Request, res: Response) => {
+router.post("/bulk", requireAuth, async (req: Request, res: Response) => {
   try {
     const { create, update, delete: deleteIds } = bulkOperationSchema.parse(req.body);
-    
+
     const result = await staffingService.bulkOperation(create, update, deleteIds);
-    
+
     res.json({
       success: true,
       data: {
@@ -158,14 +172,15 @@ router.post('/bulk', requireAuth, async (req: Request, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '入力データが正しくありません',
+        message: "入力データが正しくありません",
         errors: error.errors,
       });
     }
-    console.error('配員計画一括操作エラー:', error);
+    console.error("配員計画一括操作エラー:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : '配員計画の一括操作中にエラーが発生しました',
+      message:
+        error instanceof Error ? error.message : "配員計画の一括操作中にエラーが発生しました",
     });
   }
 });
@@ -174,7 +189,7 @@ router.post('/bulk', requireAuth, async (req: Request, res: Response) => {
  * 配員計画詳細取得API
  * GET /api/staffing/:id
  */
-router.get('/:id', requireAuth, async (req: Request, res: Response) => {
+router.get("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const staffing = await staffingService.getStaffingById(id);
@@ -183,10 +198,10 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
       data: staffing,
     });
   } catch (error: unknown) {
-    console.error('配員計画詳細取得エラー:', error);
+    console.error("配員計画詳細取得エラー:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : '配員計画の取得中にエラーが発生しました',
+      message: error instanceof Error ? error.message : "配員計画の取得中にエラーが発生しました",
     });
   }
 });
@@ -195,7 +210,7 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
  * 配員計画作成API
  * POST /api/staffing
  */
-router.post('/', requireAuth, async (req: Request, res: Response) => {
+router.post("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const data = createStaffingSchema.parse(req.body);
     const staffing = await staffingService.createStaffing(data);
@@ -207,14 +222,14 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '入力データが正しくありません',
+        message: "入力データが正しくありません",
         errors: error.errors,
       });
     }
-    console.error('配員計画作成エラー:', error);
+    console.error("配員計画作成エラー:", error);
     res.status(500).json({
       success: false,
-      message: '配員計画の作成中にエラーが発生しました',
+      message: "配員計画の作成中にエラーが発生しました",
     });
   }
 });
@@ -223,7 +238,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
  * 配員計画更新API
  * PUT /api/staffing/:id
  */
-router.put('/:id', requireAuth, async (req: Request, res: Response) => {
+router.put("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const data = updateStaffingSchema.parse(req.body);
@@ -236,14 +251,14 @@ router.put('/:id', requireAuth, async (req: Request, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '入力データが正しくありません',
+        message: "入力データが正しくありません",
         errors: error.errors,
       });
     }
-    console.error('配員計画更新エラー:', error);
+    console.error("配員計画更新エラー:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : '配員計画の更新中にエラーが発生しました',
+      message: error instanceof Error ? error.message : "配員計画の更新中にエラーが発生しました",
     });
   }
 });
@@ -252,19 +267,18 @@ router.put('/:id', requireAuth, async (req: Request, res: Response) => {
  * 配員計画削除API
  * DELETE /api/staffing/:id
  */
-router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
+router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await staffingService.deleteStaffing(id);
     res.status(204).send();
   } catch (error) {
-    console.error('配員計画削除エラー:', error);
+    console.error("配員計画削除エラー:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : '配員計画の削除中にエラーが発生しました',
+      message: error instanceof Error ? error.message : "配員計画の削除中にエラーが発生しました",
     });
   }
 });
 
 export default router;
-

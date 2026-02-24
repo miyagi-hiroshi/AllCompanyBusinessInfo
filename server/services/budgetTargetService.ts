@@ -1,4 +1,4 @@
-import type { BudgetTarget, BudgetTargetFilter,NewBudgetTarget } from "@shared/schema";
+import type { BudgetTarget, BudgetTargetFilter, NewBudgetTarget } from "@shared/schema";
 
 import { BudgetTargetRepository } from "../storage/budgetTarget";
 
@@ -121,4 +121,3 @@ export class BudgetTargetService {
     }
   }
 }
-

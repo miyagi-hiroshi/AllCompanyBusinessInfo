@@ -1,4 +1,4 @@
-import type { AccountingItem,Customer, Item, Project } from "@shared/schema";
+import type { AccountingItem, Customer, Item, Project } from "@shared/schema";
 import { useQuery } from "@tanstack/react-query";
 
 import { apiRequest } from "@/lib/queryClient";
@@ -41,7 +41,9 @@ export function useProjects(fiscalYear?: number) {
     queryKey: ["/api/projects", fiscalYear],
     queryFn: async () => {
       // 件数制限を1000に設定して全件取得
-      const url = fiscalYear ? `/api/projects?fiscalYear=${fiscalYear}&limit=1000` : "/api/projects?limit=1000";
+      const url = fiscalYear
+        ? `/api/projects?fiscalYear=${fiscalYear}&limit=1000`
+        : "/api/projects?limit=1000";
       const res = await apiRequest("GET", url, undefined);
       const result = await res.json();
       return result.data?.items || [];

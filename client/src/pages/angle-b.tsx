@@ -33,25 +33,29 @@ export default function AngleBPage() {
       month: currentMonth,
     };
   });
-  
+
   // 詳細検索条件
   const [searchFilter, setSearchFilter] = useState<SearchFilter>({});
   const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false);
-  
+
   // 保存中フラグ（二重送信防止）
   const [isSaving, setIsSaving] = useState(false);
-  
+
   const { toast } = useToast();
 
   // Fetch data from backend with combined filters
-  const { data: angleBForecasts = [], isLoading: angleBLoading, refetch: refetchAngleB } = useAngleBForecasts({
+  const {
+    data: angleBForecasts = [],
+    isLoading: angleBLoading,
+    refetch: refetchAngleB,
+  } = useAngleBForecasts({
     ...filter,
     ...searchFilter,
   });
   const { data: customers = [], isLoading: customersLoading } = useCustomers();
   const { data: projectsRaw = [], isLoading: projectsLoading } = useProjects(filter.fiscalYear);
   // プロジェクトをコードの昇順でソート
-  const projects = [...projectsRaw].sort((a, b) => (a.code || '').localeCompare(b.code || ''));
+  const projects = [...projectsRaw].sort((a, b) => (a.code || "").localeCompare(b.code || ""));
   const { data: accountingItems = [], isLoading: accountingItemsLoading } = useAccountingItems();
 
   // Mutations
@@ -82,13 +86,13 @@ export default function AngleBPage() {
     }
 
     setFilter(newFilter);
-    
+
     // フィルタ説明文を生成
     const filterParts: string[] = [];
     filterParts.push(`${newFilter.fiscalYear}年度`);
     if (newFilter.month) filterParts.push(`${newFilter.month}月`);
     if (newFilter.projectId) filterParts.push("プロジェクト指定");
-    
+
     const filterDesc = filterParts.join(", ");
     toast({
       title: "フィルタを変更しました",
@@ -112,17 +116,18 @@ export default function AngleBPage() {
     }
 
     setSearchFilter(newSearchFilter);
-    
+
     // 検索条件の説明文を生成
     const searchParts: string[] = [];
     if (newSearchFilter.salesPerson) searchParts.push(`営業窓口: ${newSearchFilter.salesPerson}`);
-    if (newSearchFilter.accountingItem) searchParts.push(`計上科目: ${newSearchFilter.accountingItem}`);
+    if (newSearchFilter.accountingItem)
+      searchParts.push(`計上科目: ${newSearchFilter.accountingItem}`);
     if (newSearchFilter.customerId) {
-      const customer = customers.find(c => c.id === newSearchFilter.customerId);
+      const customer = customers.find((c) => c.id === newSearchFilter.customerId);
       if (customer) searchParts.push(`取引先: ${customer.name}`);
     }
     if (newSearchFilter.searchText) searchParts.push(`検索: ${newSearchFilter.searchText}`);
-    
+
     if (searchParts.length > 0) {
       toast({
         title: "検索を実行しました",
@@ -173,7 +178,7 @@ export default function AngleBPage() {
       autocompleteOptions: (() => {
         const periods: string[] = [];
         const fiscalYear = filter.fiscalYear;
-        
+
         // 会計年度: 4月～翌年3月
         // 4月～12月は同じ年、1月～3月は翌年
         for (let month = 4; month <= 12; month++) {
@@ -184,8 +189,8 @@ export default function AngleBPage() {
           const periodValue = `${fiscalYear + 1}-${String(month).padStart(2, "0")}`;
           periods.push(periodValue);
         }
-        
-        return periods.map(p => ({
+
+        return periods.map((p) => ({
           value: p,
           label: `${p.split("-")[0]}年${p.split("-")[1]}月`,
         }));
@@ -242,7 +247,8 @@ export default function AngleBPage() {
       return;
     }
 
-    const dataChanged = JSON.stringify(angleBForecasts) !== JSON.stringify(lastSyncedDataRef.current);
+    const dataChanged =
+      JSON.stringify(angleBForecasts) !== JSON.stringify(lastSyncedDataRef.current);
 
     if (dataChanged) {
       const freshGridRows: GridRowData[] = angleBForecasts.map((angleB) => ({
@@ -282,7 +288,7 @@ export default function AngleBPage() {
     // 二重送信防止
     if (isSaving) return;
     setIsSaving(true);
-    
+
     try {
       const modifiedRows = localRows.filter((row) => row._modified);
 
@@ -298,12 +304,7 @@ export default function AngleBPage() {
           validationErrors.push(`行${index + 1}: 確度は0〜100の範囲で入力してください`);
         }
         // 取引先は非必須なのでチェックから除外
-        if (
-          !row.projectId ||
-          !row.accountingPeriod ||
-          !row.accountingItem ||
-          !row.description
-        ) {
+        if (!row.projectId || !row.accountingPeriod || !row.accountingItem || !row.description) {
           validationErrors.push(`行${index + 1}: 必須項目を入力してください`);
         }
       });
@@ -324,11 +325,13 @@ export default function AngleBPage() {
             projectCode: row.projectCode as string,
             projectName: row.projectName as string,
             // 取引先は非必須なので、空の場合はundefinedにする
-            ...(row.customerId ? {
-              customerId: row.customerId as string,
-              customerCode: row.customerCode as string,
-              customerName: row.customerName as string,
-            } : {}),
+            ...(row.customerId
+              ? {
+                  customerId: row.customerId as string,
+                  customerCode: row.customerCode as string,
+                  customerName: row.customerName as string,
+                }
+              : {}),
             accountingPeriod: row.accountingPeriod as string,
             accountingItem: row.accountingItem as string,
             description: row.description as string,
@@ -353,7 +356,7 @@ export default function AngleBPage() {
               probability: Number(row.probability),
               remarks: (row.remarks as string) || "",
             };
-            
+
             if (row.customerId) {
               updateData.customerId = row.customerId as string;
               updateData.customerCode = row.customerCode as string;
@@ -363,7 +366,7 @@ export default function AngleBPage() {
               updateData.customerCode = null;
               updateData.customerName = null;
             }
-            
+
             await updateMutation.mutateAsync({
               id: row.id,
               data: updateData,

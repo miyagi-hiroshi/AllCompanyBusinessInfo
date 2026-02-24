@@ -1,10 +1,10 @@
-import { insertAccountingItemSchema } from '@shared/schema/integrated';
-import express, { type Request, Response } from 'express';
-import { z } from 'zod';
+import { insertAccountingItemSchema } from "@shared/schema/integrated";
+import express, { type Request, Response } from "express";
+import { z } from "zod";
 
-import { requireAuth } from '../middleware/auth';
-import { AccountingItemService } from '../services/accountingItemService';
-import { AccountingItemRepository } from '../storage/accountingItem';
+import { requireAuth } from "../middleware/auth";
+import { AccountingItemService } from "../services/accountingItemService";
+import { AccountingItemRepository } from "../storage/accountingItem";
 
 const router = express.Router();
 const accountingItemRepository = new AccountingItemRepository();
@@ -21,17 +21,17 @@ const searchAccountingItemSchema = z.object({
   search: z.string().optional(),
   code: z.string().optional(),
   name: z.string().optional(),
-  page: z.string().transform(Number).optional().default('1'),
-  limit: z.string().transform(Number).optional().default('20'),
-  sortBy: z.enum(['code', 'name', 'createdAt']).optional().default('createdAt'),
-  sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+  page: z.string().transform(Number).optional().default("1"),
+  limit: z.string().transform(Number).optional().default("20"),
+  sortBy: z.enum(["code", "name", "createdAt"]).optional().default("createdAt"),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
 });
 
 /**
  * 会計項目一覧取得API
  * GET /api/accounting-items
  */
-router.get('/', requireAuth, async (req: Request, res: Response) => {
+router.get("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const query = searchAccountingItemSchema.parse(req.query);
     const offset = (query.page - 1) * query.limit;
@@ -62,13 +62,13 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '検索パラメータが正しくありません',
+        message: "検索パラメータが正しくありません",
         errors: error.errors,
       });
     }
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || '会計項目一覧の取得中にエラーが発生しました',
+      message: error.message || "会計項目一覧の取得中にエラーが発生しました",
     });
   }
 });
@@ -77,7 +77,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
  * 会計項目詳細取得API
  * GET /api/accounting-items/:id
  */
-router.get('/:id', requireAuth, async (req: Request, res: Response) => {
+router.get("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const accountingItem = await accountingItemService.getAccountingItemById(id);
@@ -88,7 +88,7 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
   } catch (error: any) {
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || '会計項目詳細の取得中にエラーが発生しました',
+      message: error.message || "会計項目詳細の取得中にエラーが発生しました",
     });
   }
 });
@@ -97,7 +97,7 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
  * 会計項目作成API
  * POST /api/accounting-items
  */
-router.post('/', requireAuth, async (req: Request, res: Response) => {
+router.post("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const data = createAccountingItemSchema.parse(req.body);
     const user = (req as any).user;
@@ -105,19 +105,19 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
     res.status(201).json({
       success: true,
       data: accountingItem,
-      message: '会計項目が正常に作成されました',
+      message: "会計項目が正常に作成されました",
     });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '入力値が正しくありません',
+        message: "入力値が正しくありません",
         errors: error.errors,
       });
     }
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || '会計項目の作成中にエラーが発生しました',
+      message: error.message || "会計項目の作成中にエラーが発生しました",
     });
   }
 });
@@ -126,7 +126,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
  * 会計項目更新API
  * PUT /api/accounting-items/:id
  */
-router.put('/:id', requireAuth, async (req: Request, res: Response) => {
+router.put("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const data = updateAccountingItemSchema.parse(req.body);
@@ -135,19 +135,19 @@ router.put('/:id', requireAuth, async (req: Request, res: Response) => {
     res.json({
       success: true,
       data: updatedAccountingItem,
-      message: '会計項目が正常に更新されました',
+      message: "会計項目が正常に更新されました",
     });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '入力値が正しくありません',
+        message: "入力値が正しくありません",
         errors: error.errors,
       });
     }
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || '会計項目の更新中にエラーが発生しました',
+      message: error.message || "会計項目の更新中にエラーが発生しました",
     });
   }
 });
@@ -156,18 +156,18 @@ router.put('/:id', requireAuth, async (req: Request, res: Response) => {
  * 会計項目削除API
  * DELETE /api/accounting-items/:id
  */
-router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
+router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await accountingItemService.deleteAccountingItem(id);
     res.json({
       success: true,
-      message: '会計項目が正常に削除されました',
+      message: "会計項目が正常に削除されました",
     });
   } catch (error: any) {
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || '会計項目の削除中にエラーが発生しました',
+      message: error.message || "会計項目の削除中にエラーが発生しました",
     });
   }
 });
@@ -176,7 +176,7 @@ router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
  * 会計項目コード重複チェックAPI
  * GET /api/accounting-items/check-code/:code
  */
-router.get('/check-code/:code', requireAuth, async (req: Request, res: Response) => {
+router.get("/check-code/:code", requireAuth, async (req: Request, res: Response) => {
   try {
     const { code } = req.params;
     const { excludeId } = req.query;
@@ -188,7 +188,7 @@ router.get('/check-code/:code', requireAuth, async (req: Request, res: Response)
   } catch (error: any) {
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || '会計項目コードの重複チェック中にエラーが発生しました',
+      message: error.message || "会計項目コードの重複チェック中にエラーが発生しました",
     });
   }
 });

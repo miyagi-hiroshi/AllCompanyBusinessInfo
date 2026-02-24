@@ -1,8 +1,8 @@
-import type { NextFunction,Request, Response } from 'express';
+import type { NextFunction, Request, Response } from "express";
 
 /**
  * ファイルアップロードセキュリティミドルウェア
- * 
+ *
  * 責務:
  * - ファイル内容の検証
  * - ファイル名の検証
@@ -22,7 +22,7 @@ export interface UploadOptions {
 
 /**
  * セキュアなファイルアップロード設定を作成
- * 
+ *
  * @param options - アップロード設定オプション
  * @returns アップロードミドルウェア
  */
@@ -36,7 +36,7 @@ export function createSecureUpload(_options: UploadOptions) {
 /**
  * ファイル内容を検証する
  * MIMEタイプと実際のファイル内容が一致するか確認
- * 
+ *
  * @param file - 検証するファイル
  * @returns 検証結果
  */
@@ -48,7 +48,7 @@ export function validateFileContent(_file: any): boolean {
 /**
  * ファイル名を検証する
  * 危険な文字やパストラバーサルをチェック
- * 
+ *
  * @param filename - 検証するファイル名
  * @returns 検証結果
  */
@@ -62,9 +62,9 @@ export function validateFileName(_filename: string): boolean {
  */
 export const legalCheckUpload = createSecureUpload({
   maxFileSize: 10 * 1024 * 1024, // 10MB
-  allowedMimeTypes: ['application/pdf', 'application/msword'],
-  allowedExtensions: ['.pdf', '.doc', '.docx'],
-  destination: 'uploads/legal-check'
+  allowedMimeTypes: ["application/pdf", "application/msword"],
+  allowedExtensions: [".pdf", ".doc", ".docx"],
+  destination: "uploads/legal-check",
 });
 
 /**
@@ -72,9 +72,9 @@ export const legalCheckUpload = createSecureUpload({
  */
 export const paymentUpload = createSecureUpload({
   maxFileSize: 5 * 1024 * 1024, // 5MB
-  allowedMimeTypes: ['application/pdf', 'image/jpeg', 'image/png'],
-  allowedExtensions: ['.pdf', '.jpg', '.jpeg', '.png'],
-  destination: 'uploads/payment'
+  allowedMimeTypes: ["application/pdf", "image/jpeg", "image/png"],
+  allowedExtensions: [".pdf", ".jpg", ".jpeg", ".png"],
+  destination: "uploads/payment",
 });
 
 /**
@@ -82,9 +82,9 @@ export const paymentUpload = createSecureUpload({
  */
 export const bulletinUpload = createSecureUpload({
   maxFileSize: 20 * 1024 * 1024, // 20MB
-  allowedMimeTypes: ['application/pdf', 'image/jpeg', 'image/png', 'application/msword'],
-  allowedExtensions: ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx'],
-  destination: 'uploads/bulletin'
+  allowedMimeTypes: ["application/pdf", "image/jpeg", "image/png", "application/msword"],
+  allowedExtensions: [".pdf", ".jpg", ".jpeg", ".png", ".doc", ".docx"],
+  destination: "uploads/bulletin",
 });
 
 /**
@@ -92,7 +92,7 @@ export const bulletinUpload = createSecureUpload({
  */
 export const certificateUpload = createSecureUpload({
   maxFileSize: 5 * 1024 * 1024, // 5MB
-  allowedMimeTypes: ['application/pdf', 'image/jpeg', 'image/png'],
-  allowedExtensions: ['.pdf', '.jpg', '.jpeg', '.png'],
-  destination: 'uploads/certificates'
+  allowedMimeTypes: ["application/pdf", "image/jpeg", "image/png"],
+  allowedExtensions: [".pdf", ".jpg", ".jpeg", ".png"],
+  destination: "uploads/certificates",
 });

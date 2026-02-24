@@ -27,17 +27,22 @@ export function useSalesPersonSummary(
   salesPersons?: string[]
 ) {
   return useQuery<SalesPersonSummaryResponse>({
-    queryKey: ['/api/order-forecasts/sales-person-summary', fiscalYear, includeAngleB, salesPersons],
+    queryKey: [
+      "/api/order-forecasts/sales-person-summary",
+      fiscalYear,
+      includeAngleB,
+      salesPersons,
+    ],
     queryFn: async () => {
       const params = new URLSearchParams({
         fiscalYear: fiscalYear.toString(),
-        includeAngleB: includeAngleB.toString()
+        includeAngleB: includeAngleB.toString(),
       });
-      
+
       if (salesPersons && salesPersons.length > 0) {
-        params.append('salesPersons', salesPersons.join(','));
+        params.append("salesPersons", salesPersons.join(","));
       }
-      
+
       const res = await apiRequest(
         "GET",
         `/api/order-forecasts/sales-person-summary?${params}`,
@@ -45,7 +50,6 @@ export function useSalesPersonSummary(
       );
       return await res.json();
     },
-    enabled: !!fiscalYear
+    enabled: !!fiscalYear,
   });
 }
-

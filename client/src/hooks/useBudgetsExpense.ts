@@ -16,13 +16,17 @@ export function useBudgetsExpense(filter?: BudgetExpenseFilter) {
   if (filter?.accountingItem) {
     params.append("accountingItem", filter.accountingItem);
   }
-  
+
   const queryString = params.toString();
-  
+
   return useQuery<BudgetExpense[]>({
     queryKey: ["/api/budgets/expense", filter?.fiscalYear ?? null, filter?.accountingItem ?? null],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/budgets/expense${queryString ? `?${queryString}` : ""}`, undefined);
+      const res = await apiRequest(
+        "GET",
+        `/api/budgets/expense${queryString ? `?${queryString}` : ""}`,
+        undefined
+      );
       const result = await res.json();
       return result.data?.items || [];
     },
@@ -36,8 +40,8 @@ export function useCreateBudgetExpense() {
       return await res.json();
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/budgets/expense"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/budgets/expense"],
       });
     },
   });
@@ -50,8 +54,8 @@ export function useUpdateBudgetExpense() {
       return await res.json();
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/budgets/expense"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/budgets/expense"],
       });
     },
   });
@@ -64,10 +68,9 @@ export function useDeleteBudgetExpense() {
       return res.ok;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/budgets/expense"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/budgets/expense"],
       });
     },
   });
 }
-

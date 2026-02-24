@@ -1,6 +1,6 @@
-import type { Customer,NewProject, Project } from "@shared/schema";
-import { useMutation,useQuery } from "@tanstack/react-query";
-import { Copy, Edit, Loader2,Plus, Trash2 } from "lucide-react";
+import type { Customer, NewProject, Project } from "@shared/schema";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Copy, Edit, Loader2, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
 import {
@@ -43,20 +43,20 @@ import {
 } from "@/components/ui/table";
 import { useEmployees } from "@/hooks/useMasters";
 import { useToast } from "@/hooks/useToast";
-import { apiRequest,queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { cn } from "@/lib/utils";
 
 const SERVICE_TYPES = [
   "インテグレーション",
   "エンジニアリング",
   "ソフトウェアマネージド",
-  "リセール"
+  "リセール",
 ] as const;
 
 const ANALYSIS_TYPES = ["生産性", "粗利"] as const;
 
-type ServiceType = typeof SERVICE_TYPES[number];
-type AnalysisType = typeof ANALYSIS_TYPES[number];
+type ServiceType = (typeof SERVICE_TYPES)[number];
+type AnalysisType = (typeof ANALYSIS_TYPES)[number];
 
 const FISCAL_YEARS = [2023, 2024, 2025, 2026];
 
@@ -69,7 +69,7 @@ export default function ProjectsPage() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [copyDialogOpen, setCopyDialogOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  
+
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -94,8 +94,8 @@ export default function ProjectsPage() {
         fiscalYear: selectedYear.toString(),
         page: currentPage.toString(),
         limit: pageSize.toString(),
-        sortBy: 'code',
-        sortOrder: 'asc',
+        sortBy: "code",
+        sortOrder: "asc",
       });
       const response = await apiRequest("GET", `/api/projects?${params}`, undefined);
       return await response.json();
@@ -251,7 +251,9 @@ export default function ProjectsPage() {
   };
 
   const handleEdit = () => {
-    if (!selectedProject) {return;}
+    if (!selectedProject) {
+      return;
+    }
     if (
       !formData.code ||
       !formData.name ||
@@ -453,9 +455,7 @@ export default function ProjectsPage() {
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>プロジェクト新規作成</DialogTitle>
-            <DialogDescription>
-              新しいプロジェクトの情報を入力してください
-            </DialogDescription>
+            <DialogDescription>新しいプロジェクトの情報を入力してください</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid grid-cols-4 items-center gap-4">
@@ -466,9 +466,7 @@ export default function ProjectsPage() {
                 id="create-fiscal-year"
                 type="number"
                 value={formData.fiscalYear}
-                onChange={(e) =>
-                  setFormData({ ...formData, fiscalYear: parseInt(e.target.value) })
-                }
+                onChange={(e) => setFormData({ ...formData, fiscalYear: parseInt(e.target.value) })}
                 className="col-span-3"
                 data-testid="input-fiscal-year"
               />
@@ -503,10 +501,7 @@ export default function ProjectsPage() {
               <Label htmlFor="create-customer" className="text-right">
                 取引先
               </Label>
-              <Select
-                value={formData.customerId}
-                onValueChange={handleCustomerChange}
-              >
+              <Select value={formData.customerId} onValueChange={handleCustomerChange}>
                 <SelectTrigger
                   id="create-customer"
                   className="col-span-3"
@@ -529,9 +524,7 @@ export default function ProjectsPage() {
               </Label>
               <Select
                 value={formData.salesPerson}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, salesPerson: value })
-                }
+                onValueChange={(value) => setFormData({ ...formData, salesPerson: value })}
               >
                 <SelectTrigger
                   id="create-sales-person"
@@ -542,11 +535,12 @@ export default function ProjectsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {employees.map((employee) => (
-                    <SelectItem 
-                      key={employee.id} 
+                    <SelectItem
+                      key={employee.id}
                       value={`${employee.lastName}${employee.firstName}`}
                     >
-                      {employee.lastName}{employee.firstName}
+                      {employee.lastName}
+                      {employee.firstName}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -621,9 +615,7 @@ export default function ProjectsPage() {
               disabled={createMutation.isPending}
               data-testid="button-submit-create"
             >
-              {createMutation.isPending && (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              )}
+              {createMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               作成
             </Button>
           </DialogFooter>
@@ -666,7 +658,7 @@ export default function ProjectsPage() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
                 className="h-7 px-2"
               >
@@ -704,20 +696,25 @@ export default function ProjectsPage() {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
                 className="h-7 px-2"
               >
                 次へ
               </Button>
 
-              <span className="ml-2">{currentPage} / {totalPages}ページ</span>
+              <span className="ml-2">
+                {currentPage} / {totalPages}ページ
+              </span>
             </div>
           )}
         </div>
 
         <div className="flex items-center gap-2">
-          <span className="text-xs">全{totalCount}件中 {(currentPage - 1) * pageSize + 1}～{Math.min(currentPage * pageSize, totalCount)}件を表示</span>
+          <span className="text-xs">
+            全{totalCount}件中 {(currentPage - 1) * pageSize + 1}～
+            {Math.min(currentPage * pageSize, totalCount)}件を表示
+          </span>
         </div>
       </div>
 
@@ -737,9 +734,7 @@ export default function ProjectsPage() {
                 id="edit-fiscal-year"
                 type="number"
                 value={formData.fiscalYear}
-                onChange={(e) =>
-                  setFormData({ ...formData, fiscalYear: parseInt(e.target.value) })
-                }
+                onChange={(e) => setFormData({ ...formData, fiscalYear: parseInt(e.target.value) })}
                 className="col-span-3"
                 data-testid="input-edit-fiscal-year"
               />
@@ -772,10 +767,7 @@ export default function ProjectsPage() {
               <Label htmlFor="edit-customer" className="text-right">
                 取引先
               </Label>
-              <Select
-                value={formData.customerId}
-                onValueChange={handleCustomerChange}
-              >
+              <Select value={formData.customerId} onValueChange={handleCustomerChange}>
                 <SelectTrigger
                   id="edit-customer"
                   className="col-span-3"
@@ -798,9 +790,7 @@ export default function ProjectsPage() {
               </Label>
               <Select
                 value={formData.salesPerson}
-                onValueChange={(value) =>
-                  setFormData({ ...formData, salesPerson: value })
-                }
+                onValueChange={(value) => setFormData({ ...formData, salesPerson: value })}
               >
                 <SelectTrigger
                   id="edit-sales-person"
@@ -811,11 +801,12 @@ export default function ProjectsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   {employees.map((employee) => (
-                    <SelectItem 
-                      key={employee.id} 
+                    <SelectItem
+                      key={employee.id}
                       value={`${employee.lastName}${employee.firstName}`}
                     >
-                      {employee.lastName}{employee.firstName}
+                      {employee.lastName}
+                      {employee.firstName}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -891,9 +882,7 @@ export default function ProjectsPage() {
               disabled={updateMutation.isPending}
               data-testid="button-submit-edit"
             >
-              {updateMutation.isPending && (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              )}
+              {updateMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               更新
             </Button>
           </DialogFooter>
@@ -906,22 +895,17 @@ export default function ProjectsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>プロジェクトを削除しますか？</AlertDialogTitle>
             <AlertDialogDescription>
-              この操作は取り消せません。プロジェクト「{selectedProject?.name}」を
-              完全に削除します。
+              この操作は取り消せません。プロジェクト「{selectedProject?.name}」を 完全に削除します。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete">
-              キャンセル
-            </AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-cancel-delete">キャンセル</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleteMutation.isPending}
               data-testid="button-confirm-delete"
             >
-              {deleteMutation.isPending && (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              )}
+              {deleteMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               削除
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -939,17 +923,13 @@ export default function ProjectsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-copy">
-              キャンセル
-            </AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-cancel-copy">キャンセル</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleCopyFromPreviousYear}
               disabled={copyMutation.isPending}
               data-testid="button-confirm-copy"
             >
-              {copyMutation.isPending && (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-              )}
+              {copyMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               コピー実行
             </AlertDialogAction>
           </AlertDialogFooter>

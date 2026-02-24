@@ -1,5 +1,5 @@
-import type { NewOrderForecast,OrderForecast } from "@shared/schema";
-import { useMutation,useQuery } from "@tanstack/react-query";
+import type { NewOrderForecast, OrderForecast } from "@shared/schema";
+import { useMutation, useQuery } from "@tanstack/react-query";
 
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
@@ -11,15 +11,15 @@ export interface OrderForecastFilter {
   accountingItem?: string;
   customerId?: string;
   searchText?: string;
-  reconciliationStatus?: 'matched' | 'fuzzy' | 'unmatched' | 'excluded';
+  reconciliationStatus?: "matched" | "fuzzy" | "unmatched" | "excluded";
 }
 
 export function useOrderForecasts(filter: OrderForecastFilter) {
   const params = new URLSearchParams();
-  
+
   // 年度フィルタを追加（年度全体のデータを取得）
   params.append("fiscalYear", filter.fiscalYear.toString());
-  
+
   // 会計年度と月から計上年月を生成してフィルタリング
   if (filter.month) {
     // 月が指定されている場合は、その月の計上年月で絞り込み
@@ -28,20 +28,32 @@ export function useOrderForecasts(filter: OrderForecastFilter) {
     const accountingPeriod = `${year}-${String(filter.month).padStart(2, "0")}`;
     params.append("accountingPeriod", accountingPeriod);
   }
-  
-  if (filter.projectId) {params.append("projectId", filter.projectId);}
-  if (filter.salesPerson) {params.append("salesPerson", filter.salesPerson);}
-  if (filter.accountingItem) {params.append("accountingItem", filter.accountingItem);}
-  if (filter.customerId) {params.append("customerId", filter.customerId);}
-  if (filter.searchText) {params.append("searchText", filter.searchText);}
-  if (filter.reconciliationStatus) {params.append("reconciliationStatus", filter.reconciliationStatus);}
-  
+
+  if (filter.projectId) {
+    params.append("projectId", filter.projectId);
+  }
+  if (filter.salesPerson) {
+    params.append("salesPerson", filter.salesPerson);
+  }
+  if (filter.accountingItem) {
+    params.append("accountingItem", filter.accountingItem);
+  }
+  if (filter.customerId) {
+    params.append("customerId", filter.customerId);
+  }
+  if (filter.searchText) {
+    params.append("searchText", filter.searchText);
+  }
+  if (filter.reconciliationStatus) {
+    params.append("reconciliationStatus", filter.reconciliationStatus);
+  }
+
   return useQuery<OrderForecast[]>({
     // Use scalar segments for stable cache keys
     queryKey: [
-      "/api/order-forecasts", 
-      filter.fiscalYear, 
-      filter.month ?? null, 
+      "/api/order-forecasts",
+      filter.fiscalYear,
+      filter.month ?? null,
       filter.projectId ?? null,
       filter.salesPerson ?? null,
       filter.accountingItem ?? null,
@@ -67,8 +79,8 @@ export function useCreateOrderForecast() {
     },
     onSuccess: () => {
       // Invalidate all order forecast queries (prefix matching)
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/order-forecasts"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/order-forecasts"],
       });
     },
   });
@@ -76,12 +88,12 @@ export function useCreateOrderForecast() {
 
 export function useUpdateOrderForecast() {
   return useMutation({
-    mutationFn: async ({ 
-      id, 
+    mutationFn: async ({
+      id,
       data,
-      filter: _filter
-    }: { 
-      id: string; 
+      filter: _filter,
+    }: {
+      id: string;
       data: Partial<OrderForecast>;
       filter: OrderForecastFilter;
     }) => {
@@ -90,8 +102,8 @@ export function useUpdateOrderForecast() {
     },
     onSuccess: () => {
       // Invalidate all order forecast queries (prefix matching)
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/order-forecasts"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/order-forecasts"],
       });
     },
   });
@@ -106,8 +118,8 @@ export function useDeleteOrderForecast() {
     },
     onSuccess: () => {
       // Invalidate all order forecast queries (prefix matching)
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/order-forecasts"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/order-forecasts"],
       });
     },
   });
@@ -115,8 +127,20 @@ export function useDeleteOrderForecast() {
 
 export function useSetOrderForecastsExclusion() {
   return useMutation({
-    mutationFn: async ({ ids, isExcluded, exclusionReason }: { ids: string[]; isExcluded: boolean; exclusionReason?: string }) => {
-      const res = await apiRequest("POST", "/api/order-forecasts/set-exclusion", { ids, isExcluded, exclusionReason });
+    mutationFn: async ({
+      ids,
+      isExcluded,
+      exclusionReason,
+    }: {
+      ids: string[];
+      isExcluded: boolean;
+      exclusionReason?: string;
+    }) => {
+      const res = await apiRequest("POST", "/api/order-forecasts/set-exclusion", {
+        ids,
+        isExcluded,
+        exclusionReason,
+      });
       return await res.json();
     },
     onSuccess: () => {

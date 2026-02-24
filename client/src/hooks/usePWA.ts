@@ -40,7 +40,7 @@ export function usePWA() {
   //     console.log("SW registration error", error);
   //   },
   // });
-  
+
   // 一時的な代替実装
   const [needRefresh, _setNeedRefresh] = useState(false);
   const updateServiceWorker = () => {
@@ -50,7 +50,7 @@ export function usePWA() {
   // オンライン/オフライン状態の監視
   useEffect(() => {
     const handleOnline = () => {
-      setPwaState(prev => ({
+      setPwaState((prev) => ({
         ...prev,
         isOnline: true,
         isOffline: false,
@@ -59,12 +59,15 @@ export function usePWA() {
     };
 
     const handleOffline = () => {
-      setPwaState(prev => ({
+      setPwaState((prev) => ({
         ...prev,
         isOnline: false,
         isOffline: true,
       }));
-      showInfoToast("オフライン", "ネットワーク接続が切断されました。オフライン機能をご利用ください");
+      showInfoToast(
+        "オフライン",
+        "ネットワーク接続が切断されました。オフライン機能をご利用ください"
+      );
     };
 
     window.addEventListener("online", handleOnline);
@@ -82,14 +85,14 @@ export function usePWA() {
       // デフォルトのインストールプロンプトを防止
       e.preventDefault();
       // インストールプロンプトを保存
-      setPwaState(prev => ({
+      setPwaState((prev) => ({
         ...prev,
         installPrompt: e,
       }));
     };
 
     const handleAppInstalled = () => {
-      setPwaState(prev => ({
+      setPwaState((prev) => ({
         ...prev,
         isInstalled: true,
         installPrompt: null,
@@ -101,9 +104,11 @@ export function usePWA() {
     window.addEventListener("appinstalled", handleAppInstalled);
 
     // 既にインストール済みかチェック
-    if (window.matchMedia("(display-mode: standalone)").matches || 
-        (window.navigator as any).standalone === true) {
-      setPwaState(prev => ({
+    if (
+      window.matchMedia("(display-mode: standalone)").matches ||
+      (window.navigator as any).standalone === true
+    ) {
+      setPwaState((prev) => ({
         ...prev,
         isInstalled: true,
       }));
@@ -117,7 +122,7 @@ export function usePWA() {
 
   // 更新の監視
   useEffect(() => {
-    setPwaState(prev => ({
+    setPwaState((prev) => ({
       ...prev,
       isUpdateAvailable: needRefresh,
       isUpdateReady: needRefresh,
@@ -134,7 +139,7 @@ export function usePWA() {
     try {
       // インストールプロンプトを表示
       const result = await pwaState.installPrompt.prompt();
-      
+
       if (result.outcome === "accepted") {
         // PWAインストールが承認されました
       } else {
@@ -162,9 +167,7 @@ export function usePWA() {
     try {
       if ("caches" in window) {
         const cacheNames = await caches.keys();
-        await Promise.all(
-          cacheNames.map(cacheName => caches.delete(cacheName))
-        );
+        await Promise.all(cacheNames.map((cacheName) => caches.delete(cacheName)));
         showSuccessToast("キャッシュクリア完了", "すべてのキャッシュが削除されました");
       }
     } catch (error) {

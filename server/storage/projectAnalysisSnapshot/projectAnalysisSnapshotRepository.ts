@@ -1,16 +1,19 @@
 /**
  * プロジェクト分析スナップショットリポジトリ
- * 
+ *
  * 責務:
  * - プロジェクト分析スナップショットテーブル（project_analysis_snapshots）のCRUD操作
  * - スナップショットデータの検索・フィルタリング
  */
 
-import { projectAnalysisSnapshots } from '@shared/schema/projectAnalysisSnapshot/tables';
-import type { ProjectAnalysisSnapshot, SnapshotData } from '@shared/schema/projectAnalysisSnapshot/types';
-import { desc, eq, inArray } from 'drizzle-orm';
+import { projectAnalysisSnapshots } from "@shared/schema/projectAnalysisSnapshot/tables";
+import type {
+  ProjectAnalysisSnapshot,
+  SnapshotData,
+} from "@shared/schema/projectAnalysisSnapshot/types";
+import { desc, eq, inArray } from "drizzle-orm";
 
-import { db } from '../../db';
+import { db } from "../../db";
 
 export interface CreateSnapshotData {
   fiscalYear: number;
@@ -33,7 +36,7 @@ export class ProjectAnalysisSnapshotRepository {
         createdByEmployeeId: data.createdByEmployeeId,
       })
       .returning();
-    
+
     return {
       id: result.id,
       fiscalYear: result.fiscalYear,
@@ -46,19 +49,19 @@ export class ProjectAnalysisSnapshotRepository {
 
   /**
    * スナップショット一覧を取得
-   * 
+   *
    * @param fiscalYear - 年度でフィルタリング（オプション）
    */
   async findAll(fiscalYear?: number): Promise<ProjectAnalysisSnapshot[]> {
     let query = db.select().from(projectAnalysisSnapshots);
-    
+
     if (fiscalYear !== undefined) {
       query = query.where(eq(projectAnalysisSnapshots.fiscalYear, fiscalYear)) as any;
     }
-    
+
     const results = await query.orderBy(desc(projectAnalysisSnapshots.createdAt));
-    
-    return results.map(result => ({
+
+    return results.map((result) => ({
       id: result.id,
       fiscalYear: result.fiscalYear,
       name: result.name,
@@ -76,11 +79,11 @@ export class ProjectAnalysisSnapshotRepository {
       .select()
       .from(projectAnalysisSnapshots)
       .where(eq(projectAnalysisSnapshots.id, id));
-    
+
     if (!result) {
       return null;
     }
-    
+
     return {
       id: result.id,
       fiscalYear: result.fiscalYear,
@@ -98,13 +101,13 @@ export class ProjectAnalysisSnapshotRepository {
     if (ids.length === 0) {
       return [];
     }
-    
+
     const results = await db
       .select()
       .from(projectAnalysisSnapshots)
       .where(inArray(projectAnalysisSnapshots.id, ids));
-    
-    return results.map(result => ({
+
+    return results.map((result) => ({
       id: result.id,
       fiscalYear: result.fiscalYear,
       name: result.name,
@@ -114,4 +117,3 @@ export class ProjectAnalysisSnapshotRepository {
     }));
   }
 }
-

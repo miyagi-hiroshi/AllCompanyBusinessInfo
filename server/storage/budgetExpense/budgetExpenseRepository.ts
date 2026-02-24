@@ -27,12 +27,7 @@ export class BudgetExpenseRepository {
       createdAt: budgetsExpense.createdAt,
     }[sortBy];
 
-    const query = db
-      .select()
-      .from(budgetsExpense)
-      .where(conditions)
-      .limit(limit)
-      .offset(offset);
+    const query = db.select().from(budgetsExpense).where(conditions).limit(limit).offset(offset);
 
     if (sortOrder === "asc") {
       return await query.orderBy(orderByColumn);
@@ -52,11 +47,7 @@ export class BudgetExpenseRepository {
   }
 
   async findById(id: string): Promise<BudgetExpense | null> {
-    const result = await db
-      .select()
-      .from(budgetsExpense)
-      .where(eq(budgetsExpense.id, id))
-      .limit(1);
+    const result = await db.select().from(budgetsExpense).where(eq(budgetsExpense.id, id)).limit(1);
 
     return result[0] || null;
   }
@@ -85,10 +76,7 @@ export class BudgetExpenseRepository {
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await db
-      .delete(budgetsExpense)
-      .where(eq(budgetsExpense.id, id))
-      .returning();
+    const result = await db.delete(budgetsExpense).where(eq(budgetsExpense.id, id)).returning();
 
     return result.length > 0;
   }
@@ -99,7 +87,7 @@ export class BudgetExpenseRepository {
       .from(budgetsExpense)
       .where(eq(budgetsExpense.fiscalYear, fiscalYear));
 
-    return parseFloat(result[0]?.total?.toString() || '0');
+    return parseFloat(result[0]?.total?.toString() || "0");
   }
 
   private buildWhereConditions(filter?: BudgetExpenseFilter) {
@@ -120,4 +108,3 @@ export class BudgetExpenseRepository {
     return conditions.length > 0 ? and(...conditions) : undefined;
   }
 }
-

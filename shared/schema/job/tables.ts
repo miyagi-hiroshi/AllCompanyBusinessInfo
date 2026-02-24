@@ -1,4 +1,4 @@
-import { boolean, integer, pgTable, serial, text, timestamp,varchar } from "drizzle-orm/pg-core";
+import { boolean, integer, pgTable, serial, text, timestamp, varchar } from "drizzle-orm/pg-core";
 
 // Job Positions
 export const jobPositions = pgTable("job_positions", {

@@ -1,1 +1,1 @@
-export * from './reconciliationLogRepository';
+export * from "./reconciliationLogRepository";

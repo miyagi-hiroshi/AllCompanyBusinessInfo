@@ -1,4 +1,19 @@
-import { BarChart3, BookOpen, Building2, ClipboardCheck, DollarSign, FileText, FileUp, FolderKanban, GitMerge, Home, LogOut, TrendingUp, User,Users } from "lucide-react";
+import {
+  BarChart3,
+  BookOpen,
+  Building2,
+  ClipboardCheck,
+  DollarSign,
+  FileText,
+  FileUp,
+  FolderKanban,
+  GitMerge,
+  Home,
+  LogOut,
+  TrendingUp,
+  User,
+  Users,
+} from "lucide-react";
 import { useLocation } from "wouter";
 
 import { Button } from "@/components/ui/button";
@@ -113,15 +128,18 @@ export function AppSidebar() {
             <SidebarMenu>
               {menuItems.analysis.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
+                  <SidebarMenuButton
                     asChild
                     isActive={location === item.url}
                     data-testid={`menu-${item.url.replace("/", "") || "dashboard"}`}
                   >
-                    <a href={item.url} onClick={(e) => {
-                      e.preventDefault();
-                      setLocation(item.url);
-                    }}>
+                    <a
+                      href={item.url}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setLocation(item.url);
+                      }}
+                    >
                       <item.icon />
                       <span>{item.title}</span>
                     </a>
@@ -139,15 +157,18 @@ export function AppSidebar() {
             <SidebarMenu>
               {menuItems.input.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
+                  <SidebarMenuButton
                     asChild
                     isActive={location === item.url}
                     data-testid={`menu-${item.url.replace("/", "")}`}
                   >
-                    <a href={item.url} onClick={(e) => {
-                      e.preventDefault();
-                      setLocation(item.url);
-                    }}>
+                    <a
+                      href={item.url}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setLocation(item.url);
+                      }}
+                    >
                       <item.icon />
                       <span>{item.title}</span>
                     </a>
@@ -165,15 +186,18 @@ export function AppSidebar() {
             <SidebarMenu>
               {menuItems.master.map((item) => (
                 <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton 
+                  <SidebarMenuButton
                     asChild
                     isActive={location === item.url}
                     data-testid={`menu-${item.url.replace("/", "")}`}
                   >
-                    <a href={item.url} onClick={(e) => {
-                      e.preventDefault();
-                      setLocation(item.url);
-                    }}>
+                    <a
+                      href={item.url}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setLocation(item.url);
+                      }}
+                    >
                       <item.icon />
                       <span>{item.title}</span>
                     </a>
@@ -192,16 +216,13 @@ export function AppSidebar() {
                 <SidebarMenuItem>
                   <div className="flex items-center gap-2 px-2 py-1 text-sm text-muted-foreground">
                     <User className="h-4 w-4" />
-                    <span className="truncate">{user ? `${user.firstName} ${user.lastName}`.trim() : "User"}</span>
+                    <span className="truncate">
+                      {user ? `${user.firstName} ${user.lastName}`.trim() : "User"}
+                    </span>
                   </div>
                 </SidebarMenuItem>
                 <SidebarMenuItem>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full justify-start"
-                    asChild
-                  >
+                  <Button variant="ghost" size="sm" className="w-full justify-start" asChild>
                     <a
                       href="https://docs.google.com/document/d/1hgRMUm3wt_qckef8BjNWBLoQNlvKtQ6QRWdgt5hTTO0/edit?usp=sharing"
                       target="_blank"

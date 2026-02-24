@@ -1,22 +1,20 @@
-import type { Item, NewItem } from '@shared/schema/integrated';
+import type { Item, NewItem } from "@shared/schema/integrated";
 
-import { AppError } from '../middleware/errorHandler';
-import { type ItemFilter,ItemRepository } from '../storage/item';
+import { AppError } from "../middleware/errorHandler";
+import { type ItemFilter, ItemRepository } from "../storage/item";
 
 /**
  * アイテム管理サービスクラス
- * 
+ *
  * @description アイテムに関するビジネスロジックを担当
  * @responsibility アイテムの管理、統計情報の提供
  */
 export class ItemService {
-  constructor(
-    private itemRepository: ItemRepository
-  ) {}
+  constructor(private itemRepository: ItemRepository) {}
 
   /**
    * アイテム一覧取得
-   * 
+   *
    * @param filter - 検索条件
    * @param limit - 取得件数
    * @param offset - オフセット
@@ -28,8 +26,8 @@ export class ItemService {
     filter: ItemFilter,
     limit: number,
     offset: number,
-    sortBy: 'code' | 'name' | 'category' | 'createdAt' = 'createdAt',
-    sortOrder: 'asc' | 'desc' = 'desc'
+    sortBy: "code" | "name" | "category" | "createdAt" = "createdAt",
+    sortOrder: "asc" | "desc" = "desc"
   ): Promise<{ items: Item[]; totalCount: number }> {
     try {
       const items = await this.itemRepository.findAll({
@@ -44,14 +42,14 @@ export class ItemService {
 
       return { items, totalCount };
     } catch (error) {
-      console.error('アイテム一覧取得エラー:', error);
-      throw new AppError('アイテム一覧の取得に失敗しました', 500);
+      console.error("アイテム一覧取得エラー:", error);
+      throw new AppError("アイテム一覧の取得に失敗しました", 500);
     }
   }
 
   /**
    * アイテム詳細取得
-   * 
+   *
    * @param id - アイテムID
    * @returns アイテム詳細
    */
@@ -59,7 +57,7 @@ export class ItemService {
     const item = await this.itemRepository.findById(id);
 
     if (!item) {
-      throw new AppError('アイテムが見つかりません', 404, true, 'NOT_FOUND');
+      throw new AppError("アイテムが見つかりません", 404, true, "NOT_FOUND");
     }
 
     return item;
@@ -67,7 +65,7 @@ export class ItemService {
 
   /**
    * アイテム作成
-   * 
+   *
    * @param data - アイテムデータ
    * @param user - 実行ユーザー
    * @returns 作成されたアイテム
@@ -77,7 +75,7 @@ export class ItemService {
       // コードの重複チェック
       const existingItem = await this.itemRepository.findByCode(data.code);
       if (existingItem) {
-        throw new AppError('このアイテムコードは既に使用されています', 409, true, 'CONFLICT');
+        throw new AppError("このアイテムコードは既に使用されています", 409, true, "CONFLICT");
       }
 
       const item = await this.itemRepository.create(data);
@@ -87,14 +85,14 @@ export class ItemService {
       if (error instanceof AppError) {
         throw error;
       }
-      console.error('アイテム作成エラー:', error);
-      throw new AppError('アイテムの作成に失敗しました', 500);
+      console.error("アイテム作成エラー:", error);
+      throw new AppError("アイテムの作成に失敗しました", 500);
     }
   }
 
   /**
    * アイテム更新
-   * 
+   *
    * @param id - アイテムID
    * @param data - 更新データ
    * @param user - 実行ユーザー
@@ -105,21 +103,21 @@ export class ItemService {
       // アイテムの存在チェック
       const existingItem = await this.itemRepository.findById(id);
       if (!existingItem) {
-        throw new AppError('アイテムが見つかりません', 404, true, 'NOT_FOUND');
+        throw new AppError("アイテムが見つかりません", 404, true, "NOT_FOUND");
       }
 
       // コードが変更される場合は重複チェック
       if (data.code && data.code !== existingItem.code) {
         const duplicateItem = await this.itemRepository.findByCode(data.code);
         if (duplicateItem) {
-          throw new AppError('このアイテムコードは既に使用されています', 409, true, 'CONFLICT');
+          throw new AppError("このアイテムコードは既に使用されています", 409, true, "CONFLICT");
         }
       }
 
       const item = await this.itemRepository.update(id, data);
 
       if (!item) {
-        throw new AppError('アイテムが見つかりません', 404, true, 'NOT_FOUND');
+        throw new AppError("アイテムが見つかりません", 404, true, "NOT_FOUND");
       }
 
       return item;
@@ -127,14 +125,14 @@ export class ItemService {
       if (error instanceof AppError) {
         throw error;
       }
-      console.error('アイテム更新エラー:', error);
-      throw new AppError('アイテムの更新に失敗しました', 500);
+      console.error("アイテム更新エラー:", error);
+      throw new AppError("アイテムの更新に失敗しました", 500);
     }
   }
 
   /**
    * アイテム削除
-   * 
+   *
    * @param id - アイテムID
    */
   async deleteItem(id: string): Promise<void> {
@@ -142,7 +140,7 @@ export class ItemService {
       // アイテムの存在チェック
       const existingItem = await this.itemRepository.findById(id);
       if (!existingItem) {
-        throw new AppError('アイテムが見つかりません', 404, true, 'NOT_FOUND');
+        throw new AppError("アイテムが見つかりません", 404, true, "NOT_FOUND");
       }
 
       await this.itemRepository.delete(id);
@@ -150,14 +148,14 @@ export class ItemService {
       if (error instanceof AppError) {
         throw error;
       }
-      console.error('アイテム削除エラー:', error);
-      throw new AppError('アイテムの削除に失敗しました', 500);
+      console.error("アイテム削除エラー:", error);
+      throw new AppError("アイテムの削除に失敗しました", 500);
     }
   }
 
   /**
    * アイテムコード重複チェック
-   * 
+   *
    * @param code - アイテムコード
    * @param excludeId - 除外するアイテムID（更新時）
    * @returns コードが存在するかどうか
@@ -167,4 +165,3 @@ export class ItemService {
     return exists;
   }
 }
-

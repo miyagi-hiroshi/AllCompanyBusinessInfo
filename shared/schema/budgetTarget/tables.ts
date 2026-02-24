@@ -6,7 +6,9 @@ const appSchema = pgSchema("app");
 
 // 目標値予算データ (Target Budget Data)
 export const budgetsTarget = appSchema.table("budgets_target", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   fiscalYear: integer("fiscal_year").notNull(), // 年度 (例: 2024, 2025)
   serviceType: text("service_type").notNull(), // サービス区分
   analysisType: text("analysis_type").notNull(), // 分析区分（生産性/粗利）
@@ -14,5 +16,3 @@ export const budgetsTarget = appSchema.table("budgets_target", {
   remarks: text("remarks"), // 備考
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
-
-

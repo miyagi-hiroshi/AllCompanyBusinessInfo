@@ -16,13 +16,17 @@ export function useBudgetsRevenue(filter?: BudgetRevenueFilter) {
   if (filter?.serviceType) {
     params.append("serviceType", filter.serviceType);
   }
-  
+
   const queryString = params.toString();
-  
+
   return useQuery<BudgetRevenue[]>({
     queryKey: ["/api/budgets/revenue", filter?.fiscalYear ?? null, filter?.serviceType ?? null],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/budgets/revenue${queryString ? `?${queryString}` : ""}`, undefined);
+      const res = await apiRequest(
+        "GET",
+        `/api/budgets/revenue${queryString ? `?${queryString}` : ""}`,
+        undefined
+      );
       const result = await res.json();
       return result.data?.items || [];
     },
@@ -36,8 +40,8 @@ export function useCreateBudgetRevenue() {
       return await res.json();
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/budgets/revenue"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/budgets/revenue"],
       });
     },
   });
@@ -50,8 +54,8 @@ export function useUpdateBudgetRevenue() {
       return await res.json();
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/budgets/revenue"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/budgets/revenue"],
       });
     },
   });
@@ -64,10 +68,9 @@ export function useDeleteBudgetRevenue() {
       return res.ok;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/budgets/revenue"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/budgets/revenue"],
       });
     },
   });
 }
-

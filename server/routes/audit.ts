@@ -1,9 +1,9 @@
-import express, { type Request, Response } from 'express';
-import { z } from 'zod';
+import express, { type Request, Response } from "express";
+import { z } from "zod";
 
-import { requireAuth } from '../middleware/auth';
-import { AuditLogService } from '../services/auditLogService';
-import { type AuditLogFilter,AuditLogRepository } from '../storage/auditLog';
+import { requireAuth } from "../middleware/auth";
+import { AuditLogService } from "../services/auditLogService";
+import { type AuditLogFilter, AuditLogRepository } from "../storage/auditLog";
 
 const router = express.Router();
 const auditLogRepository = new AuditLogRepository();
@@ -27,10 +27,10 @@ const auditLogSearchSchema = z.object({
  * 監査ログ検索API
  * GET /api/audit-logs
  */
-router.get('/', requireAuth, async (req: Request, res: Response) => {
+router.get("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const query = auditLogSearchSchema.parse(req.query);
-    
+
     const filter: AuditLogFilter = {
       userId: query.userId,
       employeeId: query.employeeId,
@@ -63,14 +63,14 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '入力値が正しくありません',
+        message: "入力値が正しくありません",
         errors: error.errors,
       });
     }
 
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || '監査ログの取得に失敗しました',
+      message: error.message || "監査ログの取得に失敗しました",
     });
   }
 });
@@ -79,10 +79,10 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
  * 監査ログ詳細取得API
  * GET /api/audit-logs/:id
  */
-router.get('/:id', requireAuth, async (req: Request, res: Response) => {
+router.get("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
+
     const log = await auditLogService.getAuditLogById(id);
 
     res.json({
@@ -92,7 +92,7 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
   } catch (error: any) {
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || '監査ログの取得に失敗しました',
+      message: error.message || "監査ログの取得に失敗しました",
     });
   }
 });
@@ -101,10 +101,10 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
  * リソース変更履歴取得API
  * GET /api/audit-logs/resource/:resource/:resourceId
  */
-router.get('/resource/:resource/:resourceId', requireAuth, async (req: Request, res: Response) => {
+router.get("/resource/:resource/:resourceId", requireAuth, async (req: Request, res: Response) => {
   try {
     const { resource, resourceId } = req.params;
-    
+
     const history = await auditLogService.getResourceHistory(resource, resourceId);
 
     res.json({
@@ -114,7 +114,7 @@ router.get('/resource/:resource/:resourceId', requireAuth, async (req: Request, 
   } catch (error: any) {
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'リソース履歴の取得に失敗しました',
+      message: error.message || "リソース履歴の取得に失敗しました",
     });
   }
 });
@@ -123,11 +123,11 @@ router.get('/resource/:resource/:resourceId', requireAuth, async (req: Request, 
  * ユーザー操作履歴取得API
  * GET /api/audit-logs/user/:userId
  */
-router.get('/user/:userId', requireAuth, async (req: Request, res: Response) => {
+router.get("/user/:userId", requireAuth, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const limit = parseInt(req.query.limit as string) || 50;
-    
+
     const history = await auditLogService.getUserHistory(userId, limit);
 
     res.json({
@@ -137,7 +137,7 @@ router.get('/user/:userId', requireAuth, async (req: Request, res: Response) => 
   } catch (error: any) {
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'ユーザー履歴の取得に失敗しました',
+      message: error.message || "ユーザー履歴の取得に失敗しました",
     });
   }
 });
@@ -146,10 +146,10 @@ router.get('/user/:userId', requireAuth, async (req: Request, res: Response) => 
  * 監査ログクリーンアップAPI
  * POST /api/audit-logs/cleanup
  */
-router.post('/cleanup', requireAuth, async (req: Request, res: Response) => {
+router.post("/cleanup", requireAuth, async (req: Request, res: Response) => {
   try {
     const { daysToKeep } = req.body;
-    
+
     const deletedCount = await auditLogService.cleanupOldLogs(daysToKeep || 365);
 
     res.json({
@@ -162,7 +162,7 @@ router.post('/cleanup', requireAuth, async (req: Request, res: Response) => {
   } catch (error: any) {
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || '監査ログのクリーンアップに失敗しました',
+      message: error.message || "監査ログのクリーンアップに失敗しました",
     });
   }
 });
@@ -171,10 +171,10 @@ router.post('/cleanup', requireAuth, async (req: Request, res: Response) => {
  * 監査ログ統計取得API
  * GET /api/audit-logs/stats
  */
-router.get('/stats', requireAuth, async (req: Request, res: Response) => {
+router.get("/stats", requireAuth, async (req: Request, res: Response) => {
   try {
     const { startDate, endDate } = req.query;
-    
+
     const filter: AuditLogFilter = {
       startDate: startDate ? new Date(startDate as string) : undefined,
       endDate: endDate ? new Date(endDate as string) : undefined,
@@ -189,7 +189,7 @@ router.get('/stats', requireAuth, async (req: Request, res: Response) => {
   } catch (error: any) {
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || '監査ログ統計の取得に失敗しました',
+      message: error.message || "監査ログ統計の取得に失敗しました",
     });
   }
 });

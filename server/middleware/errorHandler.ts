@@ -1,10 +1,10 @@
-import type { NextFunction, Request, Response } from 'express';
+import type { NextFunction, Request, Response } from "express";
 
-import { sanitizeLogData } from './security';
+import { sanitizeLogData } from "./security";
 
 /**
  * カスタムエラークラス
- * 
+ *
  * @description アプリケーション固有のエラーを定義
  */
 export class AppError extends Error {
@@ -40,7 +40,7 @@ export interface ErrorResponse {
 
 /**
  * 統一エラーハンドリングミドルウェア
- * 
+ *
  * @description 全APIで統一されたエラーレスポンスを提供
  */
 export function errorHandler(
@@ -50,8 +50,8 @@ export function errorHandler(
   _next: NextFunction
 ): void {
   let statusCode = 500;
-  let message = 'サーバーエラーが発生しました';
-  let code = 'INTERNAL_ERROR';
+  let message = "サーバーエラーが発生しました";
+  let code = "INTERNAL_ERROR";
   let details: any = undefined;
 
   // AppErrorの場合は設定された値を使用
@@ -61,41 +61,41 @@ export function errorHandler(
     code = error.code || error.name;
   }
   // Zodバリデーションエラーの場合
-  else if (error.name === 'ZodError') {
+  else if (error.name === "ZodError") {
     statusCode = 400;
-    message = '入力値が正しくありません';
-    code = 'VALIDATION_ERROR';
+    message = "入力値が正しくありません";
+    code = "VALIDATION_ERROR";
     details = { errors: (error as any).errors };
   }
   // バリデーションエラーの場合
-  else if (error.name === 'ValidationError') {
+  else if (error.name === "ValidationError") {
     statusCode = 400;
-    message = '入力値が正しくありません';
-    code = 'VALIDATION_ERROR';
+    message = "入力値が正しくありません";
+    code = "VALIDATION_ERROR";
   }
   // 認証エラーの場合
-  else if (error.name === 'UnauthorizedError') {
+  else if (error.name === "UnauthorizedError") {
     statusCode = 401;
-    message = '認証が必要です';
-    code = 'UNAUTHORIZED';
+    message = "認証が必要です";
+    code = "UNAUTHORIZED";
   }
   // 権限エラーの場合
-  else if (error.name === 'ForbiddenError') {
+  else if (error.name === "ForbiddenError") {
     statusCode = 403;
-    message = 'アクセス権限がありません';
-    code = 'FORBIDDEN';
+    message = "アクセス権限がありません";
+    code = "FORBIDDEN";
   }
   // リソースが見つからない場合
-  else if (error.name === 'NotFoundError') {
+  else if (error.name === "NotFoundError") {
     statusCode = 404;
-    message = 'リソースが見つかりません';
-    code = 'NOT_FOUND';
+    message = "リソースが見つかりません";
+    code = "NOT_FOUND";
   }
   // 競合エラーの場合
-  else if (error.name === 'ConflictError') {
+  else if (error.name === "ConflictError") {
     statusCode = 409;
-    message = 'リソースの競合が発生しました';
-    code = 'CONFLICT';
+    message = "リソースの競合が発生しました";
+    code = "CONFLICT";
   }
 
   // エラーログの出力
@@ -106,17 +106,17 @@ export function errorHandler(
     statusCode,
     message: error.message,
     stack: error.stack,
-    user: (req as any).user?.id || 'anonymous',
+    user: (req as any).user?.id || "anonymous",
     ip: req.ip,
-    userAgent: req.get('User-Agent'),
+    userAgent: req.get("User-Agent"),
   };
 
   // 本番環境ではスタックトレースを除外
-  if (process.env.NODE_ENV === 'production') {
+  if (process.env.NODE_ENV === "production") {
     delete errorLog.stack;
   }
 
-  console.error('Error occurred:', sanitizeLogData(errorLog));
+  console.error("Error occurred:", sanitizeLogData(errorLog));
 
   // エラーレスポンスの送信
   const errorResponse: ErrorResponse = {
@@ -126,7 +126,7 @@ export function errorHandler(
   };
 
   // 開発環境では詳細情報を追加
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === "development") {
     errorResponse.details = details || {
       originalMessage: error.message,
       stack: error.stack,
@@ -140,14 +140,14 @@ export function errorHandler(
 
 /**
  * 404エラーハンドリングミドルウェア
- * 
+ *
  * @description 存在しないエンドポイントへのアクセス時の処理
  */
 export function notFoundHandler(req: Request, res: Response): void {
   const errorResponse: ErrorResponse = {
     success: false,
     message: `エンドポイント ${req.method} ${req.path} が見つかりません`,
-    code: 'NOT_FOUND',
+    code: "NOT_FOUND",
   };
 
   res.status(404).json(errorResponse);
@@ -155,7 +155,7 @@ export function notFoundHandler(req: Request, res: Response): void {
 
 /**
  * 非同期エラーハンドラー
- * 
+ *
  * @description 非同期関数をラップしてエラーをキャッチする
  */
 export function asyncHandler(fn: Function) {
@@ -168,14 +168,14 @@ export function asyncHandler(fn: Function) {
  * エラーメッセージの定数
  */
 export const ERROR_MESSAGES = {
-  VALIDATION_ERROR: '入力値が正しくありません',
-  UNAUTHORIZED: '認証が必要です',
-  FORBIDDEN: 'アクセス権限がありません',
-  NOT_FOUND: 'リソースが見つかりません',
-  CONFLICT: 'リソースの競合が発生しました',
-  INTERNAL_ERROR: 'サーバーエラーが発生しました',
-  RATE_LIMIT_EXCEEDED: 'リクエスト制限に達しました',
-  CSRF_TOKEN_INVALID: 'CSRFトークンが無効です',
-  FILE_UPLOAD_ERROR: 'ファイルアップロードに失敗しました',
-  DATABASE_ERROR: 'データベースエラーが発生しました',
+  VALIDATION_ERROR: "入力値が正しくありません",
+  UNAUTHORIZED: "認証が必要です",
+  FORBIDDEN: "アクセス権限がありません",
+  NOT_FOUND: "リソースが見つかりません",
+  CONFLICT: "リソースの競合が発生しました",
+  INTERNAL_ERROR: "サーバーエラーが発生しました",
+  RATE_LIMIT_EXCEEDED: "リクエスト制限に達しました",
+  CSRF_TOKEN_INVALID: "CSRFトークンが無効です",
+  FILE_UPLOAD_ERROR: "ファイルアップロードに失敗しました",
+  DATABASE_ERROR: "データベースエラーが発生しました",
 } as const;

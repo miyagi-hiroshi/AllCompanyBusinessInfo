@@ -19,9 +19,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useDeleteGLByPeriod, useGLEntries, useSetGLEntriesExclusion } from "@/hooks/useGLEntries";
 import { useToast } from "@/hooks/useToast";
 
@@ -36,7 +49,11 @@ export default function GLImportPage() {
   const { toast } = useToast();
 
   // Fetch GL entries
-  const { data: glEntries = [], isLoading: glLoading, refetch: refetchGL } = useGLEntries({
+  const {
+    data: glEntries = [],
+    isLoading: glLoading,
+    refetch: refetchGL,
+  } = useGLEntries({
     fiscalYear,
     month,
   });
@@ -46,11 +63,11 @@ export default function GLImportPage() {
   // フィルタリング処理
   const filteredGLEntries = glEntries.filter((gl) => {
     if (!searchFilter) return true;
-    
+
     const searchLower = searchFilter.toLowerCase();
     const accountName = gl.accountName?.toLowerCase() || "";
     const description = gl.description?.toLowerCase() || "";
-    
+
     return accountName.includes(searchLower) || description.includes(searchLower);
   });
 
@@ -117,7 +134,7 @@ export default function GLImportPage() {
     // 月が4月以上の場合：fiscalYear-月
     // 月が1-3月の場合：(fiscalYear + 1)-月
     const year = month >= 4 ? fiscalYear : fiscalYear + 1;
-    return `${year}-${month.toString().padStart(2, '0')}`;
+    return `${year}-${month.toString().padStart(2, "0")}`;
   };
 
   const handleDeleteGL = () => {
@@ -221,7 +238,7 @@ export default function GLImportPage() {
                   </SelectContent>
                 </Select>
               </div>
-              
+
               <div className="ml-auto flex gap-2">
                 <Button
                   variant="destructive"
@@ -255,7 +272,9 @@ export default function GLImportPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">総GL件数</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  総GL件数
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold">{glEntries.length}</div>
@@ -278,7 +297,9 @@ export default function GLImportPage() {
 
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-muted-foreground">突合済み</CardTitle>
+                <CardTitle className="text-sm font-medium text-muted-foreground">
+                  突合済み
+                </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="text-3xl font-bold text-success">{matchedCount}</div>
@@ -291,9 +312,7 @@ export default function GLImportPage() {
         {/* GL Exclusion Management */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              GL明細除外管理
-            </CardTitle>
+            <CardTitle className="text-base flex items-center gap-2">GL明細除外管理</CardTitle>
             <CardDescription>
               チェックボックスで選択したGL明細を除外/除外解除できます
             </CardDescription>
@@ -323,7 +342,7 @@ export default function GLImportPage() {
                   </span>
                 )}
               </div>
-              
+
               {/* 検索フィールド */}
               <div className="mb-3">
                 <div className="relative max-w-sm">
@@ -351,10 +370,12 @@ export default function GLImportPage() {
                   </p>
                 )}
               </div>
-              
+
               {glLoading ? (
                 <div className="space-y-2">
-                  {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+                  {[...Array(5)].map((_, i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
+                  ))}
                 </div>
               ) : glEntries.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
@@ -367,10 +388,13 @@ export default function GLImportPage() {
                       <TableRow>
                         <TableHead className="w-12">
                           <Checkbox
-                            checked={filteredGLEntries.length > 0 && selectedGLIds.size === filteredGLEntries.length}
+                            checked={
+                              filteredGLEntries.length > 0 &&
+                              selectedGLIds.size === filteredGLEntries.length
+                            }
                             onCheckedChange={(checked) => {
                               if (checked) {
-                                setSelectedGLIds(new Set(filteredGLEntries.map(gl => gl.id)));
+                                setSelectedGLIds(new Set(filteredGLEntries.map((gl) => gl.id)));
                               } else {
                                 setSelectedGLIds(new Set());
                               }
@@ -408,21 +432,29 @@ export default function GLImportPage() {
                           </TableCell>
                           <TableCell className="font-medium">{gl.voucherNo}</TableCell>
                           <TableCell>{gl.transactionDate}</TableCell>
-                          <TableCell>{gl.accountCode} {gl.accountName}</TableCell>
+                          <TableCell>
+                            {gl.accountCode} {gl.accountName}
+                          </TableCell>
                           <TableCell className="max-w-[200px] truncate">{gl.description}</TableCell>
                           <TableCell>
                             <Badge variant="outline" className="text-xs">
                               {gl.debitCredit}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-right font-mono">{formatCurrency(gl.amount)}</TableCell>
+                          <TableCell className="text-right font-mono">
+                            {formatCurrency(gl.amount)}
+                          </TableCell>
                           <TableCell>
                             {gl.isExcluded === "true" ? (
                               <Badge variant="outline" className="text-xs bg-muted">
                                 除外済
                               </Badge>
                             ) : (
-                              <ReconciliationStatusBadge status={gl.reconciliationStatus as "matched" | "fuzzy" | "unmatched"} />
+                              <ReconciliationStatusBadge
+                                status={
+                                  gl.reconciliationStatus as "matched" | "fuzzy" | "unmatched"
+                                }
+                              />
                             )}
                           </TableCell>
                         </TableRow>
@@ -450,7 +482,7 @@ export default function GLImportPage() {
             <AlertDialogHeader>
               <AlertDialogTitle>GL データ削除の確認</AlertDialogTitle>
               <AlertDialogDescription>
-                期間（{calculatePeriod() || '未選択'}）のGLデータを削除します。
+                期間（{calculatePeriod() || "未選択"}）のGLデータを削除します。
                 <br />
                 突合済みのデータは突合解除後に削除されます。
                 <br />
@@ -473,4 +505,3 @@ export default function GLImportPage() {
     </div>
   );
 }
-

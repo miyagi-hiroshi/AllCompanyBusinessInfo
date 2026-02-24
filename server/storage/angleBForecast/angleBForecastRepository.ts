@@ -116,45 +116,47 @@ export class AngleBForecastRepository {
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await db
-      .delete(angleBForecasts)
-      .where(eq(angleBForecasts.id, id))
-      .returning();
+    const result = await db.delete(angleBForecasts).where(eq(angleBForecasts.id, id)).returning();
 
     return result.length > 0;
   }
 
   /**
    * 年度別月次サマリ取得
-   * 
+   *
    * @param fiscalYear - 年度
    * @param salesPerson - 営業担当者（オプション）
    * @returns 計上年月・計上科目ごとの金額集計
    */
-  async getMonthlySummary(fiscalYear: number, salesPerson?: string): Promise<Array<{
-    accounting_period: string;
-    accounting_item: string;
-    total_amount: string;
-  }>> {
+  async getMonthlySummary(
+    fiscalYear: number,
+    salesPerson?: string
+  ): Promise<
+    Array<{
+      accounting_period: string;
+      accounting_item: string;
+      total_amount: string;
+    }>
+  > {
     // 年度の開始月（4月）から終了月（3月）までの期間を定義
     const startYear = fiscalYear;
     const endYear = fiscalYear + 1;
-    
+
     // WHERE条件を構築
     const whereConditions = [
       sql`${angleBForecasts.accountingPeriod} >= ${`${startYear}-04`}`,
-      sql`${angleBForecasts.accountingPeriod} <= ${`${endYear}-03`}`
+      sql`${angleBForecasts.accountingPeriod} <= ${`${endYear}-03`}`,
     ];
-    
+
     if (salesPerson) {
       whereConditions.push(eq(projects.salesPerson, salesPerson));
     }
-    
+
     const result = await db
       .select({
         accounting_period: angleBForecasts.accountingPeriod,
         accounting_item: angleBForecasts.accountingItem,
-        total_amount: sql<string>`COALESCE(SUM(${angleBForecasts.amount}), 0)`
+        total_amount: sql<string>`COALESCE(SUM(${angleBForecasts.amount}), 0)`,
       })
       .from(angleBForecasts)
       .leftJoin(projects, eq(angleBForecasts.projectId, projects.id))
@@ -167,57 +169,76 @@ export class AngleBForecastRepository {
 
   /**
    * 営業担当者別・サービス区分別サマリ取得（角度Bのみ）
-   * 
+   *
    * @param fiscalYear - 年度
    * @param salesPersons - 営業担当者リスト（オプション）
    * @returns 営業担当者別・サービス区分別の集計データ
    */
-  async getSalesPersonSummary(fiscalYear: number, salesPersons?: string[]): Promise<Array<{
-    sales_person: string;
-    service_type: string;
-    analysis_type: string;
-    accounting_item: string;
-    total_amount: string;
-  }>> {
+  async getSalesPersonSummary(
+    fiscalYear: number,
+    salesPersons?: string[]
+  ): Promise<
+    Array<{
+      sales_person: string;
+      service_type: string;
+      analysis_type: string;
+      accounting_item: string;
+      total_amount: string;
+    }>
+  > {
     const startYear = fiscalYear;
     const endYear = fiscalYear + 1;
-    
+
     // WHERE条件を構築
     const whereConditions = [
       sql`${angleBForecasts.accountingPeriod} >= ${`${startYear}-04`}`,
       sql`${angleBForecasts.accountingPeriod} <= ${`${endYear}-03`}`,
       sql`${projects.salesPerson} IS NOT NULL`,
       sql`${projects.serviceType} IS NOT NULL`,
-      sql`${projects.analysisType} IS NOT NULL`
+      sql`${projects.analysisType} IS NOT NULL`,
     ];
-    
+
     // 営業担当者フィルタ
     if (salesPersons && salesPersons.length > 0) {
       whereConditions.push(inArray(projects.salesPerson, salesPersons));
     }
-    
+
     const result = await db
       .select({
         sales_person: projects.salesPerson,
         service_type: projects.serviceType,
         analysis_type: projects.analysisType,
         accounting_item: angleBForecasts.accountingItem,
-        total_amount: sql<string>`COALESCE(SUM(${angleBForecasts.amount}), 0)`
+        total_amount: sql<string>`COALESCE(SUM(${angleBForecasts.amount}), 0)`,
       })
       .from(angleBForecasts)
       .leftJoin(projects, eq(angleBForecasts.projectId, projects.id))
       .where(and(...whereConditions))
-      .groupBy(projects.salesPerson, projects.serviceType, projects.analysisType, angleBForecasts.accountingItem)
-      .orderBy(projects.salesPerson, projects.serviceType, projects.analysisType, angleBForecasts.accountingItem);
-    
+      .groupBy(
+        projects.salesPerson,
+        projects.serviceType,
+        projects.analysisType,
+        angleBForecasts.accountingItem
+      )
+      .orderBy(
+        projects.salesPerson,
+        projects.serviceType,
+        projects.analysisType,
+        angleBForecasts.accountingItem
+      );
+
     // nullを除外して型安全性を確保
-    return result.filter((row): row is {
-      sales_person: string;
-      service_type: string;
-      analysis_type: string;
-      accounting_item: string;
-      total_amount: string;
-    } => row.sales_person !== null && row.service_type !== null && row.analysis_type !== null);
+    return result.filter(
+      (
+        row
+      ): row is {
+        sales_person: string;
+        service_type: string;
+        analysis_type: string;
+        accounting_item: string;
+        total_amount: string;
+      } => row.sales_person !== null && row.service_type !== null && row.analysis_type !== null
+    );
   }
 
   private buildWhereConditions(filter?: AngleBForecastFilter) {
@@ -305,4 +326,3 @@ export class AngleBForecastRepository {
     return conditions.length > 0 ? and(...conditions) : undefined;
   }
 }
-

@@ -64,15 +64,11 @@ export function LoginForm({ onLogin, isLoggingIn }: LoginFormProps) {
                 autoComplete="current-password"
               />
             </div>
-            <Button 
-              type="submit" 
-              className="w-full" 
-              disabled={isLoggingIn || !email || !password}
-            >
+            <Button type="submit" className="w-full" disabled={isLoggingIn || !email || !password}>
               {isLoggingIn ? "ログイン中..." : "ログイン"}
             </Button>
           </form>
-          
+
           {/* 管理者ログイン機能を一時的に無効化 */}
           {/* <div className="mt-6 space-y-2">
             <div className="relative">
@@ -95,7 +91,7 @@ export function LoginForm({ onLogin, isLoggingIn }: LoginFormProps) {
               管理者としてログイン
             </Button>
           </div> */}
-          
+
           <div className="mt-4 p-3 bg-muted rounded-lg">
             <p className="text-sm text-muted-foreground">
               <strong>注意:</strong> この認証システムは既存システムと統合されています。

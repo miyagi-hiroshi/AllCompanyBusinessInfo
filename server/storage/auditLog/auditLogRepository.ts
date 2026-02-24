@@ -1,6 +1,6 @@
 /**
  * 監査ログリポジトリ
- * 
+ *
  * 責務:
  * - 操作ログの記録
  * - データ変更履歴の追跡
@@ -72,39 +72,43 @@ export class AuditLogRepository {
    * 監査ログを取得
    */
   async findById(id: string): Promise<AuditLog | null> {
-    return this.auditLogs.find(log => log.id === id) || null;
+    return this.auditLogs.find((log) => log.id === id) || null;
   }
 
   /**
    * 監査ログを検索
    */
-  async search(filter: AuditLogFilter, limit: number = 100, offset: number = 0): Promise<AuditLog[]> {
+  async search(
+    filter: AuditLogFilter,
+    limit: number = 100,
+    offset: number = 0
+  ): Promise<AuditLog[]> {
     let filteredLogs = this.auditLogs;
 
     // フィルタリング
     if (filter.userId) {
-      filteredLogs = filteredLogs.filter(log => log.userId === filter.userId);
+      filteredLogs = filteredLogs.filter((log) => log.userId === filter.userId);
     }
     if (filter.employeeId) {
-      filteredLogs = filteredLogs.filter(log => log.employeeId === filter.employeeId);
+      filteredLogs = filteredLogs.filter((log) => log.employeeId === filter.employeeId);
     }
     if (filter.action) {
-      filteredLogs = filteredLogs.filter(log => log.action === filter.action);
+      filteredLogs = filteredLogs.filter((log) => log.action === filter.action);
     }
     if (filter.resource) {
-      filteredLogs = filteredLogs.filter(log => log.resource === filter.resource);
+      filteredLogs = filteredLogs.filter((log) => log.resource === filter.resource);
     }
     if (filter.resourceId) {
-      filteredLogs = filteredLogs.filter(log => log.resourceId === filter.resourceId);
+      filteredLogs = filteredLogs.filter((log) => log.resourceId === filter.resourceId);
     }
     if (filter.startDate) {
-      filteredLogs = filteredLogs.filter(log => log.timestamp >= filter.startDate!);
+      filteredLogs = filteredLogs.filter((log) => log.timestamp >= filter.startDate!);
     }
     if (filter.endDate) {
-      filteredLogs = filteredLogs.filter(log => log.timestamp <= filter.endDate!);
+      filteredLogs = filteredLogs.filter((log) => log.timestamp <= filter.endDate!);
     }
     if (filter.ipAddress) {
-      filteredLogs = filteredLogs.filter(log => log.ipAddress === filter.ipAddress);
+      filteredLogs = filteredLogs.filter((log) => log.ipAddress === filter.ipAddress);
     }
 
     // ソート（新しい順）
@@ -127,7 +131,7 @@ export class AuditLogRepository {
    */
   async getResourceHistory(resource: string, resourceId: string): Promise<AuditLog[]> {
     return this.auditLogs
-      .filter(log => log.resource === resource && log.resourceId === resourceId)
+      .filter((log) => log.resource === resource && log.resourceId === resourceId)
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   }
 
@@ -136,7 +140,7 @@ export class AuditLogRepository {
    */
   async getUserHistory(userId: string, limit: number = 50): Promise<AuditLog[]> {
     return this.auditLogs
-      .filter(log => log.userId === userId)
+      .filter((log) => log.userId === userId)
       .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
       .slice(0, limit);
   }
@@ -184,8 +188,8 @@ export class AuditLogRepository {
     return this.create({
       userId,
       employeeId,
-      action: success ? 'LOGIN_SUCCESS' : 'LOGIN_FAILED',
-      resource: 'AUTH',
+      action: success ? "LOGIN_SUCCESS" : "LOGIN_FAILED",
+      resource: "AUTH",
       ipAddress,
       userAgent,
       sessionId,
@@ -206,8 +210,8 @@ export class AuditLogRepository {
     return this.create({
       userId,
       employeeId,
-      action: 'LOGOUT',
-      resource: 'AUTH',
+      action: "LOGOUT",
+      resource: "AUTH",
       ipAddress,
       userAgent,
       sessionId,
@@ -229,8 +233,8 @@ export class AuditLogRepository {
     return this.create({
       userId,
       employeeId,
-      action: 'FILE_UPLOAD',
-      resource: 'FILE',
+      action: "FILE_UPLOAD",
+      resource: "FILE",
       ipAddress,
       userAgent,
       sessionId,
@@ -257,7 +261,7 @@ export class AuditLogRepository {
     return this.create({
       userId,
       employeeId,
-      action: 'DATA_EXPORT',
+      action: "DATA_EXPORT",
       resource,
       ipAddress,
       userAgent,
@@ -277,8 +281,8 @@ export class AuditLogRepository {
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
 
     const initialCount = this.auditLogs.length;
-    this.auditLogs = this.auditLogs.filter(log => log.timestamp >= cutoffDate);
-    
+    this.auditLogs = this.auditLogs.filter((log) => log.timestamp >= cutoffDate);
+
     return initialCount - this.auditLogs.length;
   }
 }

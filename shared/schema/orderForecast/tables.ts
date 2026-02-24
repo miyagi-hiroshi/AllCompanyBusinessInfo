@@ -6,7 +6,9 @@ const appSchema = pgSchema("app");
 
 // 受発注データ (Order/Sales Forecast Data)
 export const orderForecasts = appSchema.table("order_forecasts", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   projectId: varchar("project_id").notNull(),
   projectCode: text("project_code").notNull(),
   projectName: text("project_name").notNull(),
@@ -23,11 +25,11 @@ export const orderForecasts = appSchema.table("order_forecasts", {
   glMatchId: varchar("gl_match_id"), // 突合されたGL IDへの参照
   isExcluded: text("is_excluded").notNull().default("false"), // 突合対象外フラグ (true/false)
   exclusionReason: text("exclusion_reason"), // 除外理由
-  
+
   // 既存システムとの関連（参照専用、外部キー制約なし）
   createdByUserId: varchar("created_by_user_id"), // 作成者ユーザーID（参照専用）
   createdByEmployeeId: varchar("created_by_employee_id"), // 作成者従業員ID（参照専用）
-  
+
   version: integer("version").notNull().default(1), // 楽観ロック用
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),

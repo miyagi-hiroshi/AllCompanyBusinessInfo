@@ -45,7 +45,8 @@ export function GLReconciliationPanel({
   const [internalSelectedOrderId, setInternalSelectedOrderId] = useState<string | null>(null);
 
   // Use external selected order ID if provided, otherwise use internal state
-  const selectedOrderId = externalSelectedOrderId !== undefined ? externalSelectedOrderId : internalSelectedOrderId;
+  const selectedOrderId =
+    externalSelectedOrderId !== undefined ? externalSelectedOrderId : internalSelectedOrderId;
   const setSelectedOrderId = onSelectOrder || setInternalSelectedOrderId;
   const [accountCodeFilter, setAccountCodeFilter] = useState("");
   const [searchText, setSearchText] = useState("");
@@ -58,15 +59,15 @@ export function GLReconciliationPanel({
   // 会計項目の選択肢を生成
   const accountingItemOptions = [
     { value: "", label: "すべて", code: "" },
-    ...accountingItems.map(item => ({
+    ...accountingItems.map((item) => ({
       value: item.code,
       label: item.name,
-      code: item.code
-    }))
+      code: item.code,
+    })),
   ];
 
-  const selectedOrder = selectedOrderId 
-    ? orderForecasts.find(o => o.id === selectedOrderId) 
+  const selectedOrder = selectedOrderId
+    ? orderForecasts.find((o) => o.id === selectedOrderId)
     : null;
 
   // Auto-open panel when order is selected
@@ -81,9 +82,9 @@ export function GLReconciliationPanel({
     if (selectedOrder && selectedOrder.reconciliationStatus === "unmatched") {
       // 受発注の計上科目名から対応する科目コードを取得
       const matchingItem = accountingItems.find(
-        item => item.name === selectedOrder.accountingItem
+        (item) => item.name === selectedOrder.accountingItem
       );
-      
+
       // 該当する科目コードがあればセット、なければ""（すべて）
       setAccountCodeFilter(matchingItem?.code || "");
     } else if (!selectedOrder) {
@@ -99,28 +100,32 @@ export function GLReconciliationPanel({
   const matched = orderForecasts.filter((o) => o.reconciliationStatus === "matched");
   const unmatchedGL = glEntries.filter((g) => g.reconciliationStatus === "unmatched");
 
-  const matchRate = orderForecasts.length > 0 
-    ? Math.round((matched.length / orderForecasts.length) * 100) 
-    : 0;
+  const matchRate =
+    orderForecasts.length > 0 ? Math.round((matched.length / orderForecasts.length) * 100) : 0;
 
   // Filter GL entries based on filters
   const filteredGLEntries = useMemo(() => {
-    return glEntries.filter(gl => {
+    return glEntries.filter((gl) => {
       // 突合除外指定されたGLデータは常に非表示
       if (gl.isExcluded === "true") return false;
-      
+
       // 突合済み受発注選択時: glMatchIdに一致するGLデータのみ表示
-      if (selectedOrder && selectedOrder.reconciliationStatus === "matched" && selectedOrder.glMatchId) {
+      if (
+        selectedOrder &&
+        selectedOrder.reconciliationStatus === "matched" &&
+        selectedOrder.glMatchId
+      ) {
         return gl.id === selectedOrder.glMatchId;
       }
-      
+
       // 未突合受発注または選択なしの場合: 既存のフィルタリング処理
       if (unmatchedOnly && gl.reconciliationStatus !== "unmatched") return false;
       if (accountCodeFilter && gl.accountCode !== accountCodeFilter) return false;
       if (searchText) {
         const text = searchText.toLowerCase();
-        return gl.description?.toLowerCase().includes(text) || 
-               gl.voucherNo?.toLowerCase().includes(text);
+        return (
+          gl.description?.toLowerCase().includes(text) || gl.voucherNo?.toLowerCase().includes(text)
+        );
       }
       return true;
     });
@@ -131,7 +136,10 @@ export function GLReconciliationPanel({
 
     try {
       // 既に突合済みの場合は警告を表示
-      if (selectedOrder.reconciliationStatus === "matched" || selectedOrder.reconciliationStatus === "fuzzy") {
+      if (
+        selectedOrder.reconciliationStatus === "matched" ||
+        selectedOrder.reconciliationStatus === "fuzzy"
+      ) {
         toast({
           variant: "destructive",
           title: "突合済みの明細です",
@@ -175,7 +183,7 @@ export function GLReconciliationPanel({
     }
 
     try {
-      await unmatchReconciliation.mutateAsync({ 
+      await unmatchReconciliation.mutateAsync({
         orderId: selectedOrderId,
         glId: selectedOrder.glMatchId,
       });
@@ -202,8 +210,8 @@ export function GLReconciliationPanel({
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button 
-          variant="outline" 
+        <Button
+          variant="outline"
           data-testid="button-open-reconciliation"
           onClick={() => {
             setOpen(true);
@@ -226,8 +234,8 @@ export function GLReconciliationPanel({
             GL突合パネル
           </SheetTitle>
           <SheetDescription>
-            {selectedOrder 
-              ? "GLデータを選択して手動突合を実行します" 
+            {selectedOrder
+              ? "GLデータを選択して手動突合を実行します"
               : `${period}の受発注データとGLデータを突合します`}
           </SheetDescription>
         </SheetHeader>
@@ -245,7 +253,7 @@ export function GLReconciliationPanel({
                     <span className="text-muted-foreground">{matched.length}件</span>
                   </div>
                 </div>
-                
+
                 <div className="border rounded-md p-4 space-y-2">
                   <div className="text-sm text-muted-foreground">総GL件数</div>
                   <div className="text-2xl font-bold">{glEntries.length}</div>
@@ -279,13 +287,16 @@ export function GLReconciliationPanel({
                 >
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   厳格突合実行
-                  <span className="ml-2 text-xs opacity-80">（月度 + 計上科目 + 摘要文 + 金額）</span>
+                  <span className="ml-2 text-xs opacity-80">
+                    （月度 + 計上科目 + 摘要文 + 金額）
+                  </span>
                 </Button>
               </div>
 
               <div className="border-t pt-4">
                 <p className="text-sm text-muted-foreground mb-2">
-                  💡 <strong>手動突合の方法:</strong><br />
+                  💡 <strong>手動突合の方法:</strong>
+                  <br />
                   受発注見込み入力画面のグリッドで明細を選択すると、このパネルでGLデータを選択して手動突合できます。
                 </p>
               </div>
@@ -296,22 +307,31 @@ export function GLReconciliationPanel({
               <div className="border rounded-md p-4 space-y-2 bg-primary/5">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">選択された受発注見込み</span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedOrderId(null)}
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedOrderId(null)}>
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
                 <div className="space-y-1 text-sm">
-                  <div><strong>プロジェクト:</strong> {selectedOrder.projectName}</div>
-                  <div><strong>摘要:</strong> {selectedOrder.description}</div>
-                  <div><strong>計上年月:</strong> {selectedOrder.accountingPeriod}</div>
-                  <div><strong>金額:</strong> <span className="font-mono">{formatCurrency(selectedOrder.amount)}</span></div>
+                  <div>
+                    <strong>プロジェクト:</strong> {selectedOrder.projectName}
+                  </div>
+                  <div>
+                    <strong>摘要:</strong> {selectedOrder.description}
+                  </div>
+                  <div>
+                    <strong>計上年月:</strong> {selectedOrder.accountingPeriod}
+                  </div>
+                  <div>
+                    <strong>金額:</strong>{" "}
+                    <span className="font-mono">{formatCurrency(selectedOrder.amount)}</span>
+                  </div>
                   <div className="flex items-center gap-2">
                     <strong>状態:</strong>
-                    <ReconciliationStatusBadge status={selectedOrder.reconciliationStatus as "matched" | "fuzzy" | "unmatched"} />
+                    <ReconciliationStatusBadge
+                      status={
+                        selectedOrder.reconciliationStatus as "matched" | "fuzzy" | "unmatched"
+                      }
+                    />
                   </div>
                 </div>
                 {selectedOrder.reconciliationStatus === "matched" && (
@@ -332,7 +352,7 @@ export function GLReconciliationPanel({
                   <Filter className="h-4 w-4" />
                   GLデータをフィルタ
                 </Label>
-                
+
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <Search className="h-4 w-4 text-muted-foreground" />
@@ -343,7 +363,7 @@ export function GLReconciliationPanel({
                       className="flex-1"
                     />
                   </div>
-                  
+
                   <AutocompleteSelect
                     value={accountCodeFilter}
                     onChange={(value) => setAccountCodeFilter(value)}
@@ -352,12 +372,9 @@ export function GLReconciliationPanel({
                     searchPlaceholder="科目コードまたは名称で検索..."
                     emptyText="該当する科目がありません"
                   />
-                  
+
                   <div className="flex items-center gap-2">
-                    <Switch
-                      checked={unmatchedOnly}
-                      onCheckedChange={setUnmatchedOnly}
-                    />
+                    <Switch checked={unmatchedOnly} onCheckedChange={setUnmatchedOnly} />
                     <Label className="text-sm">未突合のみ表示</Label>
                   </div>
                 </div>
@@ -365,9 +382,7 @@ export function GLReconciliationPanel({
 
               {/* GL List */}
               <div className="space-y-2">
-                <div className="text-sm font-medium">
-                  GLデータ ({filteredGLEntries.length}件)
-                </div>
+                <div className="text-sm font-medium">GLデータ ({filteredGLEntries.length}件)</div>
                 {filteredGLEntries.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <AlertCircle className="h-8 w-8 mx-auto mb-2" />
@@ -385,7 +400,9 @@ export function GLReconciliationPanel({
                         <div className="space-y-1">
                           <div className="flex items-center justify-between">
                             <span className="font-medium">{gl.voucherNo}</span>
-                            <ReconciliationStatusBadge status={gl.reconciliationStatus as "matched" | "fuzzy" | "unmatched"} />
+                            <ReconciliationStatusBadge
+                              status={gl.reconciliationStatus as "matched" | "fuzzy" | "unmatched"}
+                            />
                           </div>
                           <div className="text-xs text-muted-foreground">
                             {gl.transactionDate} | {gl.accountCode} {gl.accountName}
@@ -395,7 +412,9 @@ export function GLReconciliationPanel({
                             <Badge variant="outline" className="text-xs">
                               {gl.debitCredit}
                             </Badge>
-                            <span className="font-mono font-medium">{formatCurrency(gl.amount)}</span>
+                            <span className="font-mono font-medium">
+                              {formatCurrency(gl.amount)}
+                            </span>
                           </div>
                         </div>
                       </button>

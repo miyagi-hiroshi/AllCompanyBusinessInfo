@@ -5,13 +5,13 @@ import { auditDataChanges } from "./middleware/auditMiddleware";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 import { setupSecurityMiddleware } from "./middleware/security";
 import { registerRoutes } from "./routes";
-import { log,serveStatic, setupVite } from "./vite";
+import { log, serveStatic, setupVite } from "./vite";
 
 const app = express();
 
 // 本番環境ではリバースプロキシ（Nginx/Cloudflare）を信頼
-if (process.env.NODE_ENV === 'production') {
-  app.set('trust proxy', 1); // 最初のプロキシを信頼
+if (process.env.NODE_ENV === "production") {
+  app.set("trust proxy", 1); // 最初のプロキシを信頼
 }
 
 app.use(express.json());
@@ -80,13 +80,13 @@ void (async () => {
   // Other ports are firewalled. Default to 5000 if not specified.
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
-  const port = parseInt(process.env.PORT || '5000', 10);
-  const isWindows = process.platform === 'win32';
-  
-  const listenOptions = isWindows 
+  const port = parseInt(process.env.PORT || "5000", 10);
+  const isWindows = process.platform === "win32";
+
+  const listenOptions = isWindows
     ? { port, host: "localhost" }
     : { port, host: "0.0.0.0", reusePort: true };
-    
+
   server.listen(listenOptions, () => {
     log(`serving on port ${port}`);
   });

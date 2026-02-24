@@ -1,12 +1,12 @@
-import crypto from 'crypto';
-import express, { type Request, Response } from 'express';
-import { promisify } from 'util';
-import { z } from 'zod';
+import crypto from "crypto";
+import express, { type Request, Response } from "express";
+import { promisify } from "util";
+import { z } from "zod";
 
-import { isAuthenticated } from '../middleware/auth';
-import { CSRFProtection } from '../middleware/csrf';
-import { getExistingEmployeeByUserId,getExistingUserByEmail } from '../storage/existing';
-import { sessionRepository } from '../storage/session';
+import { isAuthenticated } from "../middleware/auth";
+import { CSRFProtection } from "../middleware/csrf";
+import { getExistingEmployeeByUserId, getExistingUserByEmail } from "../storage/existing";
+import { sessionRepository } from "../storage/session";
 
 const csrfProtection = new CSRFProtection();
 
@@ -16,12 +16,12 @@ const scryptAsync = promisify(crypto.scrypt);
 // 既存システムと同じパスワード検証関数
 async function verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
   try {
-    const [hash, salt] = hashedPassword.split('.');
+    const [hash, salt] = hashedPassword.split(".");
     if (!hash || !salt) return false;
-    
+
     const buf = (await scryptAsync(password, salt, 64)) as Buffer;
     const computedHash = buf.toString("hex");
-    
+
     return computedHash === hash;
   } catch (_error) {
     return false;
@@ -40,25 +40,25 @@ const loginSchema = z.object({
  * ログインAPI
  * POST /api/auth/login
  */
-router.post('/login', async (req: Request, res: Response) => {
+router.post("/login", async (req: Request, res: Response) => {
   try {
     const { email, password } = loginSchema.parse(req.body);
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🔑 ログイン試行:', { email });
+
+    if (process.env.NODE_ENV === "development") {
+      console.log("🔑 ログイン試行:", { email });
     }
-    
+
     // 既存システムからユーザー情報を取得
     const user = await getExistingUserByEmail(email);
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log('👤 ユーザー取得結果:', user ? '成功' : '失敗');
+
+    if (process.env.NODE_ENV === "development") {
+      console.log("👤 ユーザー取得結果:", user ? "成功" : "失敗");
     }
-    
+
     if (!user) {
       return res.status(401).json({
         success: false,
-        message: 'メールアドレスまたはパスワードが正しくありません'
+        message: "メールアドレスまたはパスワードが正しくありません",
       });
     }
 
@@ -66,38 +66,38 @@ router.post('/login', async (req: Request, res: Response) => {
     if (!user.password) {
       return res.status(401).json({
         success: false,
-        message: 'メールアドレスまたはパスワードが正しくありません'
+        message: "メールアドレスまたはパスワードが正しくありません",
       });
     }
-    
+
     const isPasswordValid = await verifyPassword(password, user.password);
-    
+
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        message: 'メールアドレスまたはパスワードが正しくありません'
+        message: "メールアドレスまたはパスワードが正しくありません",
       });
     }
 
     // 既存システムから従業員情報を取得
     const employee = await getExistingEmployeeByUserId(user.id);
-    
+
     // 管理者ユーザーの場合は常にログインを許可
-    const isAdmin = user.id === 'admin';
-    
+    const isAdmin = user.id === "admin";
+
     // ログイン権限チェック
     if (!isAdmin && !employee) {
       return res.status(403).json({
         success: false,
-        message: 'ログイン権限がありません'
+        message: "ログイン権限がありません",
       });
     }
 
     // 退職者チェック（在籍中のみログイン可）
-    if (!isAdmin && employee && employee.status !== 'active') {
+    if (!isAdmin && employee && employee.status !== "active") {
       return res.status(403).json({
         success: false,
-        message: 'ログインできません'
+        message: "ログインできません",
       });
     }
 
@@ -105,38 +105,40 @@ router.post('/login', async (req: Request, res: Response) => {
     const hasLoginPermission =
       isAdmin ||
       (employee && employee.jobPositionLevel !== null && employee.jobPositionLevel >= 2) ||
-      (employee && employee.jobTypeId !== null && (employee.jobTypeId === 5 || employee.jobTypeId === 1));
+      (employee &&
+        employee.jobTypeId !== null &&
+        (employee.jobTypeId === 5 || employee.jobTypeId === 1));
 
     if (!hasLoginPermission) {
       return res.status(403).json({
         success: false,
-        message: 'ログイン権限がありません'
+        message: "ログイン権限がありません",
       });
     }
-    
+
     // セッションをDBに保存（2時間有効）
     const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000); // 2時間後
     const session = await sessionRepository.create(user.id, expiresAt);
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🎫 セッション作成:', {
-        sessionId: session.id.substring(0, 8) + '...',
+
+    if (process.env.NODE_ENV === "development") {
+      console.log("🎫 セッション作成:", {
+        sessionId: session.id.substring(0, 8) + "...",
         userId: user.id,
-        expiresAt: expiresAt.toISOString()
+        expiresAt: expiresAt.toISOString(),
       });
     }
-    
+
     // HTTPOnly Cookieでセッション保存
-    res.cookie('sessionId', session.id, {
+    res.cookie("sessionId", session.id, {
       httpOnly: true, // XSS攻撃対策
-      secure: process.env.NODE_ENV === 'production', // HTTPS通信時のみ送信（本番環境）
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax', // CSRF攻撃対策（開発環境ではlax）
+      secure: process.env.NODE_ENV === "production", // HTTPS通信時のみ送信（本番環境）
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax", // CSRF攻撃対策（開発環境ではlax）
       maxAge: 2 * 60 * 60 * 1000, // 2時間
-      path: '/', // すべてのパスでCookieを送信
+      path: "/", // すべてのパスでCookieを送信
     });
-    
-    if (process.env.NODE_ENV === 'development') {
-      console.log('🍪 Cookie設定完了');
+
+    if (process.env.NODE_ENV === "development") {
+      console.log("🍪 Cookie設定完了");
     }
 
     res.json({
@@ -149,29 +151,31 @@ router.post('/login', async (req: Request, res: Response) => {
           lastName: user.lastName,
           isFirstLogin: user.isFirstLogin,
         },
-        employee: employee ? {
-          id: employee.id,
-          employeeId: employee.employeeId,
-          firstName: employee.firstName,
-          lastName: employee.lastName,
-          departmentId: employee.departmentId,
-          status: employee.status,
-        } : null,
+        employee: employee
+          ? {
+              id: employee.id,
+              employeeId: employee.employeeId,
+              firstName: employee.firstName,
+              lastName: employee.lastName,
+              departmentId: employee.departmentId,
+              status: employee.status,
+            }
+          : null,
       },
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '入力値が正しくありません',
+        message: "入力値が正しくありません",
         errors: error.errors,
       });
     }
 
-    console.error('ログインエラー:', error);
+    console.error("ログインエラー:", error);
     res.status(500).json({
       success: false,
-      message: 'ログイン処理中にエラーが発生しました',
+      message: "ログイン処理中にエラーが発生しました",
     });
   }
 });
@@ -180,43 +184,43 @@ router.post('/login', async (req: Request, res: Response) => {
  * ログアウトAPI
  * POST /api/auth/logout
  */
-router.post('/logout', async (req: Request, res: Response) => {
+router.post("/logout", async (req: Request, res: Response) => {
   try {
     // CookieからセッションIDを取得
     const sessionId = req.cookies?.sessionId;
-    
+
     if (sessionId) {
       // セッションをDBから削除
       await sessionRepository.delete(sessionId);
     }
-    
+
     // HTTPOnly Cookieを削除
-    res.clearCookie('sessionId', {
+    res.clearCookie("sessionId", {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: process.env.NODE_ENV === 'production' ? 'strict' : 'lax',
-      path: '/',
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "strict" : "lax",
+      path: "/",
     });
-    
+
     res.json({
       success: true,
-      message: 'ログアウトしました',
+      message: "ログアウトしました",
     });
   } catch (error) {
-    console.error('ログアウトエラー:', error);
+    console.error("ログアウトエラー:", error);
     res.status(500).json({
       success: false,
-      message: 'ログアウト処理中にエラーが発生しました',
+      message: "ログアウト処理中にエラーが発生しました",
     });
   }
 });
 
 // テスト用: 401エラーを発生させるエンドポイント
-router.get('/test-401', (req: Request, res: Response) => {
-  console.log('🔍 /api/auth/test-401 が呼び出されました');
+router.get("/test-401", (req: Request, res: Response) => {
+  console.log("🔍 /api/auth/test-401 が呼び出されました");
   res.status(401).json({
     success: false,
-    message: '認証が必要です',
+    message: "認証が必要です",
   });
 });
 
@@ -224,10 +228,10 @@ router.get('/test-401', (req: Request, res: Response) => {
  * ユーザー情報取得API
  * GET /api/auth/me
  */
-router.get('/me', isAuthenticated, async (req: Request, res: Response) => {
+router.get("/me", isAuthenticated, async (req: Request, res: Response) => {
   try {
     const user = (req as any).user;
-    
+
     res.json({
       success: true,
       data: {
@@ -242,10 +246,10 @@ router.get('/me', isAuthenticated, async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
-    console.error('ユーザー情報取得エラー:', error);
+    console.error("ユーザー情報取得エラー:", error);
     res.status(500).json({
       success: false,
-      message: 'ユーザー情報の取得中にエラーが発生しました',
+      message: "ユーザー情報の取得中にエラーが発生しました",
     });
   }
 });
@@ -254,22 +258,21 @@ router.get('/me', isAuthenticated, async (req: Request, res: Response) => {
  * CSRFトークン取得API
  * GET /api/auth/csrf-token
  */
-router.get('/csrf-token', isAuthenticated, async (req: Request, res: Response) => {
+router.get("/csrf-token", isAuthenticated, async (req: Request, res: Response) => {
   try {
     const token = csrfProtection.generateToken(req);
-    
+
     res.json({
       success: true,
       data: { token },
     });
   } catch (error) {
-    console.error('CSRFトークン生成エラー:', error);
+    console.error("CSRFトークン生成エラー:", error);
     res.status(500).json({
       success: false,
-      message: 'CSRFトークンの生成中にエラーが発生しました',
+      message: "CSRFトークンの生成中にエラーが発生しました",
     });
   }
 });
 
 export default router;
-

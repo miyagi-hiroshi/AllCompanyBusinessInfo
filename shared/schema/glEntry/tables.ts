@@ -6,7 +6,9 @@ const appSchema = pgSchema("app");
 
 // GLデータ (General Ledger Data)
 export const glEntries = appSchema.table("gl_entries", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   voucherNo: text("voucher_no").notNull(), // 伝票番号
   transactionDate: date("transaction_date").notNull(), // 取引日
   accountCode: text("account_code").notNull(), // 勘定科目コード

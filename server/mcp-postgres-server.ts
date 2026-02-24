@@ -282,7 +282,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 // サーバーの起動
 async function main() {
   console.error(`Starting MCP PostgreSQL Server for schema: ${POSTGRES_SCHEMA}`);
-  console.error(`Database: ${DATABASE_URL?.replace(/:[^:@]+@/, ':****@') ?? 'Not configured'}`);
+  console.error(`Database: ${DATABASE_URL?.replace(/:[^:@]+@/, ":****@") ?? "Not configured"}`);
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
@@ -305,5 +305,3 @@ main().catch((error) => {
   console.error("Fatal error:", error);
   process.exit(1);
 });
-
-

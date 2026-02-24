@@ -1,4 +1,14 @@
-import { ArrowDown, ArrowUp, ArrowUpDown, Copy, Loader2, Plus, Save, Search, Trash2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ArrowUpDown,
+  Copy,
+  Loader2,
+  Plus,
+  Save,
+  Search,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useHotkeys } from "react-hotkeys-hook";
 
@@ -9,7 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/useToast";
 import { cn } from "@/lib/utils";
 
-import { type AutocompleteOption,AutocompleteSelect } from "./autocomplete-select";
+import { type AutocompleteOption, AutocompleteSelect } from "./autocomplete-select";
 
 export interface GridColumn {
   key: string;
@@ -24,7 +34,17 @@ export interface GridColumn {
   onToggleChange?: (rowId: string, newValue: boolean) => void;
   onButtonClick?: (rowId: string, value: string | number | boolean | undefined) => void;
   getButtonLabel?: (value: string | number | boolean | undefined) => string;
-  getButtonVariant?: (value: string | number | boolean | undefined) => "default" | "outline" | "secondary" | "ghost" | "link" | "destructive" | "success" | "warning";
+  getButtonVariant?: (
+    value: string | number | boolean | undefined
+  ) =>
+    | "default"
+    | "outline"
+    | "secondary"
+    | "ghost"
+    | "link"
+    | "destructive"
+    | "success"
+    | "warning";
 }
 
 export interface GridRow {
@@ -65,7 +85,7 @@ export function ExcelDataGrid({
   const [editingCell, setEditingCell] = useState<{ rowIndex: number; colKey: string } | null>(null);
   const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
   const [sortBy, setSortBy] = useState<string | null>(null);
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc' | null>(null);
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc" | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(pageSize);
   const gridRef = useRef<HTMLDivElement>(null);
@@ -158,7 +178,7 @@ export function ExcelDataGrid({
       id: `temp-${Date.now()}`,
       _modified: true,
     };
-    
+
     columns.forEach((col) => {
       if (col.type === "number") {
         newRow[col.key] = 0;
@@ -174,7 +194,7 @@ export function ExcelDataGrid({
     // activeCellがある場合はその行の直下に挿入、ない場合は最下行に追加
     let newRows: GridRowData[];
     let insertedRowIndex: number;
-    
+
     if (activeCell) {
       newRows = [...rows];
       insertedRowIndex = activeCell.rowIndex + 1;
@@ -183,9 +203,9 @@ export function ExcelDataGrid({
       newRows = [...rows, newRow];
       insertedRowIndex = newRows.length - 1;
     }
-    
+
     onRowsChange(newRows);
-    
+
     // Focus on first cell of new row
     setTimeout(() => {
       setActiveCell({ rowIndex: insertedRowIndex, colKey: columns[0].key });
@@ -194,8 +214,8 @@ export function ExcelDataGrid({
 
   const handleDeleteRows = () => {
     // 削除可能な行のみをフィルタリング（読み取り専用の行は削除しない）
-    const deletableRows = Array.from(selectedRows).filter(index => !rows[index]._readonly);
-    
+    const deletableRows = Array.from(selectedRows).filter((index) => !rows[index]._readonly);
+
     if (deletableRows.length === 0) {
       toast({
         title: "削除できません",
@@ -204,12 +224,12 @@ export function ExcelDataGrid({
       });
       return;
     }
-    
+
     const newRows = rows.filter((_, index) => !deletableRows.includes(index));
     onRowsChange(newRows);
     setSelectedRows(new Set());
     setActiveCell(null);
-    
+
     toast({
       title: "削除対象に設定しました",
       description: `${deletableRows.length}行を削除対象に設定しました。保存ボタン（Ctrl+Enter）で確定してください。`,
@@ -223,11 +243,11 @@ export function ExcelDataGrid({
       id: `temp-${Date.now()}`,
       _modified: true,
     };
-    
+
     const newRows = [...rows];
     newRows.splice(rowIndex + 1, 0, newRow);
     onRowsChange(newRows);
-    
+
     toast({
       title: "行を複製しました",
       description: "直下に新しい行を追加しました",
@@ -247,16 +267,16 @@ export function ExcelDataGrid({
   const handleHeaderClick = (columnKey: string) => {
     if (sortBy === columnKey) {
       // 同じカラムをクリック: 昇順 → 降順 → ソート解除
-      if (sortOrder === 'asc') {
-        setSortOrder('desc');
-      } else if (sortOrder === 'desc') {
+      if (sortOrder === "asc") {
+        setSortOrder("desc");
+      } else if (sortOrder === "desc") {
         setSortBy(null);
         setSortOrder(null);
       }
     } else {
       // 新しいカラムをクリック: 昇順でソート
       setSortBy(columnKey);
-      setSortOrder('asc');
+      setSortOrder("asc");
     }
   };
 
@@ -267,7 +287,7 @@ export function ExcelDataGrid({
       // プロジェクト列の場合はコードで並び替え
       let aValue: any;
       let bValue: any;
-      
+
       if (sortBy === "projectId") {
         aValue = a.projectCode;
         bValue = b.projectCode;
@@ -275,17 +295,17 @@ export function ExcelDataGrid({
         aValue = a[sortBy];
         bValue = b[sortBy];
       }
-      
+
       // null/undefined を末尾に
       if (aValue == null && bValue == null) return 0;
       if (aValue == null) return 1;
       if (bValue == null) return -1;
-      
+
       // 文字列比較（accountingPeriodは"YYYY-MM"形式なので文字列比較で正しくソート）
       const aStr = String(aValue);
       const bStr = String(bValue);
-      
-      if (sortOrder === 'asc') {
+
+      if (sortOrder === "asc") {
         return aStr.localeCompare(bStr);
       } else {
         return bStr.localeCompare(aStr);
@@ -308,18 +328,16 @@ export function ExcelDataGrid({
 
   const handlePageSizeChange = (size: number) => {
     setItemsPerPage(size);
-    setCurrentPage(1);  // ページを1に戻す
+    setCurrentPage(1); // ページを1に戻す
     if (onPageSizeChange) {
       onPageSizeChange(size);
     }
   };
 
-  const handleKeyDown = (
-    e: React.KeyboardEvent,
-    rowIndex: number,
-    colKey: string
-  ) => {
-    if (!activeCell) {return;}
+  const handleKeyDown = (e: React.KeyboardEvent, rowIndex: number, colKey: string) => {
+    if (!activeCell) {
+      return;
+    }
 
     const colIndex = columns.findIndex((col) => col.key === colKey);
 
@@ -406,23 +424,19 @@ export function ExcelDataGrid({
     const value = row[column.key];
     const isRowReadonly = row._readonly || false;
 
-    const cellClassName = cn(
-      "border-r border-border p-2 text-sm",
-      column.className,
-      {
-        "bg-grid-active ring-2 ring-primary ring-inset": isActive && !isEditing,
-        "bg-background": !isActive,
-        "border-l-4 border-l-warning": row._modified,
-        "bg-grid-error": row._error,
-      }
-    );
+    const cellClassName = cn("border-r border-border p-2 text-sm", column.className, {
+      "bg-grid-active ring-2 ring-primary ring-inset": isActive && !isEditing,
+      "bg-background": !isActive,
+      "border-l-4 border-l-warning": row._modified,
+      "bg-grid-error": row._error,
+    });
 
     // Check for special column types that should render even when readonly
     if (column.type === "toggle") {
       const booleanValue = value === "true" || value === true;
       // Show toggle switch only if reconciliationStatus is not "matched"
       const showToggle = row.reconciliationStatus !== "matched";
-      
+
       return (
         <td
           key={column.key}
@@ -460,7 +474,7 @@ export function ExcelDataGrid({
     if (column.type === "button" && (column.readonly || isRowReadonly)) {
       // Check if row is excluded - if so, show "突合不要" label instead of button
       const isExcluded = row.isExcluded === "true" || row.isExcluded === true;
-      
+
       if (isExcluded) {
         return (
           <td
@@ -485,14 +499,16 @@ export function ExcelDataGrid({
           </td>
         );
       }
-      
-      const buttonLabel = column.getButtonLabel ? column.getButtonLabel(value) : String(value || "");
+
+      const buttonLabel = column.getButtonLabel
+        ? column.getButtonLabel(value)
+        : String(value || "");
       const rawVariant = column.getButtonVariant ? column.getButtonVariant(value) : "outline";
-      
+
       // Map custom variants to standard variants + custom classes
       let buttonVariant: "default" | "outline" | "secondary" | "ghost" | "destructive" = "outline";
       let customClasses = "";
-      
+
       if (rawVariant === "success") {
         buttonVariant = "outline";
         customClasses = "bg-success/20 text-success border-success/30 hover:bg-success/30";
@@ -504,7 +520,7 @@ export function ExcelDataGrid({
       } else {
         buttonVariant = rawVariant;
       }
-      
+
       return (
         <td
           key={column.key}
@@ -543,7 +559,7 @@ export function ExcelDataGrid({
     if (column.readonly || isRowReadonly) {
       // 読み取り専用セルの表示値を決定
       let displayValue = value;
-      
+
       // autocompleteの場合は、関連する名前フィールドから表示値を取得
       if (column.type === "autocomplete") {
         if (column.key.includes("customer") && row.customerName) {
@@ -567,7 +583,7 @@ export function ExcelDataGrid({
           displayValue = option?.label || value;
         }
       }
-      
+
       // 数値型（金額）の場合は、カンマ区切りで小数点以下なしにフォーマット
       if (column.type === "number" && value != null && value !== "") {
         const numValue = typeof value === "number" ? value : parseFloat(String(value));
@@ -575,12 +591,12 @@ export function ExcelDataGrid({
           displayValue = Math.floor(numValue).toLocaleString("ja-JP");
         }
       }
-      
+
       return (
         <td
           key={column.key}
           className={cn(
-            cellClassName, 
+            cellClassName,
             "bg-muted/50 text-muted-foreground",
             column.type === "number" && "text-right"
           )}
@@ -605,7 +621,7 @@ export function ExcelDataGrid({
     if (column.type === "button") {
       // Check if row is excluded - if so, show "突合不要" label instead of button
       const isExcluded = row.isExcluded === "true" || row.isExcluded === true;
-      
+
       if (isExcluded) {
         return (
           <td
@@ -630,14 +646,16 @@ export function ExcelDataGrid({
           </td>
         );
       }
-      
-      const buttonLabel = column.getButtonLabel ? column.getButtonLabel(value) : String(value || "");
+
+      const buttonLabel = column.getButtonLabel
+        ? column.getButtonLabel(value)
+        : String(value || "");
       const rawVariant = column.getButtonVariant ? column.getButtonVariant(value) : "outline";
-      
+
       // Map custom variants to standard variants + custom classes
       let buttonVariant: "default" | "outline" | "secondary" | "ghost" | "destructive" = "outline";
       let customClasses = "";
-      
+
       if (rawVariant === "success") {
         buttonVariant = "outline";
         customClasses = "bg-success/20 text-success border-success/30 hover:bg-success/30";
@@ -649,7 +667,7 @@ export function ExcelDataGrid({
       } else {
         buttonVariant = rawVariant;
       }
-      
+
       return (
         <td
           key={column.key}
@@ -720,7 +738,7 @@ export function ExcelDataGrid({
                   [column.key]: val,
                   _modified: true,
                 };
-                
+
                 // Also update related fields if needed
                 // 空の場合はundefinedにする（空文字を避ける）
                 if (column.key.includes("customer")) {
@@ -736,13 +754,13 @@ export function ExcelDataGrid({
                   updates.itemCode = option.code || undefined;
                   updates.itemName = option.label || undefined;
                 }
-                
+
                 newRows[rowIndex] = {
                   ...newRows[rowIndex],
                   ...updates,
                 };
                 onRowsChange(newRows);
-                
+
                 // Exit editing mode after selection
                 setEditingCell(null);
               }}
@@ -752,10 +770,13 @@ export function ExcelDataGrid({
             />
           ) : (
             <div className="truncate">
-              {column.key === "projectId" 
-                ? (row.projectCode && row.projectName 
-                    ? `${row.projectCode} ${row.projectName}`
-                    : row.projectCode || row.projectName || column.autocompleteOptions.find((opt) => opt.value === value)?.label || value)
+              {column.key === "projectId"
+                ? row.projectCode && row.projectName
+                  ? `${row.projectCode} ${row.projectName}`
+                  : row.projectCode ||
+                    row.projectName ||
+                    column.autocompleteOptions.find((opt) => opt.value === value)?.label ||
+                    value
                 : column.autocompleteOptions.find((opt) => opt.value === value)?.label || value}
             </div>
           )}
@@ -795,23 +816,27 @@ export function ExcelDataGrid({
                     const numValue = typeof value === "number" ? value : parseFloat(String(value));
                     return !isNaN(numValue) ? Math.floor(numValue).toString() : String(value || "");
                   })()
-                : typeof value === "boolean" ? String(value) : String(value || "")
+                : typeof value === "boolean"
+                  ? String(value)
+                  : String(value || "")
             }
             onChange={(e) => handleCellChange(rowIndex, column.key, e.target.value)}
             onBlur={() => setEditingCell(null)}
             autoFocus
-            className={cn("h-8 border-0 p-1 focus-visible:ring-0", column.type === "number" && "text-right")}
+            className={cn(
+              "h-8 border-0 p-1 focus-visible:ring-0",
+              column.type === "number" && "text-right"
+            )}
             data-testid={`input-${rowIndex}-${column.key}`}
           />
         ) : (
           <div className={cn("truncate", column.type === "number" && "font-mono text-right")}>
-            {column.type === "number" && value != null && value !== "" 
+            {column.type === "number" && value != null && value !== ""
               ? (() => {
                   const numValue = typeof value === "number" ? value : parseFloat(String(value));
                   return !isNaN(numValue) ? Math.floor(numValue).toLocaleString("ja-JP") : value;
                 })()
-              : value
-            }
+              : value}
           </div>
         )}
       </td>
@@ -823,12 +848,7 @@ export function ExcelDataGrid({
       {/* Toolbar */}
       <div className="flex items-center justify-between p-4 border-b bg-card/50 backdrop-blur-md sticky top-0 z-10">
         <div className="flex items-center gap-2">
-          <Button
-            variant="default"
-            size="sm"
-            onClick={handleAddRow}
-            data-testid="button-add-row"
-          >
+          <Button variant="default" size="sm" onClick={handleAddRow} data-testid="button-add-row">
             <Plus className="h-4 w-4 mr-1" />
             行追加
             <kbd className="ml-2 pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
@@ -837,7 +857,7 @@ export function ExcelDataGrid({
               <span className="text-xs">↓</span>
             </kbd>
           </Button>
-          
+
           <Button
             variant="outline"
             size="sm"
@@ -853,7 +873,7 @@ export function ExcelDataGrid({
               <span className="text-xs">Del</span>
             </kbd>
           </Button>
-          
+
           {activeCell && (
             <Button
               variant="outline"
@@ -874,12 +894,7 @@ export function ExcelDataGrid({
 
         <div className="flex items-center gap-2">
           {onSearch && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onSearch}
-              data-testid="button-search"
-            >
+            <Button variant="outline" size="sm" onClick={onSearch} data-testid="button-search">
               <Search className="h-4 w-4 mr-1" />
               検索
               <kbd className="ml-2 pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
@@ -888,7 +903,7 @@ export function ExcelDataGrid({
               </kbd>
             </Button>
           )}
-          
+
           {onSave && (
             <Button
               variant="default"
@@ -917,9 +932,7 @@ export function ExcelDataGrid({
         <table className="w-full border-collapse">
           <thead className="sticky top-0 z-10">
             <tr className="bg-muted">
-              <th className="border-r border-border p-2 text-left text-sm font-medium w-12">
-                #
-              </th>
+              <th className="border-r border-border p-2 text-left text-sm font-medium w-12">#</th>
               {columns.map((column) => (
                 <th
                   key={column.key}
@@ -938,7 +951,7 @@ export function ExcelDataGrid({
                     {column.sortable && (
                       <span className="ml-auto">
                         {sortBy === column.key ? (
-                          sortOrder === 'asc' ? (
+                          sortOrder === "asc" ? (
                             <ArrowUp className="h-3 w-3" />
                           ) : (
                             <ArrowDown className="h-3 w-3" />
@@ -955,44 +968,45 @@ export function ExcelDataGrid({
           </thead>
           <tbody>
             {displayedRows.map((row, displayIndex) => {
-              const actualRowIndex = startIndex + displayIndex;  // 実際の行インデックス
+              const actualRowIndex = startIndex + displayIndex; // 実際の行インデックス
               return (
-              <tr
-                key={row.id}
-                className={cn(
-                  "border-b border-border",
-                  selectedRows.has(actualRowIndex) && "bg-primary/10"
-                )}
-                data-testid={`row-${actualRowIndex}`}
-              >
-                <td className="border-r border-border p-2 text-sm text-muted-foreground text-center">
-                  <input
-                    type="checkbox"
-                    checked={selectedRows.has(actualRowIndex)}
-                    onChange={(e) => {
-                      const newSelected = new Set(selectedRows);
-                      if (e.target.checked) {
-                        newSelected.add(actualRowIndex);
-                      } else {
-                        newSelected.delete(actualRowIndex);
-                      }
-                      setSelectedRows(newSelected);
-                      
-                      // 行データの_selectedも更新
-                      const updatedRows = rows.map((r, idx) => {
-                        if (idx === actualRowIndex) {
-                          return { ...r, _selected: e.target.checked };
+                <tr
+                  key={row.id}
+                  className={cn(
+                    "border-b border-border",
+                    selectedRows.has(actualRowIndex) && "bg-primary/10"
+                  )}
+                  data-testid={`row-${actualRowIndex}`}
+                >
+                  <td className="border-r border-border p-2 text-sm text-muted-foreground text-center">
+                    <input
+                      type="checkbox"
+                      checked={selectedRows.has(actualRowIndex)}
+                      onChange={(e) => {
+                        const newSelected = new Set(selectedRows);
+                        if (e.target.checked) {
+                          newSelected.add(actualRowIndex);
+                        } else {
+                          newSelected.delete(actualRowIndex);
                         }
-                        return r;
-                      });
-                      onRowsChange(updatedRows);
-                    }}
-                    data-testid={`checkbox-row-${actualRowIndex}`}
-                  />
-                </td>
-                {columns.map((column) => renderCell(row, actualRowIndex, column))}
-              </tr>
-            )})}
+                        setSelectedRows(newSelected);
+
+                        // 行データの_selectedも更新
+                        const updatedRows = rows.map((r, idx) => {
+                          if (idx === actualRowIndex) {
+                            return { ...r, _selected: e.target.checked };
+                          }
+                          return r;
+                        });
+                        onRowsChange(updatedRows);
+                      }}
+                      data-testid={`checkbox-row-${actualRowIndex}`}
+                    />
+                  </td>
+                  {columns.map((column) => renderCell(row, actualRowIndex, column))}
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -1009,7 +1023,7 @@ export function ExcelDataGrid({
           <span>変更済: {sortedRows.filter((r) => r._modified).length}</span>
           {selectedRows.size > 0 && <span>選択: {selectedRows.size}</span>}
         </div>
-        
+
         {/* ページネーション */}
         <div className="flex items-center gap-3">
           {/* 表示件数選択 */}
@@ -1025,7 +1039,7 @@ export function ExcelDataGrid({
               <option value={100}>100件</option>
             </select>
           </div>
-          
+
           {/* ページネーション */}
           {totalPages > 1 && (
             <div className="flex items-center gap-1">
@@ -1038,7 +1052,7 @@ export function ExcelDataGrid({
               >
                 前へ
               </Button>
-              
+
               {/* ページ番号 */}
               <div className="flex gap-1">
                 {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
@@ -1053,7 +1067,7 @@ export function ExcelDataGrid({
                   } else {
                     pageNum = currentPage - 2 + i;
                   }
-                  
+
                   return (
                     <Button
                       key={pageNum}
@@ -1067,7 +1081,7 @@ export function ExcelDataGrid({
                   );
                 })}
               </div>
-              
+
               <Button
                 size="sm"
                 variant="outline"
@@ -1077,12 +1091,14 @@ export function ExcelDataGrid({
               >
                 次へ
               </Button>
-              
-              <span className="ml-2">{currentPage} / {totalPages}ページ</span>
+
+              <span className="ml-2">
+                {currentPage} / {totalPages}ページ
+              </span>
             </div>
           )}
         </div>
-        
+
         <div className="flex items-center gap-2">
           <span className="text-xs">Tab: 次のセル</span>
           <span className="text-xs">Enter: 編集/確定</span>

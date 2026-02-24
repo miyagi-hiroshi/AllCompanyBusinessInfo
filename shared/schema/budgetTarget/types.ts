@@ -29,17 +29,17 @@ export type UpdateBudgetTarget = Partial<NewBudgetTarget>;
 // ダッシュボード用型定義
 export interface DashboardData {
   fiscalYear: number;
-  revenueBudget: number;      // 売上予算合計
-  revenueActual: number;       // 売上実績合計
-  expenseBudget: number;       // 原価・販管費予算合計
-  expenseActual: number;       // 原価・販管費実績合計
-  profitBudget: number;        // 利益（予算）
-  profitActual: number;        // 利益（実績）
-  profitMarginBudget: number;  // 利益率（予算）
-  profitMarginActual: number;  // 利益率（実績）
-  costRateBudget: number;     // 原価率（予算）
-  costRateActual: number;     // 原価率（実績）
-  productivityPerManMonth: number;     // 生産性PJの粗利合計÷工数合計（円/人月）
+  revenueBudget: number; // 売上予算合計
+  revenueActual: number; // 売上実績合計
+  expenseBudget: number; // 原価・販管費予算合計
+  expenseActual: number; // 原価・販管費実績合計
+  profitBudget: number; // 利益（予算）
+  profitActual: number; // 利益（実績）
+  profitMarginBudget: number; // 利益率（予算）
+  profitMarginActual: number; // 利益率（実績）
+  costRateBudget: number; // 原価率（予算）
+  costRateActual: number; // 原価率（実績）
+  productivityPerManMonth: number; // 生産性PJの粗利合計÷工数合計（円/人月）
   grossProfitTotalByAnalysis: number; // 粗利PJの粗利合計（円）
 }
 
@@ -61,4 +61,3 @@ export interface DashboardServiceComparisonResponse {
   success: boolean;
   data: ServiceRevenueComparison[];
 }
-

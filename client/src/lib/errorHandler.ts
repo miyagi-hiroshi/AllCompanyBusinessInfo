@@ -74,17 +74,20 @@ export const ERROR_MESSAGES = {
  * エラーレスポンスをパースしてAppErrorに変換
  */
 export function parseErrorResponse(response: Response): Promise<AppError> {
-  return response.json().then((data: ErrorResponse) => {
-    const errorType = (data.code as ErrorType) || ErrorType.INTERNAL_ERROR;
-    return new AppError(data.message, errorType, data.code, data.details);
-  }).catch(() => {
-    // JSONパースに失敗した場合
-    return new AppError(
-      `HTTP ${response.status}: ${response.statusText}`,
-      ErrorType.INTERNAL_ERROR,
-      response.status.toString()
-    );
-  });
+  return response
+    .json()
+    .then((data: ErrorResponse) => {
+      const errorType = (data.code as ErrorType) || ErrorType.INTERNAL_ERROR;
+      return new AppError(data.message, errorType, data.code, data.details);
+    })
+    .catch(() => {
+      // JSONパースに失敗した場合
+      return new AppError(
+        `HTTP ${response.status}: ${response.statusText}`,
+        ErrorType.INTERNAL_ERROR,
+        response.status.toString()
+      );
+    });
 }
 
 /**
@@ -115,11 +118,7 @@ export function convertToAppError(error: unknown): AppError {
     }
 
     // その他のエラー
-    return new AppError(
-      error.message,
-      ErrorType.INTERNAL_ERROR,
-      "UNKNOWN_ERROR"
-    );
+    return new AppError(error.message, ErrorType.INTERNAL_ERROR, "UNKNOWN_ERROR");
   }
 
   // 不明なエラー

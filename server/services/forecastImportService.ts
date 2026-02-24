@@ -1,23 +1,23 @@
 /**
  * 受注見込み・角度B案件CSV取込サービス
- * 
+ *
  * 責務:
  * - CSVファイルのパース
  * - データのバリデーション
  * - 受注見込み案件・角度B案件の一括登録
  */
 
-import type { NewAngleBForecast, NewOrderForecast } from '@shared/schema/integrated';
-import { parse } from 'csv-parse';
-import iconv from 'iconv-lite';
-import { Readable } from 'stream';
+import type { NewAngleBForecast, NewOrderForecast } from "@shared/schema/integrated";
+import { parse } from "csv-parse";
+import iconv from "iconv-lite";
+import { Readable } from "stream";
 
-import { db } from '../db';
-import { AppError } from '../middleware/errorHandler';
-import { AccountingItemRepository } from '../storage/accountingItem';
-import { AngleBForecastRepository } from '../storage/angleBForecast';
-import { OrderForecastRepository } from '../storage/orderForecast';
-import { ProjectRepository } from '../storage/project';
+import { db } from "../db";
+import { AppError } from "../middleware/errorHandler";
+import { AccountingItemRepository } from "../storage/accountingItem";
+import { AngleBForecastRepository } from "../storage/angleBForecast";
+import { OrderForecastRepository } from "../storage/orderForecast";
+import { ProjectRepository } from "../storage/project";
 
 export interface ImportResult {
   totalRows: number;
@@ -36,7 +36,7 @@ export class ForecastImportService {
 
   /**
    * 受注見込み案件CSV取込
-   * 
+   *
    * @param fileBuffer - CSVファイルのバッファ
    * @param fiscalYear - 取込対象年度
    * @param userId - 作成者ユーザーID
@@ -57,7 +57,7 @@ export class ForecastImportService {
     try {
       // エンコーディング処理（BOM対応）
       const utf8Content = this.decodeCSV(fileBuffer);
-      
+
       // CSVパース（ヘッダーなし、ダブルクォート対応）
       const rawRows: any[] = [];
       await new Promise<void>((resolve, reject) => {
@@ -65,25 +65,33 @@ export class ForecastImportService {
         let rowIndex = 0;
 
         stream
-          .pipe(parse({
-            columns: ['projectCode', 'accountingItem', 'accountingPeriod', 'description', 'amount'],
-            skipEmptyLines: true,
-            relaxColumnCount: true,
-            trim: true,
-            quote: '"',
-            escape: '"',
-          }))
-          .on('data', (row: any) => {
+          .pipe(
+            parse({
+              columns: [
+                "projectCode",
+                "accountingItem",
+                "accountingPeriod",
+                "description",
+                "amount",
+              ],
+              skipEmptyLines: true,
+              relaxColumnCount: true,
+              trim: true,
+              quote: '"',
+              escape: '"',
+            })
+          )
+          .on("data", (row: any) => {
             rowIndex++;
             totalRows++;
             rawRows.push({ ...row, rowIndex });
           })
-          .on('end', () => {
+          .on("end", () => {
             console.log(`CSVパース完了: 総行数=${totalRows}`);
             resolve();
           })
-          .on('error', (error) => {
-            console.error('CSVパースエラー:', error);
+          .on("error", (error) => {
+            console.error("CSVパースエラー:", error);
             reject(error);
           });
       });
@@ -92,9 +100,15 @@ export class ForecastImportService {
       for (const row of rawRows) {
         try {
           // 必須項目チェック
-          if (!row.projectCode || !row.accountingItem || !row.accountingPeriod || !row.description || !row.amount) {
+          if (
+            !row.projectCode ||
+            !row.accountingItem ||
+            !row.accountingPeriod ||
+            !row.description ||
+            !row.amount
+          ) {
             skippedRows++;
-            errors.push({ row: row.rowIndex, message: '必須項目が不足しています' });
+            errors.push({ row: row.rowIndex, message: "必須項目が不足しています" });
             continue;
           }
 
@@ -103,12 +117,12 @@ export class ForecastImportService {
             String(row.projectCode).trim(),
             fiscalYear
           );
-          
+
           if (!project) {
             skippedRows++;
-            errors.push({ 
-              row: row.rowIndex, 
-              message: `プロジェクトコード "${row.projectCode}" が指定年度のプロジェクトマスタに見つかりません` 
+            errors.push({
+              row: row.rowIndex,
+              message: `プロジェクトコード "${row.projectCode}" が指定年度のプロジェクトマスタに見つかりません`,
             });
             continue;
           }
@@ -117,12 +131,12 @@ export class ForecastImportService {
           const accountingItem = await this.accountingItemRepository.findByName(
             String(row.accountingItem).trim()
           );
-          
+
           if (!accountingItem) {
             skippedRows++;
-            errors.push({ 
-              row: row.rowIndex, 
-              message: `計上科目 "${row.accountingItem}" が見つかりません` 
+            errors.push({
+              row: row.rowIndex,
+              message: `計上科目 "${row.accountingItem}" が見つかりません`,
             });
             continue;
           }
@@ -131,22 +145,22 @@ export class ForecastImportService {
           const accountingPeriod = String(row.accountingPeriod).trim();
           if (!/^\d{4}-\d{2}$/.test(accountingPeriod)) {
             skippedRows++;
-            errors.push({ 
-              row: row.rowIndex, 
-              message: `計上年月の形式が不正です: ${accountingPeriod} (YYYY-MM形式で入力してください)` 
+            errors.push({
+              row: row.rowIndex,
+              message: `計上年月の形式が不正です: ${accountingPeriod} (YYYY-MM形式で入力してください)`,
             });
             continue;
           }
 
           // 金額のバリデーション（カンマ区切り対応）
-          const amountStr = String(row.amount).trim().replace(/,/g, '');
+          const amountStr = String(row.amount).trim().replace(/,/g, "");
           const amount = parseFloat(amountStr);
-          
+
           if (isNaN(amount) || amount <= 0) {
             skippedRows++;
-            errors.push({ 
-              row: row.rowIndex, 
-              message: `金額が不正です: ${row.amount}` 
+            errors.push({
+              row: row.rowIndex,
+              message: `金額が不正です: ${row.amount}`,
             });
             continue;
           }
@@ -163,9 +177,9 @@ export class ForecastImportService {
             accountingItem: accountingItem.name,
             description: String(row.description).trim(),
             amount: amount.toString(),
-            remarks: '',
+            remarks: "",
             period: period,
-            reconciliationStatus: 'unmatched',
+            reconciliationStatus: "unmatched",
             createdByUserId: userId,
             createdByEmployeeId: employeeId,
           };
@@ -174,11 +188,13 @@ export class ForecastImportService {
         } catch (error: any) {
           console.error(`行 ${row.rowIndex} 処理エラー:`, error);
           skippedRows++;
-          errors.push({ row: row.rowIndex, message: error.message || 'データ処理エラー' });
+          errors.push({ row: row.rowIndex, message: error.message || "データ処理エラー" });
         }
       }
 
-      console.log(`データ処理完了: 取込対象=${results.length}, スキップ=${skippedRows}, エラー=${errors.length}`);
+      console.log(
+        `データ処理完了: 取込対象=${results.length}, スキップ=${skippedRows}, エラー=${errors.length}`
+      );
 
       // トランザクション内で一括登録
       if (results.length > 0) {
@@ -196,17 +212,17 @@ export class ForecastImportService {
         errors,
       };
     } catch (error) {
-      console.error('CSV取込エラー:', error);
+      console.error("CSV取込エラー:", error);
       if (error instanceof AppError) {
         throw error;
       }
-      throw new AppError('CSVファイルの取込中にエラーが発生しました', 500);
+      throw new AppError("CSVファイルの取込中にエラーが発生しました", 500);
     }
   }
 
   /**
    * 角度B案件CSV取込
-   * 
+   *
    * @param fileBuffer - CSVファイルのバッファ
    * @param fiscalYear - 取込対象年度
    * @param userId - 作成者ユーザーID
@@ -227,7 +243,7 @@ export class ForecastImportService {
     try {
       // エンコーディング処理（BOM対応）
       const utf8Content = this.decodeCSV(fileBuffer);
-      
+
       // CSVパース（ヘッダーなし、ダブルクォート対応）
       const rawRows: any[] = [];
       await new Promise<void>((resolve, reject) => {
@@ -235,25 +251,33 @@ export class ForecastImportService {
         let rowIndex = 0;
 
         stream
-          .pipe(parse({
-            columns: ['projectCode', 'accountingItem', 'accountingPeriod', 'description', 'amount'],
-            skipEmptyLines: true,
-            relaxColumnCount: true,
-            trim: true,
-            quote: '"',
-            escape: '"',
-          }))
-          .on('data', (row: any) => {
+          .pipe(
+            parse({
+              columns: [
+                "projectCode",
+                "accountingItem",
+                "accountingPeriod",
+                "description",
+                "amount",
+              ],
+              skipEmptyLines: true,
+              relaxColumnCount: true,
+              trim: true,
+              quote: '"',
+              escape: '"',
+            })
+          )
+          .on("data", (row: any) => {
             rowIndex++;
             totalRows++;
             rawRows.push({ ...row, rowIndex });
           })
-          .on('end', () => {
+          .on("end", () => {
             console.log(`CSVパース完了: 総行数=${totalRows}`);
             resolve();
           })
-          .on('error', (error) => {
-            console.error('CSVパースエラー:', error);
+          .on("error", (error) => {
+            console.error("CSVパースエラー:", error);
             reject(error);
           });
       });
@@ -262,9 +286,15 @@ export class ForecastImportService {
       for (const row of rawRows) {
         try {
           // 必須項目チェック
-          if (!row.projectCode || !row.accountingItem || !row.accountingPeriod || !row.description || !row.amount) {
+          if (
+            !row.projectCode ||
+            !row.accountingItem ||
+            !row.accountingPeriod ||
+            !row.description ||
+            !row.amount
+          ) {
             skippedRows++;
-            errors.push({ row: row.rowIndex, message: '必須項目が不足しています' });
+            errors.push({ row: row.rowIndex, message: "必須項目が不足しています" });
             continue;
           }
 
@@ -273,12 +303,12 @@ export class ForecastImportService {
             String(row.projectCode).trim(),
             fiscalYear
           );
-          
+
           if (!project) {
             skippedRows++;
-            errors.push({ 
-              row: row.rowIndex, 
-              message: `プロジェクトコード "${row.projectCode}" が指定年度のプロジェクトマスタに見つかりません` 
+            errors.push({
+              row: row.rowIndex,
+              message: `プロジェクトコード "${row.projectCode}" が指定年度のプロジェクトマスタに見つかりません`,
             });
             continue;
           }
@@ -287,12 +317,12 @@ export class ForecastImportService {
           const accountingItem = await this.accountingItemRepository.findByName(
             String(row.accountingItem).trim()
           );
-          
+
           if (!accountingItem) {
             skippedRows++;
-            errors.push({ 
-              row: row.rowIndex, 
-              message: `計上科目 "${row.accountingItem}" が見つかりません` 
+            errors.push({
+              row: row.rowIndex,
+              message: `計上科目 "${row.accountingItem}" が見つかりません`,
             });
             continue;
           }
@@ -301,22 +331,22 @@ export class ForecastImportService {
           const accountingPeriod = String(row.accountingPeriod).trim();
           if (!/^\d{4}-\d{2}$/.test(accountingPeriod)) {
             skippedRows++;
-            errors.push({ 
-              row: row.rowIndex, 
-              message: `計上年月の形式が不正です: ${accountingPeriod} (YYYY-MM形式で入力してください)` 
+            errors.push({
+              row: row.rowIndex,
+              message: `計上年月の形式が不正です: ${accountingPeriod} (YYYY-MM形式で入力してください)`,
             });
             continue;
           }
 
           // 金額のバリデーション（カンマ区切り対応）
-          const amountStr = String(row.amount).trim().replace(/,/g, '');
+          const amountStr = String(row.amount).trim().replace(/,/g, "");
           const amount = parseFloat(amountStr);
-          
+
           if (isNaN(amount) || amount <= 0) {
             skippedRows++;
-            errors.push({ 
-              row: row.rowIndex, 
-              message: `金額が不正です: ${row.amount}` 
+            errors.push({
+              row: row.rowIndex,
+              message: `金額が不正です: ${row.amount}`,
             });
             continue;
           }
@@ -334,7 +364,7 @@ export class ForecastImportService {
             description: String(row.description).trim(),
             amount: amount.toString(),
             probability: 50, // 固定値
-            remarks: '',
+            remarks: "",
             period: period,
             createdByUserId: userId,
             createdByEmployeeId: employeeId,
@@ -344,11 +374,13 @@ export class ForecastImportService {
         } catch (error: any) {
           console.error(`行 ${row.rowIndex} 処理エラー:`, error);
           skippedRows++;
-          errors.push({ row: row.rowIndex, message: error.message || 'データ処理エラー' });
+          errors.push({ row: row.rowIndex, message: error.message || "データ処理エラー" });
         }
       }
 
-      console.log(`データ処理完了: 取込対象=${results.length}, スキップ=${skippedRows}, エラー=${errors.length}`);
+      console.log(
+        `データ処理完了: 取込対象=${results.length}, スキップ=${skippedRows}, エラー=${errors.length}`
+      );
 
       // トランザクション内で一括登録
       if (results.length > 0) {
@@ -366,34 +398,39 @@ export class ForecastImportService {
         errors,
       };
     } catch (error) {
-      console.error('CSV取込エラー:', error);
+      console.error("CSV取込エラー:", error);
       if (error instanceof AppError) {
         throw error;
       }
-      throw new AppError('CSVファイルの取込中にエラーが発生しました', 500);
+      throw new AppError("CSVファイルの取込中にエラーが発生しました", 500);
     }
   }
 
   /**
    * CSVファイルのエンコーディング処理（BOM対応）
-   * 
+   *
    * @param fileBuffer - CSVファイルのバッファ
    * @returns UTF-8文字列
    */
   private decodeCSV(fileBuffer: Buffer): string {
     // BOM検出（UTF-8 BOM: EF BB BF）
-    if (fileBuffer.length >= 3 && fileBuffer[0] === 0xEF && fileBuffer[1] === 0xBB && fileBuffer[2] === 0xBF) {
-      return fileBuffer.slice(3).toString('utf8');
+    if (
+      fileBuffer.length >= 3 &&
+      fileBuffer[0] === 0xef &&
+      fileBuffer[1] === 0xbb &&
+      fileBuffer[2] === 0xbf
+    ) {
+      return fileBuffer.slice(3).toString("utf8");
     }
 
     // エンコーディング自動検出
-    const encodings = ['utf8', 'shift_jis', 'euc-jp', 'iso-2022-jp'];
-    
+    const encodings = ["utf8", "shift_jis", "euc-jp", "iso-2022-jp"];
+
     for (const enc of encodings) {
       try {
         const decoded = iconv.decode(fileBuffer, enc);
         // 日本語文字の存在確認
-        if (/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(decoded) || enc === 'utf8') {
+        if (/[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(decoded) || enc === "utf8") {
           return decoded;
         }
       } catch (error) {
@@ -402,7 +439,6 @@ export class ForecastImportService {
     }
 
     // デフォルトはUTF-8
-    return fileBuffer.toString('utf8');
+    return fileBuffer.toString("utf8");
   }
 }
-

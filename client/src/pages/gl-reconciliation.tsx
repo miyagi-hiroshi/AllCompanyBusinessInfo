@@ -6,9 +6,22 @@ import { ReconciliationStatusBadge } from "@/components/reconciliation-status-ba
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useGLEntries } from "@/hooks/useGLEntries";
 import { useOrderForecasts } from "@/hooks/useOrderForecasts";
@@ -21,22 +34,29 @@ export default function GLReconciliationPage() {
   const { toast } = useToast();
 
   // Fetch data
-  const { data: orderForecasts = [], isLoading: ordersLoading, refetch: refetchOrders } = useOrderForecasts({
+  const {
+    data: orderForecasts = [],
+    isLoading: ordersLoading,
+    refetch: refetchOrders,
+  } = useOrderForecasts({
     fiscalYear,
     month,
   });
-  const { data: glEntries = [], isLoading: glLoading, refetch: refetchGL } = useGLEntries({
+  const {
+    data: glEntries = [],
+    isLoading: glLoading,
+    refetch: refetchGL,
+  } = useGLEntries({
     fiscalYear,
     month,
   });
   const reconcileMutation = useReconciliation();
-  
+
   // 科目別サマリー
-  const period = month ? `${fiscalYear}-${String(month).padStart(2, '0')}` : undefined;
+  const period = month ? `${fiscalYear}-${String(month).padStart(2, "0")}` : undefined;
   const { data: accountSummary, isLoading: summaryLoading } = useAccountSummary(period);
 
   const isLoading = ordersLoading || glLoading;
-
 
   // Calculate stats
   const matched = orderForecasts.filter((o) => o.reconciliationStatus === "matched");
@@ -45,9 +65,10 @@ export default function GLReconciliationPage() {
   const excluded = orderForecasts.filter((o) => o.reconciliationStatus === "excluded");
   const unmatchedGL = glEntries.filter((g) => g.reconciliationStatus === "unmatched");
 
-  const matchRate = (orderForecasts.length - excluded.length) > 0 
-    ? Math.round((matched.length / (orderForecasts.length - excluded.length)) * 100) 
-    : 0;
+  const matchRate =
+    orderForecasts.length - excluded.length > 0
+      ? Math.round((matched.length / (orderForecasts.length - excluded.length)) * 100)
+      : 0;
 
   const handleReconcile = () => {
     if (!month) {
@@ -89,7 +110,6 @@ export default function GLReconciliationPage() {
     );
   };
 
-
   // Generate year and month options
   const currentYear = new Date().getFullYear();
   const yearOptions = Array.from({ length: 5 }, (_, i) => currentYear - 2 + i);
@@ -104,7 +124,9 @@ export default function GLReconciliationPage() {
       <div className="p-6 space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold" data-testid="text-page-title">GL突合</h1>
+          <h1 className="text-2xl font-bold" data-testid="text-page-title">
+            GL突合
+          </h1>
           <p className="text-muted-foreground mt-1">受発注データとGLデータの突合を管理します</p>
         </div>
 
@@ -140,7 +162,9 @@ export default function GLReconciliationPage() {
                   <label className="text-sm font-medium">月</label>
                   <Select
                     value={month?.toString() || "all"}
-                    onValueChange={(value) => setMonth(value === "all" ? undefined : parseInt(value))}
+                    onValueChange={(value) =>
+                      setMonth(value === "all" ? undefined : parseInt(value))
+                    }
                   >
                     <SelectTrigger className="w-[120px]" data-testid="select-month">
                       <SelectValue placeholder="全て" />
@@ -174,10 +198,12 @@ export default function GLReconciliationPage() {
                 >
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   厳格突合実行
-                  <span className="ml-2 text-xs opacity-80">（月度 + 計上科目 + 摘要文 + 金額）</span>
+                  <span className="ml-2 text-xs opacity-80">
+                    （月度 + 計上科目 + 摘要文 + 金額）
+                  </span>
                 </Button>
               </div>
-              
+
               {/* 既に突合済みのデータ情報 */}
               <div className="text-sm text-muted-foreground">
                 <p>※ 既に突合済みのデータは再突合されません</p>
@@ -229,7 +255,9 @@ export default function GLReconciliationPage() {
                 <div className="text-3xl font-bold">{matched.length}</div>
                 <p className="text-xs text-muted-foreground mt-1">
                   / {orderForecasts.length}件
-                  {excluded.length > 0 && <span className="text-muted-foreground">（除外{excluded.length}件を除く）</span>}
+                  {excluded.length > 0 && (
+                    <span className="text-muted-foreground">（除外{excluded.length}件を除く）</span>
+                  )}
                 </p>
               </CardContent>
             </Card>
@@ -258,7 +286,9 @@ export default function GLReconciliationPage() {
                 <div className="text-3xl font-bold text-destructive">{unmatched.length}</div>
                 <p className="text-xs text-muted-foreground mt-1">
                   受発注: {unmatched.length} / GL: {unmatchedGL.length}
-                  {excluded.length > 0 && <span className="text-muted-foreground">（除外{excluded.length}件を除く）</span>}
+                  {excluded.length > 0 && (
+                    <span className="text-muted-foreground">（除外{excluded.length}件を除く）</span>
+                  )}
                 </p>
               </CardContent>
             </Card>
@@ -268,16 +298,27 @@ export default function GLReconciliationPage() {
         {/* 科目別サマリー */}
         <AccountSummaryCards summary={accountSummary} isLoading={summaryLoading} />
 
-
         {/* Results Tabs */}
         <Tabs defaultValue="all" className="w-full">
           <TabsList>
-            <TabsTrigger value="all" data-testid="tab-all">全て ({orderForecasts.length})</TabsTrigger>
-            <TabsTrigger value="matched" data-testid="tab-matched">突合済 ({matched.length})</TabsTrigger>
-            <TabsTrigger value="fuzzy" data-testid="tab-fuzzy">曖昧一致 ({fuzzy.length})</TabsTrigger>
-            <TabsTrigger value="unmatched" data-testid="tab-unmatched">未突合 ({unmatched.length})</TabsTrigger>
-            <TabsTrigger value="excluded" data-testid="tab-excluded">除外 ({excluded.length})</TabsTrigger>
-            <TabsTrigger value="gl" data-testid="tab-gl">未突合GL ({unmatchedGL.length})</TabsTrigger>
+            <TabsTrigger value="all" data-testid="tab-all">
+              全て ({orderForecasts.length})
+            </TabsTrigger>
+            <TabsTrigger value="matched" data-testid="tab-matched">
+              突合済 ({matched.length})
+            </TabsTrigger>
+            <TabsTrigger value="fuzzy" data-testid="tab-fuzzy">
+              曖昧一致 ({fuzzy.length})
+            </TabsTrigger>
+            <TabsTrigger value="unmatched" data-testid="tab-unmatched">
+              未突合 ({unmatched.length})
+            </TabsTrigger>
+            <TabsTrigger value="excluded" data-testid="tab-excluded">
+              除外 ({excluded.length})
+            </TabsTrigger>
+            <TabsTrigger value="gl" data-testid="tab-gl">
+              未突合GL ({unmatchedGL.length})
+            </TabsTrigger>
           </TabsList>
 
           {/* All Orders */}
@@ -289,7 +330,9 @@ export default function GLReconciliationPage() {
               <CardContent>
                 {isLoading ? (
                   <div className="space-y-2">
-                    {[...Array(5)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}
+                    {[...Array(5)].map((_, i) => (
+                      <Skeleton key={i} className="h-12 w-full" />
+                    ))}
                   </div>
                 ) : orderForecasts.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">データがありません</div>
@@ -312,7 +355,15 @@ export default function GLReconciliationPage() {
                         {orderForecasts.map((order) => (
                           <TableRow key={order.id} data-testid={`order-row-${order.id}`}>
                             <TableCell>
-                              <ReconciliationStatusBadge status={order.reconciliationStatus as "matched" | "fuzzy" | "unmatched" | "excluded"} />
+                              <ReconciliationStatusBadge
+                                status={
+                                  order.reconciliationStatus as
+                                    | "matched"
+                                    | "fuzzy"
+                                    | "unmatched"
+                                    | "excluded"
+                                }
+                              />
                             </TableCell>
                             <TableCell className="font-medium">{order.projectName}</TableCell>
                             <TableCell>{order.salesPerson || "-"}</TableCell>
@@ -320,7 +371,9 @@ export default function GLReconciliationPage() {
                             <TableCell>{order.accountingPeriod}</TableCell>
                             <TableCell>{order.accountingItem}</TableCell>
                             <TableCell>{order.description}</TableCell>
-                            <TableCell className="text-right font-mono">{formatCurrency(order.amount)}</TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatCurrency(order.amount)}
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -342,7 +395,9 @@ export default function GLReconciliationPage() {
               </CardHeader>
               <CardContent>
                 {matched.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">突合済のデータがありません</div>
+                  <div className="text-center py-8 text-muted-foreground">
+                    突合済のデータがありません
+                  </div>
                 ) : (
                   <div className="rounded-md border">
                     <Table>
@@ -359,14 +414,20 @@ export default function GLReconciliationPage() {
                       </TableHeader>
                       <TableBody>
                         {matched.map((order) => (
-                          <TableRow key={order.id} className="bg-success/5" data-testid={`matched-row-${order.id}`}>
+                          <TableRow
+                            key={order.id}
+                            className="bg-success/5"
+                            data-testid={`matched-row-${order.id}`}
+                          >
                             <TableCell className="font-medium">{order.projectName}</TableCell>
                             <TableCell>{order.salesPerson || "-"}</TableCell>
                             <TableCell>{order.customerName}</TableCell>
                             <TableCell>{order.accountingPeriod}</TableCell>
                             <TableCell>{order.accountingItem}</TableCell>
                             <TableCell>{order.description}</TableCell>
-                            <TableCell className="text-right font-mono">{formatCurrency(order.amount)}</TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatCurrency(order.amount)}
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -388,7 +449,9 @@ export default function GLReconciliationPage() {
               </CardHeader>
               <CardContent>
                 {fuzzy.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">曖昧一致のデータがありません</div>
+                  <div className="text-center py-8 text-muted-foreground">
+                    曖昧一致のデータがありません
+                  </div>
                 ) : (
                   <div className="rounded-md border">
                     <Table>
@@ -405,14 +468,20 @@ export default function GLReconciliationPage() {
                       </TableHeader>
                       <TableBody>
                         {fuzzy.map((order) => (
-                          <TableRow key={order.id} className="bg-warning/5" data-testid={`fuzzy-row-${order.id}`}>
+                          <TableRow
+                            key={order.id}
+                            className="bg-warning/5"
+                            data-testid={`fuzzy-row-${order.id}`}
+                          >
                             <TableCell className="font-medium">{order.projectName}</TableCell>
                             <TableCell>{order.salesPerson || "-"}</TableCell>
                             <TableCell>{order.customerName}</TableCell>
                             <TableCell>{order.accountingPeriod}</TableCell>
                             <TableCell>{order.accountingItem}</TableCell>
                             <TableCell>{order.description}</TableCell>
-                            <TableCell className="text-right font-mono">{formatCurrency(order.amount)}</TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatCurrency(order.amount)}
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -434,7 +503,9 @@ export default function GLReconciliationPage() {
               </CardHeader>
               <CardContent>
                 {excluded.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">除外されたデータがありません</div>
+                  <div className="text-center py-8 text-muted-foreground">
+                    除外されたデータがありません
+                  </div>
                 ) : (
                   <div className="rounded-md border">
                     <Table>
@@ -453,7 +524,11 @@ export default function GLReconciliationPage() {
                       </TableHeader>
                       <TableBody>
                         {excluded.map((order) => (
-                          <TableRow key={order.id} className="bg-muted/30" data-testid={`excluded-row-${order.id}`}>
+                          <TableRow
+                            key={order.id}
+                            className="bg-muted/30"
+                            data-testid={`excluded-row-${order.id}`}
+                          >
                             <TableCell>
                               <ReconciliationStatusBadge status="excluded" />
                             </TableCell>
@@ -464,7 +539,9 @@ export default function GLReconciliationPage() {
                             <TableCell>{order.accountingItem}</TableCell>
                             <TableCell>{order.description}</TableCell>
                             <TableCell>{order.exclusionReason || "-"}</TableCell>
-                            <TableCell className="text-right font-mono">{formatCurrency(order.amount)}</TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatCurrency(order.amount)}
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -506,14 +583,20 @@ export default function GLReconciliationPage() {
                       </TableHeader>
                       <TableBody>
                         {unmatched.map((order) => (
-                          <TableRow key={order.id} className="bg-destructive/5" data-testid={`unmatched-row-${order.id}`}>
+                          <TableRow
+                            key={order.id}
+                            className="bg-destructive/5"
+                            data-testid={`unmatched-row-${order.id}`}
+                          >
                             <TableCell className="font-medium">{order.projectName}</TableCell>
                             <TableCell>{order.salesPerson || "-"}</TableCell>
                             <TableCell>{order.customerName}</TableCell>
                             <TableCell>{order.accountingPeriod}</TableCell>
                             <TableCell>{order.accountingItem}</TableCell>
                             <TableCell>{order.description}</TableCell>
-                            <TableCell className="text-right font-mono">{formatCurrency(order.amount)}</TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatCurrency(order.amount)}
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -553,7 +636,11 @@ export default function GLReconciliationPage() {
                       </TableHeader>
                       <TableBody>
                         {unmatchedGL.map((gl) => (
-                          <TableRow key={gl.id} className="bg-destructive/5" data-testid={`unmatched-gl-row-${gl.id}`}>
+                          <TableRow
+                            key={gl.id}
+                            className="bg-destructive/5"
+                            data-testid={`unmatched-gl-row-${gl.id}`}
+                          >
                             <TableCell className="font-medium">{gl.voucherNo}</TableCell>
                             <TableCell>{gl.transactionDate}</TableCell>
                             <TableCell>{gl.accountName}</TableCell>
@@ -562,7 +649,9 @@ export default function GLReconciliationPage() {
                                 {gl.debitCredit}
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-right font-mono">{formatCurrency(gl.amount)}</TableCell>
+                            <TableCell className="text-right font-mono">
+                              {formatCurrency(gl.amount)}
+                            </TableCell>
                           </TableRow>
                         ))}
                       </TableBody>
@@ -572,7 +661,6 @@ export default function GLReconciliationPage() {
               </CardContent>
             </Card>
           </TabsContent>
-
         </Tabs>
       </div>
     </div>

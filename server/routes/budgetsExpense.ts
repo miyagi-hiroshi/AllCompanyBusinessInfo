@@ -1,10 +1,10 @@
-import { insertBudgetExpenseSchema } from '@shared/schema/integrated';
-import express, { type Request, Response } from 'express';
-import { z } from 'zod';
+import { insertBudgetExpenseSchema } from "@shared/schema/integrated";
+import express, { type Request, Response } from "express";
+import { z } from "zod";
 
-import { requireAuth } from '../middleware/auth';
-import { BudgetExpenseService } from '../services/budgetExpenseService';
-import { BudgetExpenseRepository } from '../storage/budgetExpense';
+import { requireAuth } from "../middleware/auth";
+import { BudgetExpenseService } from "../services/budgetExpenseService";
+import { BudgetExpenseRepository } from "../storage/budgetExpense";
 
 const router = express.Router();
 const budgetExpenseRepository = new BudgetExpenseRepository();
@@ -20,21 +20,24 @@ const updateBudgetExpenseSchema = insertBudgetExpenseSchema.partial();
 const searchBudgetExpenseSchema = z.object({
   fiscalYear: z.string().transform(Number).optional(),
   accountingItem: z.string().optional(),
-  page: z.string().transform(Number).optional().default('1'),
-  limit: z.string().transform(Number).optional().default('20'),
-  sortBy: z.enum(['fiscalYear', 'accountingItem', 'budgetAmount', 'createdAt']).optional().default('fiscalYear'),
-  sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+  page: z.string().transform(Number).optional().default("1"),
+  limit: z.string().transform(Number).optional().default("20"),
+  sortBy: z
+    .enum(["fiscalYear", "accountingItem", "budgetAmount", "createdAt"])
+    .optional()
+    .default("fiscalYear"),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
 });
 
 /**
  * 販管費予算一覧取得API
  * GET /api/budgets/expense
  */
-router.get('/', requireAuth, async (req: Request, res: Response) => {
+router.get("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const query = searchBudgetExpenseSchema.parse(req.query);
     const offset = (query.page - 1) * query.limit;
-    
+
     const [budgetsExpense, totalCount] = await Promise.all([
       budgetExpenseRepository.findAll({
         filter: {
@@ -66,14 +69,14 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '検索パラメータが正しくありません',
+        message: "検索パラメータが正しくありません",
         errors: error.errors,
       });
     }
-    console.error('販管費予算一覧取得エラー:', error);
+    console.error("販管費予算一覧取得エラー:", error);
     res.status(500).json({
       success: false,
-      message: '販管費予算一覧の取得中にエラーが発生しました',
+      message: "販管費予算一覧の取得中にエラーが発生しました",
     });
   }
 });
@@ -82,7 +85,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
  * 販管費予算詳細取得API
  * GET /api/budgets/expense/:id
  */
-router.get('/:id', requireAuth, async (req: Request, res: Response) => {
+router.get("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const budgetExpense = await budgetExpenseService.getBudgetExpenseById(id);
@@ -91,10 +94,10 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
       data: budgetExpense,
     });
   } catch (error: unknown) {
-    console.error('販管費予算詳細取得エラー:', error);
+    console.error("販管費予算詳細取得エラー:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : '販管費予算の取得中にエラーが発生しました',
+      message: error instanceof Error ? error.message : "販管費予算の取得中にエラーが発生しました",
     });
   }
 });
@@ -103,7 +106,7 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
  * 販管費予算作成API
  * POST /api/budgets/expense
  */
-router.post('/', requireAuth, async (req: Request, res: Response) => {
+router.post("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const data = createBudgetExpenseSchema.parse(req.body);
     const budgetExpense = await budgetExpenseService.createBudgetExpense(data);
@@ -115,24 +118,24 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '入力データが正しくありません',
+        message: "入力データが正しくありません",
         errors: error.errors,
       });
     }
-    
+
     // PostgreSQLの一意制約違反エラーの場合
-    if (error instanceof Error && error.message.includes('duplicate key value')) {
+    if (error instanceof Error && error.message.includes("duplicate key value")) {
       const data = createBudgetExpenseSchema.parse(req.body);
       return res.status(409).json({
         success: false,
         message: `${data.fiscalYear}年度の${data.accountingItem}の販管費予算は既に登録されています。`,
       });
     }
-    
-    console.error('販管費予算作成エラー:', error);
+
+    console.error("販管費予算作成エラー:", error);
     res.status(500).json({
       success: false,
-      message: '販管費予算の作成中にエラーが発生しました',
+      message: "販管費予算の作成中にエラーが発生しました",
     });
   }
 });
@@ -141,7 +144,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
  * 販管費予算更新API
  * PUT /api/budgets/expense/:id
  */
-router.put('/:id', requireAuth, async (req: Request, res: Response) => {
+router.put("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const data = updateBudgetExpenseSchema.parse(req.body);
@@ -154,14 +157,14 @@ router.put('/:id', requireAuth, async (req: Request, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '入力データが正しくありません',
+        message: "入力データが正しくありません",
         errors: error.errors,
       });
     }
-    console.error('販管費予算更新エラー:', error);
+    console.error("販管費予算更新エラー:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : '販管費予算の更新中にエラーが発生しました',
+      message: error instanceof Error ? error.message : "販管費予算の更新中にエラーが発生しました",
     });
   }
 });
@@ -170,19 +173,18 @@ router.put('/:id', requireAuth, async (req: Request, res: Response) => {
  * 販管費予算削除API
  * DELETE /api/budgets/expense/:id
  */
-router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
+router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await budgetExpenseService.deleteBudgetExpense(id);
     res.status(204).send();
   } catch (error) {
-    console.error('販管費予算削除エラー:', error);
+    console.error("販管費予算削除エラー:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : '販管費予算の削除中にエラーが発生しました',
+      message: error instanceof Error ? error.message : "販管費予算の削除中にエラーが発生しました",
     });
   }
 });
 
 export default router;
-

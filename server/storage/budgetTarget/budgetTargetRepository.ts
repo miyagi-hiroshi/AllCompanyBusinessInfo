@@ -1,4 +1,4 @@
-import type { BudgetTarget, BudgetTargetFilter,NewBudgetTarget } from "@shared/schema";
+import type { BudgetTarget, BudgetTargetFilter, NewBudgetTarget } from "@shared/schema";
 import { budgetsTarget } from "@shared/schema/budgetTarget/tables";
 import { and, asc, desc, eq } from "drizzle-orm";
 
@@ -43,7 +43,11 @@ export class BudgetTargetRepository {
 
     // ソート条件を追加
     const sortColumn = budgetsTarget[sortBy];
-    const orderByClause = sortColumn ? (sortOrder === "asc" ? asc(sortColumn) : desc(sortColumn)) : undefined;
+    const orderByClause = sortColumn
+      ? sortOrder === "asc"
+        ? asc(sortColumn)
+        : desc(sortColumn)
+      : undefined;
 
     // クエリを構築
     if (conditions.length > 0) {
@@ -72,21 +76,13 @@ export class BudgetTargetRepository {
           .limit(limit)
           .offset(offset);
       } else {
-        return await db
-          .select()
-          .from(budgetsTarget)
-          .limit(limit)
-          .offset(offset);
+        return await db.select().from(budgetsTarget).limit(limit).offset(offset);
       }
     }
   }
 
   async findById(id: string): Promise<BudgetTarget | null> {
-    const result = await db
-      .select()
-      .from(budgetsTarget)
-      .where(eq(budgetsTarget.id, id))
-      .limit(1);
+    const result = await db.select().from(budgetsTarget).where(eq(budgetsTarget.id, id)).limit(1);
 
     return result[0] || null;
   }
@@ -121,10 +117,7 @@ export class BudgetTargetRepository {
   }
 
   async delete(id: string): Promise<void> {
-    const result = await db
-      .delete(budgetsTarget)
-      .where(eq(budgetsTarget.id, id))
-      .returning();
+    const result = await db.delete(budgetsTarget).where(eq(budgetsTarget.id, id)).returning();
 
     if (result.length === 0) {
       throw new Error("目標値予算が見つかりません");
@@ -155,9 +148,7 @@ export class BudgetTargetRepository {
         .where(and(...conditions));
       return result.length;
     } else {
-      const result = await db
-        .select({ count: budgetsTarget.id })
-        .from(budgetsTarget);
+      const result = await db.select({ count: budgetsTarget.id }).from(budgetsTarget);
       return result.length;
     }
   }
@@ -182,4 +173,3 @@ export class BudgetTargetRepository {
     return result[0] || null;
   }
 }
-

@@ -29,12 +29,7 @@ export class StaffingRepository {
       createdAt: staffing.createdAt,
     }[sortBy];
 
-    const query = db
-      .select()
-      .from(staffing)
-      .where(conditions)
-      .limit(limit)
-      .offset(offset);
+    const query = db.select().from(staffing).where(conditions).limit(limit).offset(offset);
 
     if (sortOrder === "asc") {
       return await query.orderBy(orderByColumn);
@@ -78,7 +73,7 @@ export class StaffingRepository {
 
   /**
    * 一括操作（作成・更新・削除）をトランザクション内で実行
-   * 
+   *
    * @param createData - 作成するデータの配列
    * @param updateData - 更新するデータの配列（idと更新データ）
    * @param deleteIds - 削除するIDの配列
@@ -100,7 +95,10 @@ export class StaffingRepository {
       // 削除（最初に実行）
       let deletedCount = 0;
       if (deleteIds.length > 0) {
-        const deleteResults = await tx.delete(staffing).where(inArray(staffing.id, deleteIds)).returning();
+        const deleteResults = await tx
+          .delete(staffing)
+          .where(inArray(staffing.id, deleteIds))
+          .returning();
         deletedCount = deleteResults.length;
       }
 
@@ -129,16 +127,18 @@ export class StaffingRepository {
 
   /**
    * 指定年度の月別工数集計を取得
-   * 
+   *
    * @param fiscalYear - 年度
    * @returns 従業員ID、月、工数の集計データ
    */
-  async getMonthlyAggregation(fiscalYear: number): Promise<Array<{
-    employeeId: string;
-    employeeName: string;
-    month: number;
-    totalHours: number;
-  }>> {
+  async getMonthlyAggregation(fiscalYear: number): Promise<
+    Array<{
+      employeeId: string;
+      employeeName: string;
+      month: number;
+      totalHours: number;
+    }>
+  > {
     const result = await db
       .select({
         employeeId: staffing.employeeId,
@@ -151,22 +151,25 @@ export class StaffingRepository {
       .groupBy(staffing.employeeId, staffing.employeeName, staffing.month)
       .orderBy(staffing.employeeId, staffing.month);
 
-    return result.map(row => ({
+    return result.map((row) => ({
       employeeId: row.employeeId!,
       employeeName: row.employeeName,
       month: row.month,
-      totalHours: parseFloat(row.totalHours.toString())
+      totalHours: parseFloat(row.totalHours.toString()),
     }));
   }
 
   /**
    * プロジェクト分析サマリー用の配員計画データ一括集計
-   * 
+   *
    * @param fiscalYear - 年度
    * @param projectIds - プロジェクトIDリスト
    * @returns プロジェクトID別の工数集計Map
    */
-  async getProjectWorkHoursSummary(fiscalYear: number, projectIds: string[]): Promise<Map<string, number>> {
+  async getProjectWorkHoursSummary(
+    fiscalYear: number,
+    projectIds: string[]
+  ): Promise<Map<string, number>> {
     if (projectIds.length === 0) {
       return new Map();
     }
@@ -175,26 +178,21 @@ export class StaffingRepository {
     const result = await db
       .select({
         projectId: staffing.projectId,
-        totalWorkHours: sql<number>`COALESCE(SUM(${staffing.workHours}::numeric), 0)`
+        totalWorkHours: sql<number>`COALESCE(SUM(${staffing.workHours}::numeric), 0)`,
       })
       .from(staffing)
-      .where(
-        and(
-          inArray(staffing.projectId, projectIds),
-          eq(staffing.fiscalYear, fiscalYear)
-        )
-      )
+      .where(and(inArray(staffing.projectId, projectIds), eq(staffing.fiscalYear, fiscalYear)))
       .groupBy(staffing.projectId);
 
     // プロジェクトID別の工数集計Mapを作成
     const workHoursMap = new Map<string, number>();
-    
+
     for (const row of result) {
       if (row.projectId) {
         workHoursMap.set(row.projectId, parseFloat(row.totalWorkHours.toString()));
       }
     }
-    
+
     return workHoursMap;
   }
 
@@ -227,12 +225,9 @@ export class StaffingRepository {
     }
 
     if (filter.employeeName) {
-      conditions.push(
-        or(ilike(staffing.employeeName, `%${filter.employeeName}%`))
-      );
+      conditions.push(or(ilike(staffing.employeeName, `%${filter.employeeName}%`)));
     }
 
     return conditions.length > 0 ? and(...conditions) : undefined;
   }
 }
-

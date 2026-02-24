@@ -5,9 +5,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useImportForecastCSV } from "@/hooks/useForecastImport";
 import { useToast } from "@/hooks/useToast";
 
@@ -20,7 +33,9 @@ export default function ForecastImportPage() {
     // 4月～12月: その年の年度、1月～3月: 前年の年度
     return currentMonth >= 4 ? currentYear : currentYear - 1;
   });
-  const [importType, setImportType] = useState<'order-forecasts' | 'angle-b-forecasts'>('order-forecasts');
+  const [importType, setImportType] = useState<"order-forecasts" | "angle-b-forecasts">(
+    "order-forecasts"
+  );
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [importResult, setImportResult] = useState<{
     totalRows: number;
@@ -134,7 +149,7 @@ export default function ForecastImportPage() {
                 <RadioGroup
                   value={importType}
                   onValueChange={(value) => {
-                    setImportType(value as 'order-forecasts' | 'angle-b-forecasts');
+                    setImportType(value as "order-forecasts" | "angle-b-forecasts");
                     setImportResult(null); // 取込対象変更時に結果をクリア
                   }}
                 >
@@ -169,9 +184,7 @@ export default function ForecastImportPage() {
                     hover:file:bg-primary/90"
                 />
                 {selectedFile && (
-                  <p className="text-sm text-muted-foreground">
-                    選択: {selectedFile.name}
-                  </p>
+                  <p className="text-sm text-muted-foreground">選択: {selectedFile.name}</p>
                 )}
               </div>
 
@@ -183,24 +196,45 @@ export default function ForecastImportPage() {
                   <li>列2: 計上科目（計上科目マスタの名称、例: 保守売上、ソフト売上、仕入高）</li>
                   <li>列3: 計上年月（YYYY-MM形式、例: 2026-01）</li>
                   <li>列4: 摘要文</li>
-                  <li>列5: 金額（カンマ区切りを使用する場合はダブルクォートで囲む。例: 500000 または "500,000"）</li>
+                  <li>
+                    列5: 金額（カンマ区切りを使用する場合はダブルクォートで囲む。例: 500000 または
+                    "500,000"）
+                  </li>
                 </ul>
                 <div className="mt-3 pt-3 border-t border-border">
                   <p className="font-medium mb-2">CSV例:</p>
                   <pre className="bg-background p-2 rounded text-xs font-mono overflow-x-auto">
-{`035,保守売上,2026-01,保守費用（1月分）,500000
+                    {`035,保守売上,2026-01,保守費用（1月分）,500000
 036,保守売上,2026-01,ヘルプデスク費用,300000`}
                   </pre>
                 </div>
                 <div className="mt-3 pt-3 border-t border-border space-y-2">
                   <p className="font-medium text-sm">ファイル形式に関する詳細:</p>
                   <ul className="list-disc list-inside space-y-1 text-xs text-muted-foreground">
-                    <li><strong>ヘッダー行:</strong> ヘッダー行があっても問題ありません。ヘッダー行はエラーとしてスキップされます。</li>
-                    <li><strong>ダブルクォート:</strong> 各項目はダブルクォートで囲んでも囲まなくても構いません。</li>
-                    <li><strong>文字コード:</strong> UTF-8（推奨）、Shift_JIS、EUC-JP、ISO-2022-JP に対応。UTF-8が推奨です。</li>
-                    <li><strong>改行コード:</strong> CRLF（Windows）、LF（Unix/Linux/Mac）、CR（旧Mac）に対応。自動検出されます。</li>
-                    <li><strong>BOM（Byte Order Mark）:</strong> UTF-8 BOM付きファイルにも対応。BOMの有無は問いません。</li>
-                    <li><strong>最終行の改行:</strong> 最終行に改行があってもなくても問題ありません。空行は自動的にスキップされます。</li>
+                    <li>
+                      <strong>ヘッダー行:</strong>{" "}
+                      ヘッダー行があっても問題ありません。ヘッダー行はエラーとしてスキップされます。
+                    </li>
+                    <li>
+                      <strong>ダブルクォート:</strong>{" "}
+                      各項目はダブルクォートで囲んでも囲まなくても構いません。
+                    </li>
+                    <li>
+                      <strong>文字コード:</strong> UTF-8（推奨）、Shift_JIS、EUC-JP、ISO-2022-JP
+                      に対応。UTF-8が推奨です。
+                    </li>
+                    <li>
+                      <strong>改行コード:</strong>{" "}
+                      CRLF（Windows）、LF（Unix/Linux/Mac）、CR（旧Mac）に対応。自動検出されます。
+                    </li>
+                    <li>
+                      <strong>BOM（Byte Order Mark）:</strong> UTF-8
+                      BOM付きファイルにも対応。BOMの有無は問いません。
+                    </li>
+                    <li>
+                      <strong>最終行の改行:</strong>{" "}
+                      最終行に改行があってもなくても問題ありません。空行は自動的にスキップされます。
+                    </li>
                   </ul>
                 </div>
               </div>
@@ -293,4 +327,3 @@ export default function ForecastImportPage() {
     </div>
   );
 }
-

@@ -29,7 +29,7 @@ async function throwIfResNotOk(res: Response) {
         // テキスト読み取りにも失敗した場合はstatusTextを使用
       }
     }
-    
+
     const error = new Error(errorMessage) as Error & { status?: number; response?: Response };
     error.status = res.status;
     error.response = res;
@@ -37,14 +37,10 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-export async function apiRequest(
-  method: string,
-  url: string,
-  data?: unknown  ,
-): Promise<Response> {
+export async function apiRequest(method: string, url: string, data?: unknown): Promise<Response> {
   // ヘッダーを構築（Cookieは自動送信される）
   const headers: Record<string, string> = {};
-  
+
   // FormDataの場合はContent-Typeを設定しない（ブラウザが自動設定）
   if (data && !(data instanceof FormData)) {
     headers["Content-Type"] = "application/json";
@@ -62,9 +58,7 @@ export async function apiRequest(
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
-export const getQueryFn: <T>(options: {
-  on401: UnauthorizedBehavior;
-}) => QueryFunction<T> =
+export const getQueryFn: <T>(options: { on401: UnauthorizedBehavior }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     // Cookieは自動送信される
@@ -75,7 +69,7 @@ export const getQueryFn: <T>(options: {
     if (res.status === 401) {
       // 401エラーの場合は認証エラーハンドラーで処理
       authErrorHandler.handleResponseError(res);
-      
+
       if (unauthorizedBehavior === "returnNull") {
         return null;
       }

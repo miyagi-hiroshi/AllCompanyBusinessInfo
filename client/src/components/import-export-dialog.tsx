@@ -1,16 +1,45 @@
-import { AlertCircle, CheckCircle,Database, Download, FileSpreadsheet, FileText, Upload } from "lucide-react";
-import { useRef,useState } from "react";
+import {
+  AlertCircle,
+  CheckCircle,
+  Database,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  Upload,
+} from "lucide-react";
+import { useRef, useState } from "react";
 
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { exportToCSV, exportToExcel, exportToJSON, FileFormat, generateTemplate, ImportResult,parseFile } from "@/lib/importExport";
+import {
+  exportToCSV,
+  exportToExcel,
+  exportToJSON,
+  FileFormat,
+  generateTemplate,
+  ImportResult,
+  parseFile,
+} from "@/lib/importExport";
 
 interface ImportExportDialogProps<T = any> {
   data: T[];
@@ -32,13 +61,15 @@ export function ImportExportDialog<T extends Record<string, any>>({
   const [isImporting, setIsImporting] = useState(false);
   const [exportFormat, setExportFormat] = useState<FileFormat>(FileFormat.EXCEL);
   const [exportFilename, setExportFilename] = useState(filename);
-  
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // ファイルインポート処理
   const handleFileImport = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (!file) {return;}
+    if (!file) {
+      return;
+    }
 
     setIsImporting(true);
     setImportResult(null);
@@ -84,7 +115,9 @@ export function ImportExportDialog<T extends Record<string, any>>({
 
   // テンプレート生成処理
   const handleGenerateTemplate = async () => {
-    if (!sampleData || sampleData.length === 0) {return;}
+    if (!sampleData || sampleData.length === 0) {
+      return;
+    }
 
     const config = {
       filename: exportFilename,
@@ -96,9 +129,7 @@ export function ImportExportDialog<T extends Record<string, any>>({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        {children}
-      </DialogTrigger>
+      <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>データのインポート・エクスポート</DialogTitle>
@@ -227,9 +258,7 @@ export function ImportExportDialog<T extends Record<string, any>>({
                   <Download className="h-5 w-5" />
                   データエクスポート
                 </CardTitle>
-                <CardDescription>
-                  現在のデータをファイル形式でエクスポートできます
-                </CardDescription>
+                <CardDescription>現在のデータをファイル形式でエクスポートできます</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -244,7 +273,10 @@ export function ImportExportDialog<T extends Record<string, any>>({
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="export-format">ファイル形式</Label>
-                    <Select value={exportFormat} onValueChange={(value) => setExportFormat(value as FileFormat)}>
+                    <Select
+                      value={exportFormat}
+                      onValueChange={(value) => setExportFormat(value as FileFormat)}
+                    >
                       <SelectTrigger>
                         <SelectValue />
                       </SelectTrigger>

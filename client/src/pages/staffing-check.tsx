@@ -41,15 +41,15 @@ export default function StaffingCheckPage() {
   const getCellColor = (hours: number, calendarMonth: number): string => {
     const currentYear = new Date().getFullYear();
     const currentMonth = new Date().getMonth() + 1; // 暦月: 1-12
-    
+
     // 選択された年度の判定
     const currentFiscalYear = currentMonth >= 4 ? currentYear : currentYear - 1;
     const isPastFiscalYear = selectedYear < currentFiscalYear;
     const isCurrentFiscalYear = selectedYear === currentFiscalYear;
     const isFutureFiscalYear = selectedYear > currentFiscalYear;
-    
+
     let isFuture = false;
-    
+
     if (isPastFiscalYear) {
       // 過去年度: 全ての月は過去
       isFuture = false;
@@ -80,18 +80,18 @@ export default function StaffingCheckPage() {
     }
 
     if (!isFuture) {
-      return ''; // 過去月は色分けなし
+      return ""; // 過去月は色分けなし
     }
 
     if (hours === 0) {
-      return 'bg-red-50 text-red-900 font-semibold';
+      return "bg-red-50 text-red-900 font-semibold";
     }
 
     if (hours > 0 && hours < 1) {
-      return 'bg-yellow-50 text-yellow-900 font-semibold';
+      return "bg-yellow-50 text-yellow-900 font-semibold";
     }
 
-    return '';
+    return "";
   };
 
   return (
@@ -103,7 +103,10 @@ export default function StaffingCheckPage() {
             <ClipboardCheck className="h-5 w-5 text-primary" />
             <h1 className="text-xl font-bold">{selectedYear}年度 工数入力チェック</h1>
           </div>
-          <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+          <Select
+            value={selectedYear.toString()}
+            onValueChange={(value) => setSelectedYear(parseInt(value))}
+          >
             <SelectTrigger className="w-[120px]">
               <SelectValue />
             </SelectTrigger>
@@ -133,11 +136,16 @@ export default function StaffingCheckPage() {
                     <TableRow>
                       <TableHead className="w-[180px] text-xs py-1 px-2">従業員名</TableHead>
                       {FISCAL_MONTHS.map((calendarMonth) => (
-                        <TableHead key={calendarMonth} className="text-center w-[80px] text-xs py-1 px-2">
+                        <TableHead
+                          key={calendarMonth}
+                          className="text-center w-[80px] text-xs py-1 px-2"
+                        >
                           {calendarMonth}月
                         </TableHead>
                       ))}
-                      <TableHead className="text-center w-[100px] text-xs py-1 px-2">空き工数</TableHead>
+                      <TableHead className="text-center w-[100px] text-xs py-1 px-2">
+                        空き工数
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -147,7 +155,7 @@ export default function StaffingCheckPage() {
                           {employee.employeeName}
                         </TableCell>
                         {employee.monthlyHours.map((month) => (
-                          <TableCell 
+                          <TableCell
                             key={month.month}
                             className={cn(
                               "text-center font-mono text-xs py-1 px-2",

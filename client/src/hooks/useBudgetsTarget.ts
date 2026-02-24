@@ -1,4 +1,4 @@
-import type { BudgetTarget, BudgetTargetFilter,NewBudgetTarget } from "@shared/schema";
+import type { BudgetTarget, BudgetTargetFilter, NewBudgetTarget } from "@shared/schema";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiRequest } from "@/lib/queryClient";
@@ -79,13 +79,3 @@ export function useDeleteBudgetTarget() {
     },
   });
 }
-
-
-
-
-
-
-
-
-
-

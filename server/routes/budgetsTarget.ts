@@ -1,10 +1,10 @@
-import { insertBudgetTargetSchema } from '@shared/schema/integrated';
-import express, { type Request, Response } from 'express';
-import { z } from 'zod';
+import { insertBudgetTargetSchema } from "@shared/schema/integrated";
+import express, { type Request, Response } from "express";
+import { z } from "zod";
 
-import { requireAuth } from '../middleware/auth';
-import { BudgetTargetService } from '../services/budgetTargetService';
-import { BudgetTargetRepository } from '../storage/budgetTarget';
+import { requireAuth } from "../middleware/auth";
+import { BudgetTargetService } from "../services/budgetTargetService";
+import { BudgetTargetRepository } from "../storage/budgetTarget";
 
 const router = express.Router();
 const budgetTargetRepository = new BudgetTargetRepository();
@@ -21,21 +21,24 @@ const searchBudgetTargetSchema = z.object({
   fiscalYear: z.string().transform(Number).optional(),
   serviceType: z.string().optional(),
   analysisType: z.string().optional(),
-  page: z.string().transform(Number).optional().default('1'),
-  limit: z.string().transform(Number).optional().default('20'),
-  sortBy: z.enum(['fiscalYear', 'serviceType', 'analysisType', 'targetValue', 'createdAt']).optional().default('fiscalYear'),
-  sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+  page: z.string().transform(Number).optional().default("1"),
+  limit: z.string().transform(Number).optional().default("20"),
+  sortBy: z
+    .enum(["fiscalYear", "serviceType", "analysisType", "targetValue", "createdAt"])
+    .optional()
+    .default("fiscalYear"),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
 });
 
 /**
  * 目標値予算一覧取得API
  * GET /api/budgets/target
  */
-router.get('/', requireAuth, async (req: Request, res: Response) => {
+router.get("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const query = searchBudgetTargetSchema.parse(req.query);
     const offset = (query.page - 1) * query.limit;
-    
+
     const [budgetsTarget, totalCount] = await Promise.all([
       budgetTargetRepository.findAll({
         filter: {
@@ -69,14 +72,14 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '検索パラメータが正しくありません',
+        message: "検索パラメータが正しくありません",
         errors: error.errors,
       });
     }
-    console.error('目標値予算一覧取得エラー:', error);
+    console.error("目標値予算一覧取得エラー:", error);
     res.status(500).json({
       success: false,
-      message: '目標値予算一覧の取得中にエラーが発生しました',
+      message: "目標値予算一覧の取得中にエラーが発生しました",
     });
   }
 });
@@ -85,7 +88,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
  * 目標値予算詳細取得API
  * GET /api/budgets/target/:id
  */
-router.get('/:id', requireAuth, async (req: Request, res: Response) => {
+router.get("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const budgetTarget = await budgetTargetService.getBudgetTargetById(id);
@@ -94,10 +97,10 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
       data: budgetTarget,
     });
   } catch (error: unknown) {
-    console.error('目標値予算詳細取得エラー:', error);
+    console.error("目標値予算詳細取得エラー:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : '目標値予算の取得中にエラーが発生しました',
+      message: error instanceof Error ? error.message : "目標値予算の取得中にエラーが発生しました",
     });
   }
 });
@@ -106,7 +109,7 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
  * 目標値予算作成API
  * POST /api/budgets/target
  */
-router.post('/', requireAuth, async (req: Request, res: Response) => {
+router.post("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const data = createBudgetTargetSchema.parse(req.body);
     const budgetTarget = await budgetTargetService.createBudgetTarget(data);
@@ -118,21 +121,21 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '入力データが正しくありません',
+        message: "入力データが正しくありません",
         errors: error.errors,
       });
     }
 
     // PostgreSQLの桁数制限エラーの場合
-    if (error instanceof Error && error.message.includes('numeric field overflow')) {
+    if (error instanceof Error && error.message.includes("numeric field overflow")) {
       return res.status(400).json({
         success: false,
-        message: '目標値が大きすぎます。整数部分は12桁、小数部分は2桁まで入力できます。',
+        message: "目標値が大きすぎます。整数部分は12桁、小数部分は2桁まで入力できます。",
       });
     }
 
     // PostgreSQLの一意制約違反エラーの場合
-    if (error instanceof Error && error.message.includes('duplicate key value')) {
+    if (error instanceof Error && error.message.includes("duplicate key value")) {
       const data = createBudgetTargetSchema.parse(req.body);
       return res.status(409).json({
         success: false,
@@ -140,10 +143,10 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
       });
     }
 
-    console.error('目標値予算作成エラー:', error);
+    console.error("目標値予算作成エラー:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : '目標値予算の作成中にエラーが発生しました',
+      message: error instanceof Error ? error.message : "目標値予算の作成中にエラーが発生しました",
     });
   }
 });
@@ -152,7 +155,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
  * 目標値予算更新API
  * PUT /api/budgets/target/:id
  */
-router.put('/:id', requireAuth, async (req: Request, res: Response) => {
+router.put("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const data = updateBudgetTargetSchema.parse(req.body);
@@ -165,21 +168,21 @@ router.put('/:id', requireAuth, async (req: Request, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '入力データが正しくありません',
+        message: "入力データが正しくありません",
         errors: error.errors,
       });
     }
 
     // PostgreSQLの桁数制限エラーの場合
-    if (error instanceof Error && error.message.includes('numeric field overflow')) {
+    if (error instanceof Error && error.message.includes("numeric field overflow")) {
       return res.status(400).json({
         success: false,
-        message: '目標値が大きすぎます。整数部分は12桁、小数部分は2桁まで入力できます。',
+        message: "目標値が大きすぎます。整数部分は12桁、小数部分は2桁まで入力できます。",
       });
     }
 
     // PostgreSQLの一意制約違反エラーの場合
-    if (error instanceof Error && error.message.includes('duplicate key value')) {
+    if (error instanceof Error && error.message.includes("duplicate key value")) {
       const data = updateBudgetTargetSchema.parse(req.body);
       return res.status(409).json({
         success: false,
@@ -187,10 +190,10 @@ router.put('/:id', requireAuth, async (req: Request, res: Response) => {
       });
     }
 
-    console.error('目標値予算更新エラー:', error);
+    console.error("目標値予算更新エラー:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : '目標値予算の更新中にエラーが発生しました',
+      message: error instanceof Error ? error.message : "目標値予算の更新中にエラーが発生しました",
     });
   }
 });
@@ -199,19 +202,18 @@ router.put('/:id', requireAuth, async (req: Request, res: Response) => {
  * 目標値予算削除API
  * DELETE /api/budgets/target/:id
  */
-router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
+router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await budgetTargetService.deleteBudgetTarget(id);
     res.status(204).send();
   } catch (error) {
-    console.error('目標値予算削除エラー:', error);
+    console.error("目標値予算削除エラー:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : '目標値予算の削除中にエラーが発生しました',
+      message: error instanceof Error ? error.message : "目標値予算の削除中にエラーが発生しました",
     });
   }
 });
 
 export default router;
-

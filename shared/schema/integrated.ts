@@ -25,7 +25,7 @@ import * as staffing from "./staffing";
 export const schema = {
   // 既存システムのテーブル（参照専用）
   ...existing,
-  
+
   // 新規業務データスキーマ
   ...customers,
   ...items,
@@ -90,8 +90,12 @@ export const selectOrderForecastSchema = createSelectSchema(orderForecasts.order
 export const insertGLEntrySchema = createInsertSchema(glEntries.glEntries);
 export const selectGLEntrySchema = createSelectSchema(glEntries.glEntries);
 
-export const insertReconciliationLogSchema = createInsertSchema(reconciliationLogs.reconciliationLogs);
-export const selectReconciliationLogSchema = createSelectSchema(reconciliationLogs.reconciliationLogs);
+export const insertReconciliationLogSchema = createInsertSchema(
+  reconciliationLogs.reconciliationLogs
+);
+export const selectReconciliationLogSchema = createSelectSchema(
+  reconciliationLogs.reconciliationLogs
+);
 
 export const insertAngleBForecastSchema = createInsertSchema(angleBForecasts.angleBForecasts);
 export const selectAngleBForecastSchema = createSelectSchema(angleBForecasts.angleBForecasts);
@@ -107,7 +111,10 @@ export const selectBudgetTargetSchema = createSelectSchema(budgetsTarget.budgets
 
 export const insertStaffingSchema = createInsertSchema(staffing.staffing).extend({
   workHours: z.union([z.string(), z.number().transform(String)]),
-  employeeId: z.union([z.string(), z.number().transform(String)]).optional().nullable(),
+  employeeId: z
+    .union([z.string(), z.number().transform(String)])
+    .optional()
+    .nullable(),
 });
 export const selectStaffingSchema = createSelectSchema(staffing.staffing);
 

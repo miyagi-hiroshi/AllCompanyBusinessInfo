@@ -1,18 +1,24 @@
-import type { NewOrderForecast,OrderForecast } from "@shared/schema";
+import type { NewOrderForecast, OrderForecast } from "@shared/schema";
 import { FileSpreadsheet } from "lucide-react";
-import { useEffect, useRef,useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { AdvancedFilterPanel, type FilterState } from "@/components/advanced-filter-panel";
 import { ExcelDataGrid, type GridColumn, type GridRowData } from "@/components/excel-data-grid";
 import { GLReconciliationPanel } from "@/components/gl-reconciliation-panel";
 import { KeyboardShortcutsPanel } from "@/components/keyboard-shortcuts-panel";
 import { ReconciliationStatusBadge } from "@/components/reconciliation-status-badge";
-import { type SearchFilter,SearchFilterPanel } from "@/components/search-filter-panel";
+import { type SearchFilter, SearchFilterPanel } from "@/components/search-filter-panel";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGLEntries } from "@/hooks/useGLEntries";
-import { useAccountingItems,useCustomers, useProjects } from "@/hooks/useMasters";
-import { useCreateOrderForecast, useDeleteOrderForecast,useOrderForecasts, useSetOrderForecastsExclusion, useUpdateOrderForecast } from "@/hooks/useOrderForecasts";
+import { useAccountingItems, useCustomers, useProjects } from "@/hooks/useMasters";
+import {
+  useCreateOrderForecast,
+  useDeleteOrderForecast,
+  useOrderForecasts,
+  useSetOrderForecastsExclusion,
+  useUpdateOrderForecast,
+} from "@/hooks/useOrderForecasts";
 import { useReconciliation } from "@/hooks/useReconciliation";
 import { useToast } from "@/hooks/useToast";
 import { sortAccountingItemsByOrder } from "@/lib/accountingItemOrder";
@@ -31,22 +37,26 @@ export default function OrderForecastPage() {
       month: currentMonth,
     };
   });
-  
+
   // 詳細検索条件
   const [searchFilter, setSearchFilter] = useState<SearchFilter>({});
   const [isSearchPanelOpen, setIsSearchPanelOpen] = useState(false);
-  
+
   // ページネーション関連
-  const [pageSize, setPageSize] = useState(50);  // デフォルト50件
+  const [pageSize, setPageSize] = useState(50); // デフォルト50件
   const [shouldResetPage, setShouldResetPage] = useState(false);
-  
+
   // 保存中フラグ（二重送信防止）
   const [isSaving, setIsSaving] = useState(false);
-  
+
   const { toast } = useToast();
 
   // Fetch data from backend with combined filters
-  const { data: orderForecasts = [], isLoading: ordersLoading, refetch: refetchOrders } = useOrderForecasts({
+  const {
+    data: orderForecasts = [],
+    isLoading: ordersLoading,
+    refetch: refetchOrders,
+  } = useOrderForecasts({
     ...filter,
     ...searchFilter,
   });
@@ -57,7 +67,7 @@ export default function OrderForecastPage() {
   const { data: customers = [], isLoading: customersLoading } = useCustomers();
   const { data: projectsRaw = [], isLoading: projectsLoading } = useProjects(filter.fiscalYear);
   // プロジェクトをコードの昇順でソート
-  const projects = [...projectsRaw].sort((a, b) => (a.code || '').localeCompare(b.code || ''));
+  const projects = [...projectsRaw].sort((a, b) => (a.code || "").localeCompare(b.code || ""));
   const { data: accountingItems = [], isLoading: accountingItemsLoading } = useAccountingItems();
 
   // Mutations
@@ -93,15 +103,15 @@ export default function OrderForecastPage() {
     }
 
     setFilter(newFilter);
-    setShouldResetPage(true);  // ページをリセット
-    setSelectedOrderIdForGL(null);  // GL突合パネルを閉じる
-    
+    setShouldResetPage(true); // ページをリセット
+    setSelectedOrderIdForGL(null); // GL突合パネルを閉じる
+
     // フィルタ説明文を生成
     const filterParts: string[] = [];
     filterParts.push(`${newFilter.fiscalYear}年度`);
     if (newFilter.month) filterParts.push(`${newFilter.month}月`);
     if (newFilter.projectId) filterParts.push("プロジェクト指定");
-    
+
     const filterDesc = filterParts.join(", ");
     toast({
       title: "フィルタを変更しました",
@@ -125,30 +135,35 @@ export default function OrderForecastPage() {
     }
 
     setSearchFilter(newSearchFilter);
-    setSelectedOrderIdForGL(null);  // GL突合パネルを閉じる
-    
+    setSelectedOrderIdForGL(null); // GL突合パネルを閉じる
+
     // 検索条件の説明文を生成
     const searchParts: string[] = [];
     if (newSearchFilter.salesPerson) searchParts.push(`営業窓口: ${newSearchFilter.salesPerson}`);
-    if (newSearchFilter.accountingItem) searchParts.push(`計上科目: ${newSearchFilter.accountingItem}`);
+    if (newSearchFilter.accountingItem)
+      searchParts.push(`計上科目: ${newSearchFilter.accountingItem}`);
     if (newSearchFilter.customerId) {
-      const customer = customers.find(c => c.id === newSearchFilter.customerId);
+      const customer = customers.find((c) => c.id === newSearchFilter.customerId);
       if (customer) searchParts.push(`取引先: ${customer.name}`);
     }
     if (newSearchFilter.reconciliationStatus) {
-      let statusLabel = '未突合';
-      const status = newSearchFilter.reconciliationStatus as 'matched' | 'fuzzy' | 'unmatched' | 'excluded';
-      if (status === 'matched') {
-        statusLabel = '突合済み';
-      } else if (status === 'fuzzy') {
-        statusLabel = '曖昧一致';
-      } else if (status === 'excluded') {
-        statusLabel = '除外';
+      let statusLabel = "未突合";
+      const status = newSearchFilter.reconciliationStatus as
+        | "matched"
+        | "fuzzy"
+        | "unmatched"
+        | "excluded";
+      if (status === "matched") {
+        statusLabel = "突合済み";
+      } else if (status === "fuzzy") {
+        statusLabel = "曖昧一致";
+      } else if (status === "excluded") {
+        statusLabel = "除外";
       }
       searchParts.push(`突合状態: ${statusLabel}`);
     }
     if (newSearchFilter.searchText) searchParts.push(`検索: ${newSearchFilter.searchText}`);
-    
+
     if (searchParts.length > 0) {
       toast({
         title: "検索を実行しました",
@@ -164,14 +179,14 @@ export default function OrderForecastPage() {
 
   // 除外トグルのハンドラー（ローカル状態のみ更新、保存時に反映）
   const handleToggleExclusion = (rowId: string, isExcluded: boolean) => {
-    setLocalRows(prevRows => 
-      prevRows.map(row => 
-        row.id === rowId 
-          ? { 
-              ...row, 
-              isExcluded, 
-              reconciliationStatus: isExcluded ? 'excluded' : 'unmatched',
-              _modified: true 
+    setLocalRows((prevRows) =>
+      prevRows.map((row) =>
+        row.id === rowId
+          ? {
+              ...row,
+              isExcluded,
+              reconciliationStatus: isExcluded ? "excluded" : "unmatched",
+              _modified: true,
             }
           : row
       )
@@ -195,7 +210,17 @@ export default function OrderForecastPage() {
   };
 
   // 突合状態ボタンの配色を取得
-  const getReconciliationButtonVariant = (status: string | number | boolean | undefined): "default" | "outline" | "secondary" | "ghost" | "link" | "destructive" | "success" | "warning" => {
+  const getReconciliationButtonVariant = (
+    status: string | number | boolean | undefined
+  ):
+    | "default"
+    | "outline"
+    | "secondary"
+    | "ghost"
+    | "link"
+    | "destructive"
+    | "success"
+    | "warning" => {
     if (status === "matched") return "success" as const;
     if (status === "fuzzy") return "warning" as const;
     if (status === "excluded") return "secondary" as const;
@@ -244,7 +269,7 @@ export default function OrderForecastPage() {
       autocompleteOptions: (() => {
         const periods: string[] = [];
         const fiscalYear = filter.fiscalYear;
-        
+
         // 会計年度: 4月～翌年3月
         // 4月～12月は同じ年、1月～3月は翌年
         for (let month = 4; month <= 12; month++) {
@@ -255,8 +280,8 @@ export default function OrderForecastPage() {
           const periodValue = `${fiscalYear + 1}-${String(month).padStart(2, "0")}`;
           periods.push(periodValue);
         }
-        
-        return periods.map(p => ({
+
+        return periods.map((p) => ({
           value: p,
           label: `${p.split("-")[0]}年${p.split("-")[1]}月`,
         }));
@@ -343,14 +368,15 @@ export default function OrderForecastPage() {
   // Sync local rows only when filter changes or on initial load
   useEffect(() => {
     // Don't sync if there are pending saves (modified rows exist)
-    const hasModifiedRows = localRows.some(row => row._modified);
+    const hasModifiedRows = localRows.some((row) => row._modified);
     if (hasModifiedRows) {
       return; // Preserve _modified flags during save
     }
 
     // Check if orderForecasts data is actually different from what we last synced
-    const dataChanged = JSON.stringify(orderForecasts) !== JSON.stringify(lastSyncedDataRef.current);
-    
+    const dataChanged =
+      JSON.stringify(orderForecasts) !== JSON.stringify(lastSyncedDataRef.current);
+
     // Only sync if data changed (prevents infinite loop from same-data re-renders)
     if (dataChanged) {
       const freshGridRows: GridRowData[] = orderForecasts.map((order) => ({
@@ -378,14 +404,14 @@ export default function OrderForecastPage() {
 
   const handleRowsChange = (rows: GridRowData[]) => {
     // Track deletions: find rows that were in localRows but not in new rows
-    const newRowIds = new Set(rows.map(r => r.id));
-    localRows.forEach(oldRow => {
+    const newRowIds = new Set(rows.map((r) => r.id));
+    localRows.forEach((oldRow) => {
       if (!newRowIds.has(oldRow.id) && !oldRow.id.startsWith("temp-")) {
         // Real row was deleted (not a temp row)
         deletedIdsRef.current.add(oldRow.id);
       }
     });
-    
+
     setLocalRows(rows);
   };
 
@@ -393,15 +419,15 @@ export default function OrderForecastPage() {
     // 二重送信防止
     if (isSaving) return;
     setIsSaving(true);
-    
+
     try {
       // Find modified rows
       const modifiedRows = localRows.filter((row) => row._modified);
 
       // 除外設定が変更された行を抽出
       const excludedChanges = modifiedRows
-        .filter(row => !row.id.startsWith("temp-"))
-        .filter(row => {
+        .filter((row) => !row.id.startsWith("temp-"))
+        .filter((row) => {
           const existing = orderForecasts.find((o) => o.id === row.id);
           return existing && existing.isExcluded !== row.isExcluded;
         });
@@ -439,7 +465,7 @@ export default function OrderForecastPage() {
               exclusionReason: row.isExcluded ? "手動除外" : undefined,
             });
           } catch (error) {
-            console.error('除外設定APIエラー:', error);
+            console.error("除外設定APIエラー:", error);
           }
         }
       }
@@ -448,7 +474,8 @@ export default function OrderForecastPage() {
       for (const row of modifiedRows) {
         // 除外設定のみの変更の場合はスキップ（既に保存済み）
         const existing = orderForecasts.find((o) => o.id === row.id);
-        const isOnlyExclusionChange = existing && 
+        const isOnlyExclusionChange =
+          existing &&
           existing.isExcluded !== row.isExcluded &&
           existing.projectId === row.projectId &&
           existing.customerId === row.customerId &&
@@ -456,24 +483,26 @@ export default function OrderForecastPage() {
           existing.accountingItem === row.accountingItem &&
           existing.description === row.description &&
           existing.amount === row.amount &&
-          (existing.remarks || "") === (row.remarks as string || "");
-        
+          (existing.remarks || "") === ((row.remarks as string) || "");
+
         if (isOnlyExclusionChange) {
           continue; // 除外設定のみの変更は既に保存済みなのでスキップ
         }
 
-        if ((row.id).startsWith("temp-")) {
+        if (row.id.startsWith("temp-")) {
           // Create new order
           const newOrder: NewOrderForecast = {
             projectId: row.projectId as string,
             projectCode: row.projectCode as string,
             projectName: row.projectName as string,
             // 取引先は非必須なので、空の場合はundefinedにする
-            ...(row.customerId ? {
-              customerId: row.customerId as string,
-              customerCode: row.customerCode as string,
-              customerName: row.customerName as string,
-            } : {}),
+            ...(row.customerId
+              ? {
+                  customerId: row.customerId as string,
+                  customerCode: row.customerCode as string,
+                  customerName: row.customerName as string,
+                }
+              : {}),
             accountingPeriod: row.accountingPeriod as string,
             accountingItem: row.accountingItem as string,
             description: row.description as string,
@@ -497,7 +526,7 @@ export default function OrderForecastPage() {
               amount: String(row.amount),
               remarks: (row.remarks as string) || "",
             };
-            
+
             if (row.customerId) {
               updateData.customerId = row.customerId as string;
               updateData.customerCode = row.customerCode as string;
@@ -507,7 +536,7 @@ export default function OrderForecastPage() {
               updateData.customerCode = null;
               updateData.customerName = null;
             }
-            
+
             await updateMutation.mutateAsync({
               id: row.id,
               data: updateData,
@@ -521,17 +550,17 @@ export default function OrderForecastPage() {
       const deletedIds = Array.from(deletedIdsRef.current);
       let deletedCount = 0;
       const deleteErrors: string[] = [];
-      
+
       for (const deletedId of deletedIds) {
         try {
           await deleteMutation.mutateAsync({ id: deletedId, filter });
           deletedCount++;
         } catch (error) {
-          console.error('削除エラー:', error);
+          console.error("削除エラー:", error);
           deleteErrors.push(deletedId);
         }
       }
-      
+
       // Clear deleted IDs after successful deletion
       if (deleteErrors.length === 0) {
         deletedIdsRef.current.clear();
@@ -539,7 +568,7 @@ export default function OrderForecastPage() {
 
       // Refetch and update local rows with fresh data
       const { data: freshData } = await refetchOrders();
-      
+
       if (freshData) {
         const freshRows: GridRowData[] = freshData.map((order) => ({
           id: order.id,
@@ -561,7 +590,7 @@ export default function OrderForecastPage() {
         }));
         setLocalRows(freshRows);
       }
-      
+
       // 保存・削除の件数をまとめて表示
       const changeMessages: string[] = [];
       if (modifiedRows.length > 0) {
@@ -570,14 +599,14 @@ export default function OrderForecastPage() {
       if (deletedCount > 0) {
         changeMessages.push(`${deletedCount}件を削除`);
       }
-      
+
       if (changeMessages.length > 0) {
         toast({
           title: "保存しました",
           description: changeMessages.join("、"),
         });
       }
-      
+
       if (deleteErrors.length > 0) {
         toast({
           title: "削除エラー",
@@ -606,7 +635,7 @@ export default function OrderForecastPage() {
       });
       return;
     }
-    
+
     try {
       const result = await reconcileMutation.mutateAsync({
         period: currentPeriod,
@@ -658,10 +687,11 @@ export default function OrderForecastPage() {
     });
   };
 
-
   const matchedCount = orderForecasts.filter((o) => o.reconciliationStatus === "matched").length;
   const fuzzyCount = orderForecasts.filter((o) => o.reconciliationStatus === "fuzzy").length;
-  const unmatchedCount = orderForecasts.filter((o) => o.reconciliationStatus === "unmatched").length;
+  const unmatchedCount = orderForecasts.filter(
+    (o) => o.reconciliationStatus === "unmatched"
+  ).length;
 
   // Loading state
   if (ordersLoading || glLoading || customersLoading || projectsLoading || accountingItemsLoading) {
@@ -685,14 +715,12 @@ export default function OrderForecastPage() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <FileSpreadsheet className="h-6 w-6 text-primary" />
-            <h1 className="text-xl font-semibold" data-testid="text-page-title">受発注見込み入力</h1>
+            <h1 className="text-xl font-semibold" data-testid="text-page-title">
+              受発注見込み入力
+            </h1>
           </div>
           <div className="h-6 w-px bg-border" />
-          <AdvancedFilterPanel 
-            filter={filter} 
-            onChange={handleFilterChange} 
-            projects={projects}
-          />
+          <AdvancedFilterPanel filter={filter} onChange={handleFilterChange} projects={projects} />
         </div>
 
         <div className="flex items-center gap-2">
@@ -712,26 +740,26 @@ export default function OrderForecastPage() {
             </div>
           </div>
 
-              <SearchFilterPanel
-                open={isSearchPanelOpen}
-                onOpenChange={setIsSearchPanelOpen}
-                filter={searchFilter}
-                onSearch={handleSearch}
-                projects={projects}
-                customers={customers}
-                accountingItems={accountingItems}
-              />
-              <GLReconciliationPanel
-                period={currentPeriod}
-                orderForecasts={orderForecasts}
-                glEntries={glEntries}
-                onReconcile={handleReconcile}
-                onManualMatch={handleManualMatch}
-                selectedOrderId={selectedOrderIdForGL}
-                onSelectOrder={setSelectedOrderIdForGL}
-              />
-              <KeyboardShortcutsPanel />
-              <ThemeToggle />
+          <SearchFilterPanel
+            open={isSearchPanelOpen}
+            onOpenChange={setIsSearchPanelOpen}
+            filter={searchFilter}
+            onSearch={handleSearch}
+            projects={projects}
+            customers={customers}
+            accountingItems={accountingItems}
+          />
+          <GLReconciliationPanel
+            period={currentPeriod}
+            orderForecasts={orderForecasts}
+            glEntries={glEntries}
+            onReconcile={handleReconcile}
+            onManualMatch={handleManualMatch}
+            selectedOrderId={selectedOrderIdForGL}
+            onSelectOrder={setSelectedOrderIdForGL}
+          />
+          <KeyboardShortcutsPanel />
+          <ThemeToggle />
         </div>
       </header>
 

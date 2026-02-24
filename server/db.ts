@@ -1,4 +1,4 @@
-import { neonConfig,Pool as NeonPool } from "@neondatabase/serverless";
+import { neonConfig, Pool as NeonPool } from "@neondatabase/serverless";
 import * as schema from "@shared/schema";
 import dotenv from "dotenv";
 import { drizzle as drizzleNeon, NeonDatabase } from "drizzle-orm/neon-serverless";
@@ -13,9 +13,7 @@ type PgPoolType = InstanceType<typeof PgPool>;
 dotenv.config();
 
 if (!process.env.DATABASE_URL) {
-  throw new Error(
-    "DATABASE_URL must be set. Did you forget to provision a database?",
-  );
+  throw new Error("DATABASE_URL must be set. Did you forget to provision a database?");
 }
 
 let pool: NeonPool | PgPoolType;
@@ -33,25 +31,26 @@ if (isReplit) {
 } else {
   // ローカル開発環境 or 本番環境: 標準の pg driver を使用
   console.log("Running in local/production environment, using pg driver.");
-  
+
   // SSL設定: 開発環境ではSSL無効、本番環境ではSSL有効（適切な証明書検証）
-  const sslConfig = process.env.NODE_ENV === "production"
-    ? {
-        rejectUnauthorized: true, // 証明書検証を有効化
-        ca: process.env.DATABASE_CA_CERT, // CA証明書（環境変数から読み込み）
-      }
-    : false; // 開発環境ではSSLを無効
+  const sslConfig =
+    process.env.NODE_ENV === "production"
+      ? {
+          rejectUnauthorized: true, // 証明書検証を有効化
+          ca: process.env.DATABASE_CA_CERT, // CA証明書（環境変数から読み込み）
+        }
+      : false; // 開発環境ではSSLを無効
 
   // データベース接続URLに文字エンコーディングを明示的に指定
   const dbUrl = new URL(process.env.DATABASE_URL);
-  dbUrl.searchParams.set('client_encoding', 'UTF8');
-  
+  dbUrl.searchParams.set("client_encoding", "UTF8");
+
   pool = new PgPool({
     connectionString: dbUrl.toString(),
     ssl: sslConfig,
-    application_name: 'AllCompanyBusinessInfo',
+    application_name: "AllCompanyBusinessInfo",
   });
   db = drizzlePg(pool, { schema });
 }
 
-export { db,pool };
+export { db, pool };

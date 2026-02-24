@@ -21,21 +21,17 @@ interface ReconciliationResponse {
 export function useReconciliation() {
   return useMutation<ReconciliationResponse, Error, ReconciliationRequest>({
     mutationFn: async ({ period, type }: ReconciliationRequest) => {
-      const response = await apiRequest(
-        "POST",
-        `/api/reconciliation/execute`,
-        { period, type }
-      );
+      const response = await apiRequest("POST", `/api/reconciliation/execute`, { period, type });
       const result = await response.json();
       return result.data as ReconciliationResponse;
     },
     onSuccess: () => {
       // Invalidate both order forecasts and GL entries
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/order-forecasts"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/order-forecasts"],
       });
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/gl-entries"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/gl-entries"],
       });
     },
   });
@@ -46,7 +42,11 @@ export function useAccountSummary(period: string | undefined) {
     queryKey: ["/api/reconciliation/account-summary", period],
     queryFn: async () => {
       if (!period) return null;
-      const res = await apiRequest("GET", `/api/reconciliation/account-summary?period=${period}`, undefined);
+      const res = await apiRequest(
+        "GET",
+        `/api/reconciliation/account-summary?period=${period}`,
+        undefined
+      );
       const result = await res.json();
       return result.data;
     },

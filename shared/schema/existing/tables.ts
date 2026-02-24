@@ -1,12 +1,20 @@
 /**
  * 既存システムのテーブル定義（参照専用）
- * 
+ *
  * 注意: これらのテーブルは既存システムで管理されており、
  * 本システムでは読み取り専用として使用します。
  * 外部キー制約は設定せず、文字列参照のみで関連付けます。
  */
 
-import { boolean, integer, pgSchema, pgTable, serial, timestamp, varchar } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  integer,
+  pgSchema,
+  pgTable,
+  serial,
+  timestamp,
+  varchar,
+} from "drizzle-orm/pg-core";
 
 // appスキーマの定義
 const appSchema = pgSchema("app");

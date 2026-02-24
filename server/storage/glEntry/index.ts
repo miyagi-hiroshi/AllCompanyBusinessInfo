@@ -1,1 +1,1 @@
-export * from './glEntryRepository';
+export * from "./glEntryRepository";

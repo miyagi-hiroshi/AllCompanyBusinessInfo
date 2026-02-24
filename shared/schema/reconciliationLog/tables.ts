@@ -6,7 +6,9 @@ const appSchema = pgSchema("app");
 
 // 突合ログ (Reconciliation Log)
 export const reconciliationLogs = appSchema.table("reconciliation_logs", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   period: text("period").notNull(),
   executedAt: timestamp("executed_at").defaultNow().notNull(),
   matchedCount: integer("matched_count").notNull().default(0),

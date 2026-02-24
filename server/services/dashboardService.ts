@@ -1,23 +1,23 @@
-import type { DashboardData, ServiceRevenueComparison } from '@shared/schema/budgetTarget/types';
+import type { DashboardData, ServiceRevenueComparison } from "@shared/schema/budgetTarget/types";
 
-import { AccountingItemRepository } from '../storage/accountingItem';
-import { AngleBForecastRepository } from '../storage/angleBForecast';
-import { BudgetExpenseRepository } from '../storage/budgetExpense';
-import { BudgetRevenueRepository } from '../storage/budgetRevenue';
-import { BudgetTargetRepository } from '../storage/budgetTarget';
-import { CustomerRepository } from '../storage/customer';
-import { GLEntryRepository } from '../storage/glEntry';
-import { OrderForecastRepository } from '../storage/orderForecast';
-import { ProjectRepository } from '../storage/project';
-import { StaffingRepository } from '../storage/staffing';
-import { BudgetExpenseService } from './budgetExpenseService';
-import { BudgetRevenueService } from './budgetRevenueService';
-import { OrderForecastService } from './orderForecastService';
-import { ProjectService } from './projectService';
+import { AccountingItemRepository } from "../storage/accountingItem";
+import { AngleBForecastRepository } from "../storage/angleBForecast";
+import { BudgetExpenseRepository } from "../storage/budgetExpense";
+import { BudgetRevenueRepository } from "../storage/budgetRevenue";
+import { BudgetTargetRepository } from "../storage/budgetTarget";
+import { CustomerRepository } from "../storage/customer";
+import { GLEntryRepository } from "../storage/glEntry";
+import { OrderForecastRepository } from "../storage/orderForecast";
+import { ProjectRepository } from "../storage/project";
+import { StaffingRepository } from "../storage/staffing";
+import { BudgetExpenseService } from "./budgetExpenseService";
+import { BudgetRevenueService } from "./budgetRevenueService";
+import { OrderForecastService } from "./orderForecastService";
+import { ProjectService } from "./projectService";
 
 /**
  * ダッシュボード管理サービスクラス
- * 
+ *
  * @description ダッシュボードデータの集計・計算を担当
  * @responsibility 予算と実績データの比較、KPI指標の計算
  */
@@ -63,7 +63,7 @@ export class DashboardService {
 
   /**
    * ダッシュボードデータ取得
-   * 
+   *
    * @param fiscalYear - 年度
    * @returns ダッシュボードデータ
    */
@@ -72,15 +72,18 @@ export class DashboardService {
       // 予算データ取得
       const [revenueBudget, expenseBudget] = await Promise.all([
         this.budgetRevenueService.getAnnualBudgetByFiscalYear(fiscalYear),
-        this.budgetExpenseService.getAnnualBudgetByFiscalYear(fiscalYear)
+        this.budgetExpenseService.getAnnualBudgetByFiscalYear(fiscalYear),
       ]);
 
       // 実績データ取得（受発注見込みから）
-      const monthlySummary = await this.orderForecastService.getMonthlySummaryByAccountingItem(fiscalYear, false);
+      const monthlySummary = await this.orderForecastService.getMonthlySummaryByAccountingItem(
+        fiscalYear,
+        false
+      );
 
       // 実績データを集計
-      const revenueActual = this.calculateActualAmount(monthlySummary, 'revenue');
-      const expenseActual = this.calculateActualAmount(monthlySummary, 'expense');
+      const revenueActual = this.calculateActualAmount(monthlySummary, "revenue");
+      const expenseActual = this.calculateActualAmount(monthlySummary, "expense");
 
       // 利益計算
       const profitBudget = revenueBudget - expenseBudget;
@@ -95,7 +98,7 @@ export class DashboardService {
       // 分析区分別サマリ（人月あたりの生産性・粗利合計）
       const analysisSummaries = await this.projectService.getProjectAnalysisSummary(fiscalYear);
 
-      const productivityProjects = analysisSummaries.filter((s) => s.analysisType === '生産性');
+      const productivityProjects = analysisSummaries.filter((s) => s.analysisType === "生産性");
       const totalGrossProfitProductivity = productivityProjects.reduce(
         (sum, s) => sum + (s.revenue - s.costOfSales - s.sgaExpenses),
         0
@@ -104,7 +107,7 @@ export class DashboardService {
       const productivityPerManMonth =
         totalWorkHours > 0 ? totalGrossProfitProductivity / totalWorkHours : 0;
 
-      const grossProfitProjects = analysisSummaries.filter((s) => s.analysisType === '粗利');
+      const grossProfitProjects = analysisSummaries.filter((s) => s.analysisType === "粗利");
       const grossProfitTotalByAnalysis = grossProfitProjects.reduce(
         (sum, s) => sum + (s.grossProfit ?? s.revenue - s.costOfSales - s.sgaExpenses),
         0
@@ -123,17 +126,17 @@ export class DashboardService {
         costRateBudget,
         costRateActual,
         productivityPerManMonth,
-        grossProfitTotalByAnalysis
+        grossProfitTotalByAnalysis,
       };
     } catch (error) {
-      console.error('ダッシュボードデータ取得エラー:', error);
-      throw new Error('ダッシュボードデータの取得中にエラーが発生しました');
+      console.error("ダッシュボードデータ取得エラー:", error);
+      throw new Error("ダッシュボードデータの取得中にエラーが発生しました");
     }
   }
 
   /**
    * サービス毎の売上予実比較データ取得
-   * 
+   *
    * @param fiscalYear - 年度
    * @returns サービス毎の売上予実比較データ
    */
@@ -142,12 +145,17 @@ export class DashboardService {
       // 予算と実績を並列で取得
       const [budgetMap, revenueMap] = await Promise.all([
         this.budgetRevenueRepository.getBudgetByServiceType(fiscalYear),
-        this.orderForecastRepository.getRevenueByServiceType(fiscalYear)
+        this.orderForecastRepository.getRevenueByServiceType(fiscalYear),
       ]);
 
       // サービス区分の順序定義
-      const serviceOrder = ['インテグレーション', 'エンジニアリング', 'ソフトウェアマネージド', 'リセール'];
-      
+      const serviceOrder = [
+        "インテグレーション",
+        "エンジニアリング",
+        "ソフトウェアマネージド",
+        "リセール",
+      ];
+
       // 全てのサービス区分を収集（予算と実績の両方から）
       const allServiceTypes = new Set<string>();
       budgetMap.forEach((_, serviceType) => allServiceTypes.add(serviceType));
@@ -155,7 +163,7 @@ export class DashboardService {
 
       // サービス区分ごとにデータを構築
       const comparisons: ServiceRevenueComparison[] = [];
-      
+
       for (const serviceType of serviceOrder) {
         if (allServiceTypes.has(serviceType)) {
           const revenueBudget = budgetMap.get(serviceType) || 0;
@@ -168,7 +176,7 @@ export class DashboardService {
             revenueBudget,
             revenueActual,
             difference,
-            achievementRate
+            achievementRate,
           });
         }
       }
@@ -186,35 +194,44 @@ export class DashboardService {
             revenueBudget,
             revenueActual,
             difference,
-            achievementRate
+            achievementRate,
           });
         }
       }
 
       return comparisons;
     } catch (error) {
-      console.error('サービス毎の売上予実比較データ取得エラー:', error);
-      throw new Error('サービス毎の売上予実比較データの取得中にエラーが発生しました');
+      console.error("サービス毎の売上予実比較データ取得エラー:", error);
+      throw new Error("サービス毎の売上予実比較データの取得中にエラーが発生しました");
     }
   }
 
   /**
    * 実績金額を計算
-   * 
+   *
    * @param monthlySummary - 月次サマリデータ
    * @param type - 計算タイプ（revenue: 売上, expense: 費用）
    * @returns 実績金額
    */
-  private calculateActualAmount(monthlySummary: any, type: 'revenue' | 'expense'): number {
+  private calculateActualAmount(monthlySummary: any, type: "revenue" | "expense"): number {
     const summaries = monthlySummary.summaries;
-    
-    if (type === 'revenue') {
+
+    if (type === "revenue") {
       // 売上実績（純売上）
-      return Object.values(summaries.revenue.monthlyTotals).reduce((sum: number, amount: any) => sum + amount, 0);
+      return Object.values(summaries.revenue.monthlyTotals).reduce(
+        (sum: number, amount: any) => sum + amount,
+        0
+      );
     } else {
       // 費用実績（売上原価 + 販管費）
-      const costOfSales = Object.values(summaries.costOfSales.monthlyTotals).reduce((sum: number, amount: any) => sum + amount, 0);
-      const sgaExpenses = Object.values(summaries.sgaExpenses.monthlyTotals).reduce((sum: number, amount: any) => sum + amount, 0);
+      const costOfSales = Object.values(summaries.costOfSales.monthlyTotals).reduce(
+        (sum: number, amount: any) => sum + amount,
+        0
+      );
+      const sgaExpenses = Object.values(summaries.sgaExpenses.monthlyTotals).reduce(
+        (sum: number, amount: any) => sum + amount,
+        0
+      );
       return costOfSales + sgaExpenses;
     }
   }

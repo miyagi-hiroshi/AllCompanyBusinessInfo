@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useToast } from "@/hooks/useToast";
 import { authErrorHandler } from "@/lib/authErrorHandler";
-import { handleError,showErrorToast, showSuccessToast } from "@/lib/errorHandler";
+import { handleError, showErrorToast, showSuccessToast } from "@/lib/errorHandler";
 import { apiRequest } from "@/lib/queryClient";
 
 // ユーザー情報の型定義
@@ -35,7 +35,10 @@ interface AuthState {
 // 認証API
 const authApi = {
   // ログイン
-  async login(email: string, password: string): Promise<{
+  async login(
+    email: string,
+    password: string
+  ): Promise<{
     user: User;
     employee: Employee | null;
   }> {
@@ -52,7 +55,7 @@ const authApi = {
       throw await handleError(response, false);
     }
 
-    const data = await response.json() as {
+    const data = (await response.json()) as {
       success: boolean;
       data?: { user: User; employee: Employee | null };
       message?: string;
@@ -69,7 +72,7 @@ const authApi = {
   // ログアウト
   async logout(): Promise<void> {
     const response = await apiRequest("POST", "/api/auth/logout", undefined);
-    
+
     if (!response.ok) {
       throw await handleError(response, false);
     }
@@ -88,7 +91,7 @@ const authApi = {
       throw await handleError(response, false);
     }
 
-    const data = await response.json() as {
+    const data = (await response.json()) as {
       success: boolean;
       data?: { user: User; employee: Employee | null };
       message?: string;
@@ -130,10 +133,10 @@ export function useAuth() {
         isLoading: false,
         error: null,
       });
-      
+
       // ログイン成功時にauthErrorHandlerのフラグをリセット
       authErrorHandler.setAuthenticated();
-      
+
       showSuccessToast("ログイン成功", "認証が完了しました");
     },
     onError: async (error) => {
@@ -153,10 +156,10 @@ export function useAuth() {
   const performLogout = useCallback(() => {
     // ログアウトフラグを設定（トースト通知を抑制するため）
     authErrorHandler.setLoggedOut();
-    
+
     // ログアウト完了フラグを設定（無限ループ防止）
-    sessionStorage.setItem('logout_completed', 'true');
-    
+    sessionStorage.setItem("logout_completed", "true");
+
     // 強制的に状態をリセット
     setAuthState({
       user: null,
@@ -165,13 +168,13 @@ export function useAuth() {
       isLoading: false,
       error: null,
     });
-    
+
     // クエリキャッシュをクリアして認証状態をリセット
     void queryClient.clear();
-    
+
     // 強制的にページをリロードしてログイン画面に遷移
     setTimeout(() => {
-      window.location.href = '/';
+      window.location.href = "/";
     }, 100);
   }, [queryClient]);
 
@@ -192,33 +195,32 @@ export function useAuth() {
     authErrorHandler.setLogoutCallback(performLogout);
   }, [performLogout]);
 
-
   // 初回アクセス時の処理
   useEffect(() => {
     // Cookieベースの認証: サーバーに認証状態を確認
     const checkAuth = async () => {
       try {
         // ログアウト完了フラグをチェック（無限ループ防止）
-        const logoutCompleted = sessionStorage.getItem('logout_completed');
-        if (logoutCompleted === 'true') {
-          sessionStorage.removeItem('logout_completed');
-          setAuthState(prev => ({
+        const logoutCompleted = sessionStorage.getItem("logout_completed");
+        if (logoutCompleted === "true") {
+          sessionStorage.removeItem("logout_completed");
+          setAuthState((prev) => ({
             ...prev,
             isLoading: false,
           }));
           return;
         }
-        
+
         const response = await fetch("/api/auth/me", {
           credentials: "include", // Cookieを送信
         });
-        
+
         if (response.ok) {
-          const result = await response.json() as {
+          const result = (await response.json()) as {
             success: boolean;
             data?: { user: User; employee: Employee | null };
           };
-          
+
           if (result.success && result.data) {
             setAuthState({
               user: result.data.user,
@@ -227,34 +229,34 @@ export function useAuth() {
               isLoading: false,
               error: null,
             });
-            
+
             // 認証成功時にauthErrorHandlerのフラグをリセット
             authErrorHandler.setAuthenticated();
-            
+
             return;
           }
         }
-        
+
         // 401エラーの場合は認証エラーハンドラーで処理
         if (response.status === 401) {
           authErrorHandler.handleResponseError(response);
           return;
         }
-        
+
         // その他の認証エラーまたはCookieなしの場合はログイン画面を表示
-        setAuthState(prev => ({
+        setAuthState((prev) => ({
           ...prev,
           isLoading: false,
         }));
       } catch {
         // エラー時はログイン画面を表示
-        setAuthState(prev => ({
+        setAuthState((prev) => ({
           ...prev,
           isLoading: false,
         }));
       }
     };
-    
+
     void checkAuth();
   }, []);
 

@@ -13,8 +13,8 @@ export function useStaffing(filter?: StaffingFilter) {
   const params = new URLSearchParams();
   if (filter?.projectId) {
     // 配列の場合はカンマ区切りで結合
-    const projectIds = Array.isArray(filter.projectId) 
-      ? filter.projectId.join(",") 
+    const projectIds = Array.isArray(filter.projectId)
+      ? filter.projectId.join(",")
       : filter.projectId;
     if (projectIds) {
       params.append("projectId", projectIds);
@@ -26,18 +26,22 @@ export function useStaffing(filter?: StaffingFilter) {
   if (filter?.month) {
     params.append("month", filter.month.toString());
   }
-  
+
   const queryString = params.toString();
-  
+
   // queryKeyも配列対応
-  const projectIdKey = Array.isArray(filter?.projectId) 
-    ? filter.projectId.sort().join(",") 
-    : filter?.projectId ?? null;
-  
+  const projectIdKey = Array.isArray(filter?.projectId)
+    ? filter.projectId.sort().join(",")
+    : (filter?.projectId ?? null);
+
   return useQuery<Staffing[]>({
     queryKey: ["/api/staffing", projectIdKey, filter?.fiscalYear ?? null, filter?.month ?? null],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/staffing${queryString ? `?${queryString}` : ""}`, undefined);
+      const res = await apiRequest(
+        "GET",
+        `/api/staffing${queryString ? `?${queryString}` : ""}`,
+        undefined
+      );
       const result = await res.json();
       return result.data?.items || [];
     },
@@ -51,8 +55,8 @@ export function useCreateStaffing() {
       return await res.json();
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/staffing"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/staffing"],
       });
     },
   });
@@ -65,8 +69,8 @@ export function useUpdateStaffing() {
       return await res.json();
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/staffing"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/staffing"],
       });
     },
   });
@@ -79,8 +83,8 @@ export function useDeleteStaffing() {
       return res.ok;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/staffing"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/staffing"],
       });
     },
   });
@@ -89,15 +93,15 @@ export function useDeleteStaffing() {
 export function useBulkCreateStaffing() {
   return useMutation({
     mutationFn: async (data: NewStaffing[]) => {
-      const promises = data.map(item => 
-        apiRequest("POST", "/api/staffing", item).then(res => res.json())
+      const promises = data.map((item) =>
+        apiRequest("POST", "/api/staffing", item).then((res) => res.json())
       );
       const results = await Promise.all(promises);
       return results;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/staffing"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/staffing"],
       });
     },
   });
@@ -106,15 +110,15 @@ export function useBulkCreateStaffing() {
 export function useBulkUpdateStaffing() {
   return useMutation({
     mutationFn: async (data: Array<{ id: string; data: Partial<NewStaffing> }>) => {
-      const promises = data.map(({ id, data: updateData }) => 
-        apiRequest("PUT", `/api/staffing/${id}`, updateData).then(res => res.json())
+      const promises = data.map(({ id, data: updateData }) =>
+        apiRequest("PUT", `/api/staffing/${id}`, updateData).then((res) => res.json())
       );
       const results = await Promise.all(promises);
       return results;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/staffing"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/staffing"],
       });
     },
   });
@@ -123,15 +127,13 @@ export function useBulkUpdateStaffing() {
 export function useBulkDeleteStaffing() {
   return useMutation({
     mutationFn: async (ids: string[]) => {
-      const promises = ids.map(id => 
-        apiRequest("DELETE", `/api/staffing/${id}`, undefined)
-      );
+      const promises = ids.map((id) => apiRequest("DELETE", `/api/staffing/${id}`, undefined));
       const results = await Promise.all(promises);
       return results;
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/staffing"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/staffing"],
       });
     },
   });
@@ -151,8 +153,8 @@ export function useBulkOperationStaffing() {
       return await res.json();
     },
     onSuccess: () => {
-      void queryClient.invalidateQueries({ 
-        queryKey: ["/api/staffing"] 
+      void queryClient.invalidateQueries({
+        queryKey: ["/api/staffing"],
       });
     },
   });
@@ -175,10 +177,13 @@ export function useStaffingCheck(fiscalYear: number) {
   return useQuery<StaffingCheckData>({
     queryKey: ["/api/staffing/check", fiscalYear],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/staffing/check?fiscalYear=${fiscalYear}`, undefined);
+      const res = await apiRequest(
+        "GET",
+        `/api/staffing/check?fiscalYear=${fiscalYear}`,
+        undefined
+      );
       const result = await res.json();
       return result.data;
     },
   });
 }
-

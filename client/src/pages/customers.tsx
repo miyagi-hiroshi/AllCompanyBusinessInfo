@@ -1,6 +1,6 @@
 import type { Customer, NewCustomer } from "@shared/schema";
-import { useMutation,useQuery } from "@tanstack/react-query";
-import { Download,Pencil, Plus, Trash2, Upload } from "lucide-react";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { Download, Pencil, Plus, Trash2, Upload } from "lucide-react";
 import { useState } from "react";
 
 import {
@@ -154,7 +154,9 @@ export default function CustomersPage() {
   };
 
   const handleEdit = () => {
-    if (!selectedCustomer) {return;}
+    if (!selectedCustomer) {
+      return;
+    }
     updateMutation.mutate({
       id: selectedCustomer.id,
       data: formData,
@@ -162,7 +164,9 @@ export default function CustomersPage() {
   };
 
   const handleDelete = () => {
-    if (!selectedCustomer) {return;}
+    if (!selectedCustomer) {
+      return;
+    }
     deleteMutation.mutate(selectedCustomer.id);
   };
 
@@ -173,7 +177,9 @@ export default function CustomersPage() {
 
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
-        if (!line) {continue;}
+        if (!line) {
+          continue;
+        }
 
         const [code, name] = line.split(",").map((s) => s.trim());
         if (code && name) {
@@ -226,7 +232,9 @@ export default function CustomersPage() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold" data-testid="text-page-title">取引先マスタ</h1>
+          <h1 className="text-3xl font-bold" data-testid="text-page-title">
+            取引先マスタ
+          </h1>
           <p className="text-muted-foreground mt-1">取引先情報の管理</p>
         </div>
         <div className="flex gap-2">
@@ -254,19 +262,13 @@ export default function CustomersPage() {
       <Card>
         <CardHeader>
           <CardTitle>取引先一覧</CardTitle>
-          <CardDescription>
-            {customers.length}件の取引先が登録されています
-          </CardDescription>
+          <CardDescription>{customers.length}件の取引先が登録されています</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-muted-foreground">
-              読み込み中...
-            </div>
+            <div className="text-center py-8 text-muted-foreground">読み込み中...</div>
           ) : customers.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              取引先が登録されていません
-            </div>
+            <div className="text-center py-8 text-muted-foreground">取引先が登録されていません</div>
           ) : (
             <Table>
               <TableHeader>
@@ -283,9 +285,7 @@ export default function CustomersPage() {
                     <TableCell className="font-mono" data-testid={`text-code-${customer.id}`}>
                       {customer.code}
                     </TableCell>
-                    <TableCell data-testid={`text-name-${customer.id}`}>
-                      {customer.name}
-                    </TableCell>
+                    <TableCell data-testid={`text-name-${customer.id}`}>{customer.name}</TableCell>
                     <TableCell className="text-muted-foreground">
                       {new Date(customer.createdAt).toLocaleString("ja-JP")}
                     </TableCell>
@@ -321,9 +321,7 @@ export default function CustomersPage() {
         <DialogContent data-testid="dialog-create-customer">
           <DialogHeader>
             <DialogTitle>新規取引先作成</DialogTitle>
-            <DialogDescription>
-              新しい取引先情報を入力してください
-            </DialogDescription>
+            <DialogDescription>新しい取引先情報を入力してください</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -370,9 +368,7 @@ export default function CustomersPage() {
         <DialogContent data-testid="dialog-edit-customer">
           <DialogHeader>
             <DialogTitle>取引先編集</DialogTitle>
-            <DialogDescription>
-              取引先情報を編集してください
-            </DialogDescription>
+            <DialogDescription>取引先情報を編集してください</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -418,13 +414,12 @@ export default function CustomersPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>取引先を削除しますか？</AlertDialogTitle>
             <AlertDialogDescription>
-              この操作は取り消せません。取引先「{selectedCustomer?.name}」を削除してもよろしいですか？
+              この操作は取り消せません。取引先「{selectedCustomer?.name}
+              」を削除してもよろしいですか？
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete">
-              キャンセル
-            </AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-cancel-delete">キャンセル</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleteMutation.isPending}
@@ -440,9 +435,7 @@ export default function CustomersPage() {
         <DialogContent className="max-w-2xl" data-testid="dialog-import-csv">
           <DialogHeader>
             <DialogTitle>CSVインポート</DialogTitle>
-            <DialogDescription>
-              CSV形式で取引先データを一括インポートします
-            </DialogDescription>
+            <DialogDescription>CSV形式で取引先データを一括インポートします</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">

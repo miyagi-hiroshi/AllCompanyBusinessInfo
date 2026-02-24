@@ -21,17 +21,27 @@ export function useAccountingItems(filter?: AccountingItemFilter) {
   if (filter?.name) {
     params.append("name", filter.name);
   }
-  
+
   const queryString = params.toString();
-  
+
   return useQuery<{ items: AccountingItem[]; total: number }>({
-    queryKey: ["/api/accounting-items", filter?.search ?? null, filter?.code ?? null, filter?.name ?? null, filter?.excludeRevenueCodes ?? false],
+    queryKey: [
+      "/api/accounting-items",
+      filter?.search ?? null,
+      filter?.code ?? null,
+      filter?.name ?? null,
+      filter?.excludeRevenueCodes ?? false,
+    ],
     queryFn: async () => {
-      const res = await apiRequest("GET", `/api/accounting-items${queryString ? `?${queryString}` : ""}`, undefined);
+      const res = await apiRequest(
+        "GET",
+        `/api/accounting-items${queryString ? `?${queryString}` : ""}`,
+        undefined
+      );
       const result = await res.json();
-      
+
       let items = result.data?.items || [];
-      
+
       // 売上系コード（510-519）を除外する場合
       if (filter?.excludeRevenueCodes) {
         items = items.filter((item: AccountingItem) => {
@@ -39,7 +49,7 @@ export function useAccountingItems(filter?: AccountingItemFilter) {
           return !(code >= 510 && code <= 519);
         });
       }
-      
+
       return {
         items,
         total: result.data?.total || 0,

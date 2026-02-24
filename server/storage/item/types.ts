@@ -13,6 +13,6 @@ export interface ItemSearchOptions {
   filter?: ItemFilter;
   limit?: number;
   offset?: number;
-  sortBy?: 'code' | 'name' | 'category' | 'createdAt';
-  sortOrder?: 'asc' | 'desc';
+  sortBy?: "code" | "name" | "category" | "createdAt";
+  sortOrder?: "asc" | "desc";
 }

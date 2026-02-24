@@ -1,16 +1,19 @@
-import { insertAngleBForecastSchema } from '@shared/schema/integrated';
-import express, { type Request, Response } from 'express';
-import { z } from 'zod';
+import { insertAngleBForecastSchema } from "@shared/schema/integrated";
+import express, { type Request, Response } from "express";
+import { z } from "zod";
 
-import { requireAuth } from '../middleware/auth';
-import { AngleBForecastService } from '../services/angleBForecastService';
-import { AngleBForecastRepository } from '../storage/angleBForecast';
-import { OrderForecastRepository } from '../storage/orderForecast';
+import { requireAuth } from "../middleware/auth";
+import { AngleBForecastService } from "../services/angleBForecastService";
+import { AngleBForecastRepository } from "../storage/angleBForecast";
+import { OrderForecastRepository } from "../storage/orderForecast";
 
 const router = express.Router();
 const angleBForecastRepository = new AngleBForecastRepository();
 const orderForecastRepository = new OrderForecastRepository();
-const angleBForecastService = new AngleBForecastService(angleBForecastRepository, orderForecastRepository);
+const angleBForecastService = new AngleBForecastService(
+  angleBForecastRepository,
+  orderForecastRepository
+);
 
 // 角度B案件作成スキーマ
 // 取引先フィールドをoptionalにする
@@ -45,21 +48,24 @@ const searchAngleBForecastSchema = z.object({
   createdByEmployeeId: z.string().optional(),
   salesPerson: z.string().optional(),
   searchText: z.string().optional(),
-  page: z.string().transform(Number).optional().default('1'),
-  limit: z.string().transform(Number).optional().default('20'),
-  sortBy: z.enum(['accountingPeriod', 'amount', 'probability', 'createdAt']).optional().default('createdAt'),
-  sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+  page: z.string().transform(Number).optional().default("1"),
+  limit: z.string().transform(Number).optional().default("20"),
+  sortBy: z
+    .enum(["accountingPeriod", "amount", "probability", "createdAt"])
+    .optional()
+    .default("createdAt"),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
 });
 
 /**
  * 角度B案件一覧取得API
  * GET /api/angle-b-forecasts
  */
-router.get('/', requireAuth, async (req: Request, res: Response) => {
+router.get("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const query = searchAngleBForecastSchema.parse(req.query);
     const offset = (query.page - 1) * query.limit;
-    
+
     const [angleBForecasts, totalCount] = await Promise.all([
       angleBForecastRepository.findAll({
         filter: {
@@ -115,14 +121,14 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '検索パラメータが正しくありません',
+        message: "検索パラメータが正しくありません",
         errors: error.errors,
       });
     }
-    console.error('角度B案件一覧取得エラー:', error);
+    console.error("角度B案件一覧取得エラー:", error);
     res.status(500).json({
       success: false,
-      message: '角度B案件一覧の取得中にエラーが発生しました',
+      message: "角度B案件一覧の取得中にエラーが発生しました",
     });
   }
 });
@@ -131,7 +137,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
  * 角度B案件詳細取得API
  * GET /api/angle-b-forecasts/:id
  */
-router.get('/:id', requireAuth, async (req: Request, res: Response) => {
+router.get("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const angleBForecast = await angleBForecastService.getAngleBForecastById(id);
@@ -140,10 +146,10 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
       data: angleBForecast,
     });
   } catch (error: unknown) {
-    console.error('角度B案件詳細取得エラー:', error);
+    console.error("角度B案件詳細取得エラー:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : '角度B案件の取得中にエラーが発生しました',
+      message: error instanceof Error ? error.message : "角度B案件の取得中にエラーが発生しました",
     });
   }
 });
@@ -152,7 +158,7 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
  * 角度B案件作成API
  * POST /api/angle-b-forecasts
  */
-router.post('/', requireAuth, async (req: Request, res: Response) => {
+router.post("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const data = createAngleBForecastSchema.parse(req.body);
     const angleBForecast = await angleBForecastService.createAngleBForecast(data);
@@ -164,14 +170,14 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '入力データが正しくありません',
+        message: "入力データが正しくありません",
         errors: error.errors,
       });
     }
-    console.error('角度B案件作成エラー:', error);
+    console.error("角度B案件作成エラー:", error);
     res.status(500).json({
       success: false,
-      message: '角度B案件の作成中にエラーが発生しました',
+      message: "角度B案件の作成中にエラーが発生しました",
     });
   }
 });
@@ -180,7 +186,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
  * 角度B案件更新API
  * PUT /api/angle-b-forecasts/:id
  */
-router.put('/:id', requireAuth, async (req: Request, res: Response) => {
+router.put("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const data = updateAngleBForecastSchema.parse(req.body);
@@ -193,14 +199,14 @@ router.put('/:id', requireAuth, async (req: Request, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '入力データが正しくありません',
+        message: "入力データが正しくありません",
         errors: error.errors,
       });
     }
-    console.error('角度B案件更新エラー:', error);
+    console.error("角度B案件更新エラー:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : '角度B案件の更新中にエラーが発生しました',
+      message: error instanceof Error ? error.message : "角度B案件の更新中にエラーが発生しました",
     });
   }
 });
@@ -209,16 +215,16 @@ router.put('/:id', requireAuth, async (req: Request, res: Response) => {
  * 角度B案件削除API
  * DELETE /api/angle-b-forecasts/:id
  */
-router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
+router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await angleBForecastService.deleteAngleBForecast(id);
     res.status(204).send();
   } catch (error) {
-    console.error('角度B案件削除エラー:', error);
+    console.error("角度B案件削除エラー:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : '角度B案件の削除中にエラーが発生しました',
+      message: error instanceof Error ? error.message : "角度B案件の削除中にエラーが発生しました",
     });
   }
 });
@@ -227,23 +233,22 @@ router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
  * 角度B案件を受発注見込に昇格API
  * POST /api/angle-b-forecasts/:id/promote
  */
-router.post('/:id/promote', requireAuth, async (req: Request, res: Response) => {
+router.post("/:id/promote", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const result = await angleBForecastService.promoteToOrderForecast(id);
     res.json({
       success: true,
       data: result,
-      message: '角度B案件を受発注見込に昇格しました',
+      message: "角度B案件を受発注見込に昇格しました",
     });
   } catch (error) {
-    console.error('角度B案件昇格エラー:', error);
+    console.error("角度B案件昇格エラー:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : '角度B案件の昇格中にエラーが発生しました',
+      message: error instanceof Error ? error.message : "角度B案件の昇格中にエラーが発生しました",
     });
   }
 });
 
 export default router;
-

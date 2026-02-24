@@ -1,6 +1,6 @@
 /**
  * 従業員マスタフック
- * 
+ *
  * 既存システムの従業員マスタからデータを取得
  */
 
@@ -23,7 +23,7 @@ export interface Employee {
  */
 export function useEmployees() {
   return useQuery({
-    queryKey: ['/api/employees'],
+    queryKey: ["/api/employees"],
     queryFn: async () => {
       const res = await apiRequest("GET", "/api/employees", undefined);
       const result = await res.json();
@@ -31,4 +31,3 @@ export function useEmployees() {
     },
   });
 }
-

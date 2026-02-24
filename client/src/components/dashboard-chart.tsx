@@ -1,5 +1,14 @@
 import React from "react";
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -33,8 +42,8 @@ export function DashboardChart({ data, title, className = "" }: DashboardChartPr
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
               <YAxis tickFormatter={formatCurrency} />
-              <Tooltip 
-                formatter={(value: number) => [formatCurrency(value), '']}
+              <Tooltip
+                formatter={(value: number) => [formatCurrency(value), ""]}
                 labelFormatter={(label) => `${label}`}
               />
               <Legend />

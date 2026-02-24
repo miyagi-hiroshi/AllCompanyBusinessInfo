@@ -23,12 +23,12 @@ const shortcuts: Shortcut[] = [
   { keys: ["Enter"], description: "編集開始 / 確定して下へ", category: "ナビゲーション" },
   { keys: ["Esc"], description: "編集キャンセル", category: "ナビゲーション" },
   { keys: ["↑", "↓", "←", "→"], description: "セル移動", category: "ナビゲーション" },
-  
+
   { keys: ["Ctrl", "Enter"], description: "一括保存", category: "データ操作" },
   { keys: ["Ctrl", "Shift", "↓"], description: "行追加", category: "データ操作" },
   { keys: ["Ctrl", "Shift", "D"], description: "行複製", category: "データ操作" },
   { keys: ["Ctrl", "F"], description: "検索", category: "データ操作" },
-  
+
   { keys: ["Alt", "0"], description: "列レイアウト初期化", category: "表示" },
 ];
 
@@ -51,9 +51,7 @@ export function KeyboardShortcutsPanel() {
             <Keyboard className="h-5 w-5" />
             キーボードショートカット
           </SheetTitle>
-          <SheetDescription>
-            効率的な入力操作のためのショートカット一覧
-          </SheetDescription>
+          <SheetDescription>効率的な入力操作のためのショートカット一覧</SheetDescription>
         </SheetHeader>
 
         <div className="mt-6 space-y-6">

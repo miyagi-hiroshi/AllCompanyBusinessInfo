@@ -1,10 +1,7 @@
 import type { Project } from "@shared/schema";
 import { Calendar, CalendarDays, FolderKanban } from "lucide-react";
 
-import {
-  type AutocompleteOption,
-  AutocompleteSelect,
-} from "@/components/autocomplete-select";
+import { type AutocompleteOption, AutocompleteSelect } from "@/components/autocomplete-select";
 import {
   Select,
   SelectContent,
@@ -43,7 +40,7 @@ export function AdvancedFilterPanel({ filter, onChange, projects }: AdvancedFilt
 
   // 選択した年度に紐付くプロジェクトのみフィルタリングし、プロジェクトコード昇順でソート
   const filteredProjects = projects
-    .filter(p => p.fiscalYear === filter.fiscalYear)
+    .filter((p) => p.fiscalYear === filter.fiscalYear)
     .sort((a, b) => a.code.localeCompare(b.code));
 
   // AutocompleteSelect用のオプションを生成（「全てのプロジェクト」を先頭に追加）
@@ -83,18 +80,15 @@ export function AdvancedFilterPanel({ filter, onChange, projects }: AdvancedFilt
       {/* 年度選択（必須） */}
       <div className="flex items-center gap-2">
         <Calendar className="h-4 w-4 text-muted-foreground" />
-        <Select 
-          value={filter.fiscalYear.toString()} 
-          onValueChange={handleFiscalYearChange}
-        >
+        <Select value={filter.fiscalYear.toString()} onValueChange={handleFiscalYearChange}>
           <SelectTrigger className="w-[140px]" data-testid="select-fiscal-year">
             <SelectValue placeholder="年度を選択" />
           </SelectTrigger>
           <SelectContent>
             {fiscalYears.map((year) => (
-              <SelectItem 
-                key={year} 
-                value={year.toString()} 
+              <SelectItem
+                key={year}
+                value={year.toString()}
                 data-testid={`option-fiscal-year-${year}`}
               >
                 {year}年度
@@ -107,10 +101,7 @@ export function AdvancedFilterPanel({ filter, onChange, projects }: AdvancedFilt
       {/* 月選択（任意） */}
       <div className="flex items-center gap-2">
         <CalendarDays className="h-4 w-4 text-muted-foreground" />
-        <Select 
-          value={filter.month?.toString() || "all"} 
-          onValueChange={handleMonthChange}
-        >
+        <Select value={filter.month?.toString() || "all"} onValueChange={handleMonthChange}>
           <SelectTrigger className="w-[120px]" data-testid="select-month">
             <SelectValue placeholder="月を選択" />
           </SelectTrigger>
@@ -119,9 +110,9 @@ export function AdvancedFilterPanel({ filter, onChange, projects }: AdvancedFilt
               全ての月
             </SelectItem>
             {months.map((month) => (
-              <SelectItem 
-                key={month} 
-                value={month.toString()} 
+              <SelectItem
+                key={month}
+                value={month.toString()}
                 data-testid={`option-month-${month}`}
               >
                 {month}月

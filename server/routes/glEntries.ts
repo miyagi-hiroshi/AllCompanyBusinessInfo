@@ -1,12 +1,12 @@
-import { insertGLEntrySchema } from '@shared/schema/integrated';
-import express, { type Request, Response } from 'express';
-import multer from 'multer';
-import { z } from 'zod';
+import { insertGLEntrySchema } from "@shared/schema/integrated";
+import express, { type Request, Response } from "express";
+import multer from "multer";
+import { z } from "zod";
 
-import { requireAuth } from '../middleware/auth';
-import { GLEntryService } from '../services/glEntryService';
-import { GLEntryRepository } from '../storage/glEntry';
-import { OrderForecastRepository } from '../storage/orderForecast';
+import { requireAuth } from "../middleware/auth";
+import { GLEntryService } from "../services/glEntryService";
+import { GLEntryRepository } from "../storage/glEntry";
+import { OrderForecastRepository } from "../storage/orderForecast";
 
 const router = express.Router();
 const glEntryRepository = new GLEntryRepository();
@@ -20,14 +20,14 @@ const csvUpload = multer({
     fileSize: 50 * 1024 * 1024, // 50MB
   },
   fileFilter: (_req, file, cb) => {
-    const allowedMimeTypes = ['text/csv', 'application/vnd.ms-excel', 'text/plain'];
-    const allowedExtensions = ['.csv'];
-    const ext = '.' + file.originalname.split('.').pop()?.toLowerCase();
-    
+    const allowedMimeTypes = ["text/csv", "application/vnd.ms-excel", "text/plain"];
+    const allowedExtensions = [".csv"];
+    const ext = "." + file.originalname.split(".").pop()?.toLowerCase();
+
     if (allowedMimeTypes.includes(file.mimetype) && allowedExtensions.includes(ext)) {
       cb(null, true);
     } else {
-      cb(new Error('CSVファイルのみアップロード可能です'));
+      cb(new Error("CSVファイルのみアップロード可能です"));
     }
   },
 });
@@ -46,65 +46,73 @@ const searchGLEntrySchema = z.object({
   transactionDateTo: z.string().optional(),
   accountCode: z.string().optional(),
   accountName: z.string().optional(),
-  debitCredit: z.enum(['debit', 'credit']).optional(),
+  debitCredit: z.enum(["debit", "credit"]).optional(),
   period: z.string().optional(),
-  reconciliationStatus: z.enum(['matched', 'fuzzy', 'unmatched']).optional(),
+  reconciliationStatus: z.enum(["matched", "fuzzy", "unmatched"]).optional(),
   fiscalYear: z.string().transform(Number).optional(),
   month: z.string().transform(Number).optional(),
-  page: z.string().transform(Number).optional().default('1'),
-  limit: z.string().transform(Number).optional().default('20'),
-  sortBy: z.enum(['voucherNo', 'transactionDate', 'accountCode', 'amount', 'createdAt']).optional().default('createdAt'),
-  sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+  page: z.string().transform(Number).optional().default("1"),
+  limit: z.string().transform(Number).optional().default("20"),
+  sortBy: z
+    .enum(["voucherNo", "transactionDate", "accountCode", "amount", "createdAt"])
+    .optional()
+    .default("createdAt"),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
 });
 
 /**
  * CSV取込API
  * POST /api/gl-entries/import-csv
  */
-router.post('/import-csv', requireAuth, csvUpload.single('file'), async (req: Request, res: Response) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({
+router.post(
+  "/import-csv",
+  requireAuth,
+  csvUpload.single("file"),
+  async (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: "CSVファイルがアップロードされていません",
+        });
+      }
+
+      const result = await glEntryService.importFromCSV(req.file.buffer);
+
+      res.json({
+        success: true,
+        data: result,
+        message: `CSV取込が完了しました（取込: ${result.importedRows}件、スキップ: ${result.skippedRows}件）`,
+      });
+    } catch (error: any) {
+      console.error("CSV取込エラー:", error);
+      res.status(error.statusCode || 500).json({
         success: false,
-        message: 'CSVファイルがアップロードされていません',
+        message: error.message || "CSV取込中にエラーが発生しました",
       });
     }
-
-    const result = await glEntryService.importFromCSV(req.file.buffer);
-
-    res.json({
-      success: true,
-      data: result,
-      message: `CSV取込が完了しました（取込: ${result.importedRows}件、スキップ: ${result.skippedRows}件）`,
-    });
-  } catch (error: any) {
-    console.error('CSV取込エラー:', error);
-    res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message || 'CSV取込中にエラーが発生しました',
-    });
   }
-});
+);
 
 /**
  * 除外設定API
  * POST /api/gl-entries/set-exclusion
  */
-router.post('/set-exclusion', requireAuth, async (req: Request, res: Response) => {
+router.post("/set-exclusion", requireAuth, async (req: Request, res: Response) => {
   try {
     const { ids, isExcluded, exclusionReason } = req.body;
 
     if (!ids || !Array.isArray(ids) || ids.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'GL明細IDリストが正しくありません',
+        message: "GL明細IDリストが正しくありません",
       });
     }
 
-    if (typeof isExcluded !== 'boolean') {
+    if (typeof isExcluded !== "boolean") {
       return res.status(400).json({
         success: false,
-        message: '除外フラグが正しくありません',
+        message: "除外フラグが正しくありません",
       });
     }
 
@@ -113,13 +121,13 @@ router.post('/set-exclusion', requireAuth, async (req: Request, res: Response) =
     res.json({
       success: true,
       data: { updatedCount },
-      message: `${updatedCount}件のGL明細を${isExcluded ? '除外' : '除外解除'}しました`,
+      message: `${updatedCount}件のGL明細を${isExcluded ? "除外" : "除外解除"}しました`,
     });
   } catch (error: any) {
-    console.error('除外設定エラー:', error);
+    console.error("除外設定エラー:", error);
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || '除外設定の更新中にエラーが発生しました',
+      message: error.message || "除外設定の更新中にエラーが発生しました",
     });
   }
 });
@@ -128,11 +136,11 @@ router.post('/set-exclusion', requireAuth, async (req: Request, res: Response) =
  * GLデータ一覧取得API
  * GET /api/gl-entries
  */
-router.get('/', requireAuth, async (req: Request, res: Response) => {
+router.get("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const query = searchGLEntrySchema.parse(req.query);
     const offset = (query.page - 1) * query.limit;
-    
+
     const [glEntries, totalCount] = await Promise.all([
       glEntryRepository.findAll({
         filter: {
@@ -182,15 +190,15 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '検索パラメータが正しくありません',
+        message: "検索パラメータが正しくありません",
         errors: error.errors,
       });
     }
 
-    console.error('GLデータ一覧取得エラー:', error);
+    console.error("GLデータ一覧取得エラー:", error);
     res.status(500).json({
       success: false,
-      message: 'GLデータ一覧の取得中にエラーが発生しました',
+      message: "GLデータ一覧の取得中にエラーが発生しました",
     });
   }
 });
@@ -199,16 +207,16 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
  * GLデータ詳細取得API
  * GET /api/gl-entries/:id
  */
-router.get('/:id', requireAuth, async (req: Request, res: Response) => {
+router.get("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
+
     const glEntry = await glEntryRepository.findById(id);
-    
+
     if (!glEntry) {
       return res.status(404).json({
         success: false,
-        message: 'GLデータが見つかりません',
+        message: "GLデータが見つかりません",
       });
     }
 
@@ -217,10 +225,10 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
       data: glEntry,
     });
   } catch (error) {
-    console.error('GLデータ詳細取得エラー:', error);
+    console.error("GLデータ詳細取得エラー:", error);
     res.status(500).json({
       success: false,
-      message: 'GLデータ詳細の取得中にエラーが発生しました',
+      message: "GLデータ詳細の取得中にエラーが発生しました",
     });
   }
 });
@@ -229,10 +237,10 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
  * 伝票番号別GLデータ取得API
  * GET /api/gl-entries/voucher/:voucherNo
  */
-router.get('/voucher/:voucherNo', requireAuth, async (req: Request, res: Response) => {
+router.get("/voucher/:voucherNo", requireAuth, async (req: Request, res: Response) => {
   try {
     const { voucherNo } = req.params;
-    
+
     const glEntries = await glEntryRepository.findByVoucherNo(voucherNo);
 
     res.json({
@@ -240,10 +248,10 @@ router.get('/voucher/:voucherNo', requireAuth, async (req: Request, res: Respons
       data: glEntries,
     });
   } catch (error) {
-    console.error('伝票番号別GLデータ取得エラー:', error);
+    console.error("伝票番号別GLデータ取得エラー:", error);
     res.status(500).json({
       success: false,
-      message: '伝票番号別GLデータの取得中にエラーが発生しました',
+      message: "伝票番号別GLデータの取得中にエラーが発生しました",
     });
   }
 });
@@ -252,10 +260,10 @@ router.get('/voucher/:voucherNo', requireAuth, async (req: Request, res: Respons
  * 期間別GLデータ取得API
  * GET /api/gl-entries/period/:period
  */
-router.get('/period/:period', requireAuth, async (req: Request, res: Response) => {
+router.get("/period/:period", requireAuth, async (req: Request, res: Response) => {
   try {
     const { period } = req.params;
-    
+
     const glEntries = await glEntryRepository.findByPeriod(period);
 
     res.json({
@@ -263,10 +271,10 @@ router.get('/period/:period', requireAuth, async (req: Request, res: Response) =
       data: glEntries,
     });
   } catch (error) {
-    console.error('期間別GLデータ取得エラー:', error);
+    console.error("期間別GLデータ取得エラー:", error);
     res.status(500).json({
       success: false,
-      message: '期間別GLデータの取得中にエラーが発生しました',
+      message: "期間別GLデータの取得中にエラーが発生しました",
     });
   }
 });
@@ -275,15 +283,15 @@ router.get('/period/:period', requireAuth, async (req: Request, res: Response) =
  * 期間別GLデータ削除API
  * DELETE /api/gl-entries/period/:period
  */
-router.delete('/period/:period', requireAuth, async (req: Request, res: Response) => {
+router.delete("/period/:period", requireAuth, async (req: Request, res: Response) => {
   try {
     const { period } = req.params;
-    
+
     // 期間フォーマット検証（YYYY-MM形式）
     if (!/^\d{4}-\d{2}$/.test(period)) {
       return res.status(400).json({
         success: false,
-        message: '期間フォーマットが正しくありません（YYYY-MM形式で指定してください）',
+        message: "期間フォーマットが正しくありません（YYYY-MM形式で指定してください）",
       });
     }
 
@@ -295,10 +303,10 @@ router.delete('/period/:period', requireAuth, async (req: Request, res: Response
       message: `期間（${period}）のGLデータを削除しました（削除: ${result.deletedCount}件、突合解除: ${result.unmatchedCount}件）`,
     });
   } catch (error: any) {
-    console.error('期間別GLデータ削除エラー:', error);
+    console.error("期間別GLデータ削除エラー:", error);
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || '期間別GLデータの削除中にエラーが発生しました',
+      message: error.message || "期間別GLデータの削除中にエラーが発生しました",
     });
   }
 });
@@ -307,10 +315,10 @@ router.delete('/period/:period', requireAuth, async (req: Request, res: Response
  * 突合されていないGLデータ取得API
  * GET /api/gl-entries/unmatched
  */
-router.get('/unmatched', requireAuth, async (req: Request, res: Response) => {
+router.get("/unmatched", requireAuth, async (req: Request, res: Response) => {
   try {
     const { period } = req.query;
-    
+
     const glEntries = await glEntryRepository.findUnmatched(period as string);
 
     res.json({
@@ -318,10 +326,10 @@ router.get('/unmatched', requireAuth, async (req: Request, res: Response) => {
       data: glEntries,
     });
   } catch (error) {
-    console.error('未突合GLデータ取得エラー:', error);
+    console.error("未突合GLデータ取得エラー:", error);
     res.status(500).json({
       success: false,
-      message: '未突合GLデータの取得中にエラーが発生しました',
+      message: "未突合GLデータの取得中にエラーが発生しました",
     });
   }
 });
@@ -330,10 +338,10 @@ router.get('/unmatched', requireAuth, async (req: Request, res: Response) => {
  * 突合済みGLデータ取得API
  * GET /api/gl-entries/matched
  */
-router.get('/matched', requireAuth, async (req: Request, res: Response) => {
+router.get("/matched", requireAuth, async (req: Request, res: Response) => {
   try {
     const { period } = req.query;
-    
+
     const glEntries = await glEntryRepository.findMatched(period as string);
 
     res.json({
@@ -341,10 +349,10 @@ router.get('/matched', requireAuth, async (req: Request, res: Response) => {
       data: glEntries,
     });
   } catch (error) {
-    console.error('突合済みGLデータ取得エラー:', error);
+    console.error("突合済みGLデータ取得エラー:", error);
     res.status(500).json({
       success: false,
-      message: '突合済みGLデータの取得中にエラーが発生しました',
+      message: "突合済みGLデータの取得中にエラーが発生しました",
     });
   }
 });
@@ -353,7 +361,7 @@ router.get('/matched', requireAuth, async (req: Request, res: Response) => {
  * GLデータ作成API
  * POST /api/gl-entries
  */
-router.post('/', requireAuth, async (req: Request, res: Response) => {
+router.post("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const data = createGLEntrySchema.parse(req.body);
 
@@ -362,21 +370,21 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
     res.status(201).json({
       success: true,
       data: glEntry,
-      message: 'GLデータが正常に作成されました',
+      message: "GLデータが正常に作成されました",
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '入力値が正しくありません',
+        message: "入力値が正しくありません",
         errors: error.errors,
       });
     }
 
-    console.error('GLデータ作成エラー:', error);
+    console.error("GLデータ作成エラー:", error);
     res.status(500).json({
       success: false,
-      message: 'GLデータの作成中にエラーが発生しました',
+      message: "GLデータの作成中にエラーが発生しました",
     });
   }
 });
@@ -385,30 +393,30 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
  * GLデータ更新API
  * PUT /api/gl-entries/:id
  */
-router.put('/:id', requireAuth, async (req: Request, res: Response) => {
+router.put("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const data = updateGLEntrySchema.parse(req.body);
-    
+
     const glEntry = await glEntryService.updateGLEntry(id, data);
 
     res.json({
       success: true,
       data: glEntry,
-      message: 'GLデータが正常に更新されました',
+      message: "GLデータが正常に更新されました",
     });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '入力値が正しくありません',
+        message: "入力値が正しくありません",
         errors: error.errors,
       });
     }
 
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'GLデータの更新中にエラーが発生しました',
+      message: error.message || "GLデータの更新中にエラーが発生しました",
     });
   }
 });
@@ -417,20 +425,20 @@ router.put('/:id', requireAuth, async (req: Request, res: Response) => {
  * GLデータ削除API
  * DELETE /api/gl-entries/:id
  */
-router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
+router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
+
     await glEntryService.deleteGLEntry(id);
 
     res.json({
       success: true,
-      message: 'GLデータが正常に削除されました',
+      message: "GLデータが正常に削除されました",
     });
   } catch (error: any) {
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'GLデータの削除中にエラーが発生しました',
+      message: error.message || "GLデータの削除中にエラーが発生しました",
     });
   }
 });
@@ -439,41 +447,37 @@ router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
  * 突合ステータス更新API
  * PUT /api/gl-entries/:id/reconciliation-status
  */
-router.put('/:id/reconciliation-status', requireAuth, async (req: Request, res: Response) => {
+router.put("/:id/reconciliation-status", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const { status, orderMatchId } = req.body;
-    
-    if (!status || !['matched', 'fuzzy', 'unmatched'].includes(status)) {
+
+    if (!status || !["matched", "fuzzy", "unmatched"].includes(status)) {
       return res.status(400).json({
         success: false,
-        message: '突合ステータスが正しくありません',
+        message: "突合ステータスが正しくありません",
       });
     }
 
-    const glEntry = await glEntryRepository.updateReconciliationStatus(
-      id,
-      status,
-      orderMatchId
-    );
-    
+    const glEntry = await glEntryRepository.updateReconciliationStatus(id, status, orderMatchId);
+
     if (!glEntry) {
       return res.status(404).json({
         success: false,
-        message: 'GLデータが見つからないか、更新に失敗しました',
+        message: "GLデータが見つからないか、更新に失敗しました",
       });
     }
 
     res.json({
       success: true,
       data: glEntry,
-      message: '突合ステータスが正常に更新されました',
+      message: "突合ステータスが正常に更新されました",
     });
   } catch (error) {
-    console.error('突合ステータス更新エラー:', error);
+    console.error("突合ステータス更新エラー:", error);
     res.status(500).json({
       success: false,
-      message: '突合ステータスの更新中にエラーが発生しました',
+      message: "突合ステータスの更新中にエラーが発生しました",
     });
   }
 });

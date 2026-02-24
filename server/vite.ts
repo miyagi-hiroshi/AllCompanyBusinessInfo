@@ -22,15 +22,12 @@ export async function setupVite(app: Express, _server: Server) {
   });
 
   app.use(viteDevServer.middlewares);
-  
+
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
     try {
       const clientPath = path.resolve(import.meta.dirname, "..", "client");
-      let template = fs.readFileSync(
-        path.resolve(clientPath, "index.html"),
-        "utf-8",
-      );
+      let template = fs.readFileSync(path.resolve(clientPath, "index.html"), "utf-8");
 
       template = await viteDevServer.transformIndexHtml(url, template);
 
@@ -47,7 +44,7 @@ export function serveStatic(app: Express) {
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
+      `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
   }
 

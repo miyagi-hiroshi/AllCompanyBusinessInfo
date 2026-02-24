@@ -1,1 +1,1 @@
-export * from './orderForecastRepository';
+export * from "./orderForecastRepository";

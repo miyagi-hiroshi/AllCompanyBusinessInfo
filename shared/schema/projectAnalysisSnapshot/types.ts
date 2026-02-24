@@ -4,16 +4,16 @@ import { z } from "zod";
  * スナップショットデータ行の型定義（プロジェクト行と小計行の共用型）
  */
 export interface SnapshotDataRow {
-  type: 'project' | 'subtotal';
+  type: "project" | "subtotal";
   serviceType: string;
-  projectName?: string;      // type === 'project' の場合のみ
-  projectCode?: string;      // type === 'project' の場合のみ
+  projectName?: string; // type === 'project' の場合のみ
+  projectCode?: string; // type === 'project' の場合のみ
   analysisType: string;
   revenue: number;
   costOfSales: number;
   sgaExpenses: number;
   workHours: number;
-  targetValue?: number;      // type === 'subtotal' の場合のみ
+  targetValue?: number; // type === 'subtotal' の場合のみ
   actualValue?: number;
 }
 
@@ -40,7 +40,7 @@ export interface ProjectAnalysisSnapshot {
  * スナップショットデータ行のZodスキーマ
  */
 export const snapshotDataRowSchema = z.object({
-  type: z.enum(['project', 'subtotal']),
+  type: z.enum(["project", "subtotal"]),
   serviceType: z.string(),
   projectName: z.string().optional(),
   projectCode: z.string().optional(),
@@ -68,4 +68,3 @@ export const createProjectAnalysisSnapshotSchema = z.object({
   name: z.string().min(1).max(255),
   snapshotData: snapshotDataSchema,
 });
-

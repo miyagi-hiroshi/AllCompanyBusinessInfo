@@ -1,10 +1,7 @@
 import { Calendar, CalendarDays, FolderKanban, Users } from "lucide-react";
 import { useState } from "react";
 
-import {
-  type AutocompleteOption,
-  AutocompleteSelect,
-} from "@/components/autocomplete-select";
+import { type AutocompleteOption, AutocompleteSelect } from "@/components/autocomplete-select";
 import { ProjectStaffingInput } from "@/components/project-staffing-input";
 import { MultiSelect } from "@/components/ui/multi-select";
 import {
@@ -26,7 +23,7 @@ export default function StaffingProjectPage() {
 
   const { data: projects = [] } = useProjects(selectedYear);
   const { data: employees = [] } = useEmployees();
-  const productivityProjects = projects.filter(p => p.analysisType === "生産性");
+  const productivityProjects = projects.filter((p) => p.analysisType === "生産性");
 
   // AutocompleteSelect用の従業員オプションを生成（「全従業員」を先頭に追加）
   const employeeOptions: AutocompleteOption[] = [
@@ -111,7 +108,7 @@ export default function StaffingProjectPage() {
 
       {/* Main Content */}
       <main className="flex-1 overflow-hidden p-6">
-        <ProjectStaffingInput 
+        <ProjectStaffingInput
           selectedYear={selectedYear}
           selectedProjectIds={selectedProjectIds}
           selectedEmployeeId={selectedEmployeeId}

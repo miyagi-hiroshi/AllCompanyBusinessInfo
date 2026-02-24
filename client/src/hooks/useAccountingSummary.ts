@@ -10,7 +10,7 @@ export interface AccountingSummaryResponse {
     accountingItems: Array<{
       code: string;
       name: string;
-      category: 'revenue' | 'costOfSales' | 'sgaExpenses';
+      category: "revenue" | "costOfSales" | "sgaExpenses";
       monthlyAmounts: Record<string, number>;
     }>;
     summaries: {
@@ -21,19 +21,23 @@ export interface AccountingSummaryResponse {
   };
 }
 
-export function useAccountingSummary(fiscalYear: number, includeAngleB: boolean = false, salesPerson?: string) {
+export function useAccountingSummary(
+  fiscalYear: number,
+  includeAngleB: boolean = false,
+  salesPerson?: string
+) {
   return useQuery<AccountingSummaryResponse>({
-    queryKey: ['/api/order-forecasts/monthly-summary', fiscalYear, includeAngleB, salesPerson],
+    queryKey: ["/api/order-forecasts/monthly-summary", fiscalYear, includeAngleB, salesPerson],
     queryFn: async () => {
       const params = new URLSearchParams({
         fiscalYear: fiscalYear.toString(),
-        includeAngleB: includeAngleB.toString()
+        includeAngleB: includeAngleB.toString(),
       });
-      
-      if (salesPerson && salesPerson !== 'all') {
-        params.append('salesPerson', salesPerson);
+
+      if (salesPerson && salesPerson !== "all") {
+        params.append("salesPerson", salesPerson);
       }
-      
+
       const res = await apiRequest(
         "GET",
         `/api/order-forecasts/monthly-summary?${params}`,
@@ -41,6 +45,6 @@ export function useAccountingSummary(fiscalYear: number, includeAngleB: boolean 
       );
       return await res.json();
     },
-    enabled: !!fiscalYear
+    enabled: !!fiscalYear,
   });
 }

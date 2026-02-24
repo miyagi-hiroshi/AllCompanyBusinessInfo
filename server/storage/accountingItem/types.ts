@@ -12,6 +12,6 @@ export interface AccountingItemSearchOptions {
   filter?: AccountingItemFilter;
   limit?: number;
   offset?: number;
-  sortBy?: 'code' | 'name' | 'createdAt';
-  sortOrder?: 'asc' | 'desc';
+  sortBy?: "code" | "name" | "createdAt";
+  sortOrder?: "asc" | "desc";
 }

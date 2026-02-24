@@ -1,10 +1,10 @@
-import { insertItemSchema } from '@shared/schema/integrated';
-import express, { type Request, Response } from 'express';
-import { z } from 'zod';
+import { insertItemSchema } from "@shared/schema/integrated";
+import express, { type Request, Response } from "express";
+import { z } from "zod";
 
-import { requireAuth } from '../middleware/auth';
-import { ItemService } from '../services/itemService';
-import { ItemRepository } from '../storage/item';
+import { requireAuth } from "../middleware/auth";
+import { ItemService } from "../services/itemService";
+import { ItemRepository } from "../storage/item";
 
 const router = express.Router();
 const itemRepository = new ItemRepository();
@@ -22,17 +22,17 @@ const searchItemSchema = z.object({
   code: z.string().optional(),
   name: z.string().optional(),
   category: z.string().optional(),
-  page: z.string().transform(Number).optional().default('1'),
-  limit: z.string().transform(Number).optional().default('20'),
-  sortBy: z.enum(['code', 'name', 'category', 'createdAt']).optional().default('createdAt'),
-  sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+  page: z.string().transform(Number).optional().default("1"),
+  limit: z.string().transform(Number).optional().default("20"),
+  sortBy: z.enum(["code", "name", "category", "createdAt"]).optional().default("createdAt"),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
 });
 
 /**
  * アイテム一覧取得API
  * GET /api/items
  */
-router.get('/', requireAuth, async (req: Request, res: Response) => {
+router.get("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const query = searchItemSchema.parse(req.query);
     const offset = (query.page - 1) * query.limit;
@@ -64,13 +64,13 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '検索パラメータが正しくありません',
+        message: "検索パラメータが正しくありません",
         errors: error.errors,
       });
     }
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'アイテム一覧の取得中にエラーが発生しました',
+      message: error.message || "アイテム一覧の取得中にエラーが発生しました",
     });
   }
 });
@@ -79,7 +79,7 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
  * アイテム詳細取得API
  * GET /api/items/:id
  */
-router.get('/:id', requireAuth, async (req: Request, res: Response) => {
+router.get("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const item = await itemService.getItemById(id);
@@ -90,7 +90,7 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
   } catch (error: any) {
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'アイテム詳細の取得中にエラーが発生しました',
+      message: error.message || "アイテム詳細の取得中にエラーが発生しました",
     });
   }
 });
@@ -99,7 +99,7 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
  * アイテム作成API
  * POST /api/items
  */
-router.post('/', requireAuth, async (req: Request, res: Response) => {
+router.post("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const data = createItemSchema.parse(req.body);
     const user = (req as any).user;
@@ -107,19 +107,19 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
     res.status(201).json({
       success: true,
       data: item,
-      message: 'アイテムが正常に作成されました',
+      message: "アイテムが正常に作成されました",
     });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '入力値が正しくありません',
+        message: "入力値が正しくありません",
         errors: error.errors,
       });
     }
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'アイテムの作成中にエラーが発生しました',
+      message: error.message || "アイテムの作成中にエラーが発生しました",
     });
   }
 });
@@ -128,7 +128,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
  * アイテム更新API
  * PUT /api/items/:id
  */
-router.put('/:id', requireAuth, async (req: Request, res: Response) => {
+router.put("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const data = updateItemSchema.parse(req.body);
@@ -137,19 +137,19 @@ router.put('/:id', requireAuth, async (req: Request, res: Response) => {
     res.json({
       success: true,
       data: updatedItem,
-      message: 'アイテムが正常に更新されました',
+      message: "アイテムが正常に更新されました",
     });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '入力値が正しくありません',
+        message: "入力値が正しくありません",
         errors: error.errors,
       });
     }
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'アイテムの更新中にエラーが発生しました',
+      message: error.message || "アイテムの更新中にエラーが発生しました",
     });
   }
 });
@@ -158,18 +158,18 @@ router.put('/:id', requireAuth, async (req: Request, res: Response) => {
  * アイテム削除API
  * DELETE /api/items/:id
  */
-router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
+router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     await itemService.deleteItem(id);
     res.json({
       success: true,
-      message: 'アイテムが正常に削除されました',
+      message: "アイテムが正常に削除されました",
     });
   } catch (error: any) {
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'アイテムの削除中にエラーが発生しました',
+      message: error.message || "アイテムの削除中にエラーが発生しました",
     });
   }
 });
@@ -178,7 +178,7 @@ router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
  * アイテムコード重複チェックAPI
  * GET /api/items/check-code/:code
  */
-router.get('/check-code/:code', requireAuth, async (req: Request, res: Response) => {
+router.get("/check-code/:code", requireAuth, async (req: Request, res: Response) => {
   try {
     const { code } = req.params;
     const { excludeId } = req.query;
@@ -190,7 +190,7 @@ router.get('/check-code/:code', requireAuth, async (req: Request, res: Response)
   } catch (error: any) {
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'アイテムコードの重複チェック中にエラーが発生しました',
+      message: error.message || "アイテムコードの重複チェック中にエラーが発生しました",
     });
   }
 });

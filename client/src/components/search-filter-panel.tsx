@@ -27,7 +27,7 @@ export interface SearchFilter {
   accountingItem?: string;
   customerId?: string;
   searchText?: string;
-  reconciliationStatus?: 'matched' | 'fuzzy' | 'unmatched';
+  reconciliationStatus?: "matched" | "fuzzy" | "unmatched";
 }
 
 interface SearchFilterPanelProps {
@@ -53,10 +53,10 @@ export function SearchFilterPanel({
   const [localFilter, setLocalFilter] = useState<SearchFilter>(filter);
 
   // 営業担当者のユニークリストを抽出
-  const salesPersons = Array.from(new Set(projects.map(p => p.salesPerson))).sort();
+  const salesPersons = Array.from(new Set(projects.map((p) => p.salesPerson))).sort();
 
   // アクティブな検索条件の数をカウント
-  const activeFilterCount = Object.values(filter).filter(v => v !== undefined && v !== '').length;
+  const activeFilterCount = Object.values(filter).filter((v) => v !== undefined && v !== "").length;
 
   const handleSearch = () => {
     onSearch(localFilter);
@@ -81,7 +81,7 @@ export function SearchFilterPanel({
   return (
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>
-        <Button 
+        <Button
           variant={activeFilterCount > 0 ? "default" : "outline"}
           data-testid="button-open-search"
         >
@@ -100,21 +100,21 @@ export function SearchFilterPanel({
             <Filter className="h-5 w-5" />
             詳細検索
           </SheetTitle>
-          <SheetDescription>
-            受発注データを詳細条件で絞り込みます
-          </SheetDescription>
+          <SheetDescription>受発注データを詳細条件で絞り込みます</SheetDescription>
         </SheetHeader>
 
         <div className="mt-6 space-y-4">
           {/* 営業窓口 */}
           <div className="space-y-2">
             <label className="text-sm font-medium">営業窓口</label>
-            <Select 
-              value={localFilter.salesPerson || "all"} 
-              onValueChange={(value) => setLocalFilter({
-                ...localFilter,
-                salesPerson: value === "all" ? undefined : value
-              })}
+            <Select
+              value={localFilter.salesPerson || "all"}
+              onValueChange={(value) =>
+                setLocalFilter({
+                  ...localFilter,
+                  salesPerson: value === "all" ? undefined : value,
+                })
+              }
             >
               <SelectTrigger data-testid="search-select-sales-person">
                 <SelectValue placeholder="選択してください" />
@@ -133,12 +133,14 @@ export function SearchFilterPanel({
           {/* 計上科目 */}
           <div className="space-y-2">
             <label className="text-sm font-medium">計上科目</label>
-            <Select 
-              value={localFilter.accountingItem || "all"} 
-              onValueChange={(value) => setLocalFilter({
-                ...localFilter,
-                accountingItem: value === "all" ? undefined : value
-              })}
+            <Select
+              value={localFilter.accountingItem || "all"}
+              onValueChange={(value) =>
+                setLocalFilter({
+                  ...localFilter,
+                  accountingItem: value === "all" ? undefined : value,
+                })
+              }
             >
               <SelectTrigger data-testid="search-select-accounting-item">
                 <SelectValue placeholder="選択してください" />
@@ -157,12 +159,14 @@ export function SearchFilterPanel({
           {/* 取引先 */}
           <div className="space-y-2">
             <label className="text-sm font-medium">取引先</label>
-            <Select 
-              value={localFilter.customerId || "all"} 
-              onValueChange={(value) => setLocalFilter({
-                ...localFilter,
-                customerId: value === "all" ? undefined : value
-              })}
+            <Select
+              value={localFilter.customerId || "all"}
+              onValueChange={(value) =>
+                setLocalFilter({
+                  ...localFilter,
+                  customerId: value === "all" ? undefined : value,
+                })
+              }
             >
               <SelectTrigger data-testid="search-select-customer">
                 <SelectValue placeholder="選択してください" />
@@ -181,12 +185,15 @@ export function SearchFilterPanel({
           {/* 突合状態 */}
           <div className="space-y-2">
             <label className="text-sm font-medium">突合状態</label>
-            <Select 
-              value={localFilter.reconciliationStatus || "all"} 
-              onValueChange={(value) => setLocalFilter({
-                ...localFilter,
-                reconciliationStatus: value === "all" ? undefined : (value as 'matched' | 'fuzzy' | 'unmatched')
-              })}
+            <Select
+              value={localFilter.reconciliationStatus || "all"}
+              onValueChange={(value) =>
+                setLocalFilter({
+                  ...localFilter,
+                  reconciliationStatus:
+                    value === "all" ? undefined : (value as "matched" | "fuzzy" | "unmatched"),
+                })
+              }
             >
               <SelectTrigger data-testid="search-select-reconciliation-status">
                 <SelectValue placeholder="選択してください" />
@@ -207,10 +214,12 @@ export function SearchFilterPanel({
               type="text"
               placeholder="検索キーワードを入力..."
               value={localFilter.searchText || ""}
-              onChange={(e) => setLocalFilter({
-                ...localFilter,
-                searchText: e.target.value || undefined
-              })}
+              onChange={(e) =>
+                setLocalFilter({
+                  ...localFilter,
+                  searchText: e.target.value || undefined,
+                })
+              }
               data-testid="search-input-text"
             />
             <p className="text-xs text-muted-foreground">
@@ -221,19 +230,11 @@ export function SearchFilterPanel({
 
         {/* フッター: アクションボタン */}
         <div className="mt-8 flex gap-2">
-          <Button 
-            onClick={handleSearch}
-            className="flex-1"
-            data-testid="button-apply-search"
-          >
+          <Button onClick={handleSearch} className="flex-1" data-testid="button-apply-search">
             <Search className="h-4 w-4 mr-2" />
             検索
           </Button>
-          <Button 
-            variant="outline"
-            onClick={handleClear}
-            data-testid="button-clear-search"
-          >
+          <Button variant="outline" onClick={handleClear} data-testid="button-clear-search">
             <X className="h-4 w-4 mr-2" />
             クリア
           </Button>
@@ -242,5 +243,3 @@ export function SearchFilterPanel({
     </Sheet>
   );
 }
-
-

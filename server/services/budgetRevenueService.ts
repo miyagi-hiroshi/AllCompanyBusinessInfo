@@ -57,4 +57,3 @@ export class BudgetRevenueService {
     return await this.budgetRevenueRepository.getAnnualTotal(fiscalYear);
   }
 }
-

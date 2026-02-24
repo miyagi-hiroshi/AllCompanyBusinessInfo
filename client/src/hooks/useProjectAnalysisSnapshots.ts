@@ -1,4 +1,7 @@
-import type { ProjectAnalysisSnapshot, SnapshotData } from "@shared/schema/projectAnalysisSnapshot/types";
+import type {
+  ProjectAnalysisSnapshot,
+  SnapshotData,
+} from "@shared/schema/projectAnalysisSnapshot/types";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { apiRequest } from "@/lib/queryClient";
@@ -29,22 +32,16 @@ export interface CompareResponse {
 
 /**
  * プロジェクト分析スナップショット一覧取得フック
- * 
+ *
  * @param fiscalYear - 年度（オプション）
  * @returns スナップショット一覧のクエリ結果
  */
 export function useProjectAnalysisSnapshots(fiscalYear?: number) {
   return useQuery<SnapshotsResponse>({
-    queryKey: ['/api/projects/analysis-snapshots', fiscalYear],
+    queryKey: ["/api/projects/analysis-snapshots", fiscalYear],
     queryFn: async () => {
-      const params = fiscalYear 
-        ? `?fiscalYear=${fiscalYear}` 
-        : '';
-      const res = await apiRequest(
-        "GET",
-        `/api/projects/analysis-snapshots${params}`,
-        undefined
-      );
+      const params = fiscalYear ? `?fiscalYear=${fiscalYear}` : "";
+      const res = await apiRequest("GET", `/api/projects/analysis-snapshots${params}`, undefined);
       return await res.json();
     },
   });
@@ -52,19 +49,15 @@ export function useProjectAnalysisSnapshots(fiscalYear?: number) {
 
 /**
  * プロジェクト分析スナップショット詳細取得フック
- * 
+ *
  * @param id - スナップショットID
  * @returns スナップショット詳細のクエリ結果
  */
 export function useProjectAnalysisSnapshot(id: string) {
   return useQuery<SnapshotResponse>({
-    queryKey: ['/api/projects/analysis-snapshots', id],
+    queryKey: ["/api/projects/analysis-snapshots", id],
     queryFn: async () => {
-      const res = await apiRequest(
-        "GET",
-        `/api/projects/analysis-snapshots/${id}`,
-        undefined
-      );
+      const res = await apiRequest("GET", `/api/projects/analysis-snapshots/${id}`, undefined);
       return await res.json();
     },
     enabled: !!id,
@@ -73,7 +66,7 @@ export function useProjectAnalysisSnapshot(id: string) {
 
 /**
  * プロジェクト分析スナップショット作成フック
- * 
+ *
  * @returns スナップショット作成のMutation
  */
 export function useCreateProjectAnalysisSnapshot() {
@@ -81,20 +74,16 @@ export function useCreateProjectAnalysisSnapshot() {
 
   return useMutation({
     mutationFn: async (data: CreateSnapshotRequest) => {
-      const res = await apiRequest(
-        "POST",
-        "/api/projects/analysis-snapshots",
-        data
-      );
+      const res = await apiRequest("POST", "/api/projects/analysis-snapshots", data);
       return await res.json();
     },
     onSuccess: (_, variables) => {
       // スナップショット一覧を更新
-      queryClient.invalidateQueries({ 
-        queryKey: ['/api/projects/analysis-snapshots', variables.fiscalYear] 
+      queryClient.invalidateQueries({
+        queryKey: ["/api/projects/analysis-snapshots", variables.fiscalYear],
       });
-      queryClient.invalidateQueries({ 
-        queryKey: ['/api/projects/analysis-snapshots'] 
+      queryClient.invalidateQueries({
+        queryKey: ["/api/projects/analysis-snapshots"],
       });
     },
   });
@@ -102,7 +91,7 @@ export function useCreateProjectAnalysisSnapshot() {
 
 /**
  * プロジェクト分析スナップショット比較取得フック
- * 
+ *
  * @param id1 - スナップショットID1
  * @param id2 - スナップショットID2
  * @returns スナップショット比較のクエリ結果
@@ -113,7 +102,7 @@ export function useCompareProjectAnalysisSnapshots(
   options?: { enabled?: boolean }
 ) {
   return useQuery<CompareResponse>({
-    queryKey: ['/api/projects/analysis-snapshots/compare', id1, id2],
+    queryKey: ["/api/projects/analysis-snapshots/compare", id1, id2],
     queryFn: async () => {
       const res = await apiRequest(
         "GET",
@@ -125,4 +114,3 @@ export function useCompareProjectAnalysisSnapshots(
     enabled: (options?.enabled ?? true) && !!id1 && !!id2,
   });
 }
-

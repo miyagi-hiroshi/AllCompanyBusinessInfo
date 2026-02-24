@@ -82,31 +82,31 @@ export default tseslint.config(
       /** ---------- 最小限の重要ルール ---------- */
       // デバッガー残存は絶対にエラー
       "no-debugger": "error",
-      
+
       // console.logは警告（開発時は許可）
       "no-console": ["warn", { allow: ["warn", "error"] }],
-      
+
       // 未使用変数は警告（_で始まるものは除外）
       "@typescript-eslint/no-unused-vars": [
-        "warn", 
-        { 
-          argsIgnorePattern: "^_", 
-          varsIgnorePattern: "^_", 
-          caughtErrorsIgnorePattern: "^_" 
-        }
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
       ],
-      
+
       // any型の使用は警告
       "@typescript-eslint/no-explicit-any": "warn",
-      
+
       // Reactの基本的なルール
       "react/jsx-key": "error",
       "react-hooks/rules-of-hooks": "error",
-      
+
       // 構文エラーは絶対にエラー
       "no-unreachable": "error",
       "no-fallthrough": "error",
-      
+
       /** ---------- 段階的改善のため抑制 ---------- */
       "@typescript-eslint/no-unsafe-assignment": "off",
       "@typescript-eslint/no-unsafe-member-access": "off",
@@ -120,7 +120,7 @@ export default tseslint.config(
       "@typescript-eslint/require-await": "off",
       "@typescript-eslint/await-thenable": "off",
       "@typescript-eslint/unbound-method": "off",
-      
+
       /** ---------- インポート/モジュール関連 ---------- */
       // 循環参照を検出（エラーレベル）
       "import/no-cycle": ["error", { maxDepth: 10, ignoreExternal: true }],
@@ -129,7 +129,7 @@ export default tseslint.config(
       // インポート順序の自動ソート
       "simple-import-sort/imports": "error",
       "simple-import-sort/exports": "error",
-    }
+    },
   },
 
   // サーバー側（適度な緩和）
@@ -141,14 +141,14 @@ export default tseslint.config(
       "@typescript-eslint/no-explicit-any": "off",
       // 未使用変数は警告レベル
       "@typescript-eslint/no-unused-vars": [
-        "warn", 
-        { 
-          argsIgnorePattern: "^_", 
-          varsIgnorePattern: "^_", 
-          caughtErrorsIgnorePattern: "^_" 
-        }
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
       ],
-    }
+    },
   },
 
   // クライアント側（より厳格）
@@ -159,15 +159,15 @@ export default tseslint.config(
       "@typescript-eslint/no-explicit-any": "warn",
       // 未使用変数はエラー
       "@typescript-eslint/no-unused-vars": [
-        "error", 
-        { 
-          argsIgnorePattern: "^_", 
-          varsIgnorePattern: "^_", 
-          caughtErrorsIgnorePattern: "^_" 
-        }
+        "error",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
       ],
       // React固有ルール
       "react-refresh/only-export-components": "warn",
-    }
+    },
   }
 );

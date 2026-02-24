@@ -1,6 +1,12 @@
 import { Calendar } from "lucide-react";
 
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface PeriodSelectorProps {
   value: string;
@@ -12,13 +18,13 @@ interface PeriodSelectorProps {
 function generatePeriods(): string[] {
   const periods: string[] = [];
   const now = new Date();
-  
+
   for (let i = 0; i < 12; i++) {
     const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
     const period = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
     periods.push(period);
   }
-  
+
   return periods;
 }
 
@@ -27,7 +33,11 @@ function formatPeriod(period: string): string {
   return `${year}年${month}月`;
 }
 
-export function PeriodSelector({ value, onChange, periods = generatePeriods() }: PeriodSelectorProps) {
+export function PeriodSelector({
+  value,
+  onChange,
+  periods = generatePeriods(),
+}: PeriodSelectorProps) {
   return (
     <Select value={value} onValueChange={onChange}>
       <SelectTrigger className="w-[200px]" data-testid="select-period">

@@ -4,22 +4,71 @@
  * @returns 全角カナに変換された文字列
  */
 export function convertHalfWidthKanaToFullWidth(text: string): string {
-  if (!text) return '';
-  
+  if (!text) return "";
+
   return text.replace(/[\uFF65-\uFF9F]/g, (s) => {
     const code = s.charCodeAt(0);
     const hankanaMap: { [key: number]: string } = {
-      0xFF65: '・', 0xFF66: '・', 0xFF67: 'ァ', 0xFF68: 'ィ', 0xFF69: 'ゥ', 0xFF6A: 'ェ', 0xFF6B: 'ォ',
-      0xFF6C: 'ャ', 0xFF6D: 'ュ', 0xFF6E: 'ョ', 0xFF6F: 'ッ', 0xFF70: 'ー', 0xFF71: 'ア', 0xFF72: 'イ',
-      0xFF73: 'ウ', 0xFF74: 'エ', 0xFF75: 'オ', 0xFF76: 'カ', 0xFF77: 'キ', 0xFF78: 'ク', 0xFF79: 'ケ',
-      0xFF7A: 'コ', 0xFF7B: 'サ', 0xFF7C: 'シ', 0xFF7D: 'ス', 0xFF7E: 'セ', 0xFF7F: 'ソ', 0xFF80: 'タ',
-      0xFF81: 'チ', 0xFF82: 'ツ', 0xFF83: 'テ', 0xFF84: 'ト', 0xFF85: 'ナ', 0xFF86: 'ニ', 0xFF87: 'ヌ',
-      0xFF88: 'ネ', 0xFF89: 'ノ', 0xFF8A: 'ハ', 0xFF8B: 'ヒ', 0xFF8C: 'フ', 0xFF8D: 'ヘ', 0xFF8E: 'ホ',
-      0xFF8F: 'マ', 0xFF90: 'ミ', 0xFF91: 'ム', 0xFF92: 'メ', 0xFF93: 'モ', 0xFF94: 'ヤ', 0xFF95: 'ユ',
-      0xFF96: 'ヨ', 0xFF97: 'ラ', 0xFF98: 'リ', 0xFF99: 'ル', 0xFF9A: 'レ', 0xFF9B: 'ロ', 0xFF9C: 'ワ',
-      0xFF9D: 'ヲ', 0xFF9E: 'ン', 0xFF9F: 'ヴ'
+      0xff65: "・",
+      0xff66: "・",
+      0xff67: "ァ",
+      0xff68: "ィ",
+      0xff69: "ゥ",
+      0xff6a: "ェ",
+      0xff6b: "ォ",
+      0xff6c: "ャ",
+      0xff6d: "ュ",
+      0xff6e: "ョ",
+      0xff6f: "ッ",
+      0xff70: "ー",
+      0xff71: "ア",
+      0xff72: "イ",
+      0xff73: "ウ",
+      0xff74: "エ",
+      0xff75: "オ",
+      0xff76: "カ",
+      0xff77: "キ",
+      0xff78: "ク",
+      0xff79: "ケ",
+      0xff7a: "コ",
+      0xff7b: "サ",
+      0xff7c: "シ",
+      0xff7d: "ス",
+      0xff7e: "セ",
+      0xff7f: "ソ",
+      0xff80: "タ",
+      0xff81: "チ",
+      0xff82: "ツ",
+      0xff83: "テ",
+      0xff84: "ト",
+      0xff85: "ナ",
+      0xff86: "ニ",
+      0xff87: "ヌ",
+      0xff88: "ネ",
+      0xff89: "ノ",
+      0xff8a: "ハ",
+      0xff8b: "ヒ",
+      0xff8c: "フ",
+      0xff8d: "ヘ",
+      0xff8e: "ホ",
+      0xff8f: "マ",
+      0xff90: "ミ",
+      0xff91: "ム",
+      0xff92: "メ",
+      0xff93: "モ",
+      0xff94: "ヤ",
+      0xff95: "ユ",
+      0xff96: "ヨ",
+      0xff97: "ラ",
+      0xff98: "リ",
+      0xff99: "ル",
+      0xff9a: "レ",
+      0xff9b: "ロ",
+      0xff9c: "ワ",
+      0xff9d: "ヲ",
+      0xff9e: "ン",
+      0xff9f: "ヴ",
     };
     return hankanaMap[code] || s;
   });
 }
-

@@ -11,11 +11,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
 export interface MultiSelectOption {
@@ -107,8 +103,8 @@ export function MultiSelect({
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent 
-        className="w-full p-0" 
+      <PopoverContent
+        className="w-full p-0"
         align="start"
         onInteractOutside={() => {
           // 外側をクリックした場合のみ閉じる
@@ -153,4 +149,3 @@ export function MultiSelect({
     </Popover>
   );
 }
-

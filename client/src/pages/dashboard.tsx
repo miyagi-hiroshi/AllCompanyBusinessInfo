@@ -25,17 +25,18 @@ const FISCAL_YEARS = [2023, 2024, 2025, 2026];
 
 export default function DashboardPage() {
   const [selectedYear, setSelectedYear] = useState<number>(2025);
-  
+
   // ダッシュボードデータ取得
   const { data: dashboardData, isLoading } = useDashboard(selectedYear);
-  
+
   // サービス毎の売上予実比較データ取得
-  const { data: comparisonData, isLoading: isComparisonLoading } = useServiceRevenueComparison(selectedYear);
+  const { data: comparisonData, isLoading: isComparisonLoading } =
+    useServiceRevenueComparison(selectedYear);
 
   // 数値フォーマット関数
   const formatPercentage = (value: number | undefined) => {
     if (value === undefined || isNaN(value)) {
-      return '0.0%';
+      return "0.0%";
     }
     return `${value.toFixed(1)}%`;
   };
@@ -55,13 +56,13 @@ export default function DashboardPage() {
           </div>
           <Skeleton className="h-10 w-32" />
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-32" />
           ))}
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-32" />
@@ -91,7 +92,7 @@ export default function DashboardPage() {
 
   // サービス毎の予実比較データ
   const serviceComparisons = comparisonData?.success ? comparisonData.data : [];
-  
+
   // 合計行の計算
   const totalBudget = serviceComparisons.reduce((sum, item) => sum + item.revenueBudget, 0);
   const totalActual = serviceComparisons.reduce((sum, item) => sum + item.revenueActual, 0);
@@ -107,7 +108,10 @@ export default function DashboardPage() {
           <h1 className="text-2xl font-bold">ダッシュボード</h1>
         </div>
         <div className="flex items-center gap-4">
-          <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(Number(value))}>
+          <Select
+            value={selectedYear.toString()}
+            onValueChange={(value) => setSelectedYear(Number(value))}
+          >
             <SelectTrigger className="w-[120px]">
               <SelectValue />
             </SelectTrigger>
@@ -251,12 +255,21 @@ export default function DashboardPage() {
                   {serviceComparisons.map((item) => (
                     <TableRow key={item.serviceType}>
                       <TableCell className="font-medium">{item.serviceType}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(item.revenueBudget)}</TableCell>
-                      <TableCell className="text-right">{formatCurrency(item.revenueActual)}</TableCell>
-                      <TableCell className={`text-right ${item.difference >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                        {item.difference >= 0 ? '+' : ''}{formatCurrency(item.difference)}
+                      <TableCell className="text-right">
+                        {formatCurrency(item.revenueBudget)}
                       </TableCell>
-                      <TableCell className="text-right">{formatPercentage(item.achievementRate)}</TableCell>
+                      <TableCell className="text-right">
+                        {formatCurrency(item.revenueActual)}
+                      </TableCell>
+                      <TableCell
+                        className={`text-right ${item.difference >= 0 ? "text-green-600" : "text-red-600"}`}
+                      >
+                        {item.difference >= 0 ? "+" : ""}
+                        {formatCurrency(item.difference)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatPercentage(item.achievementRate)}
+                      </TableCell>
                     </TableRow>
                   ))}
                   {/* 合計行 */}
@@ -264,10 +277,15 @@ export default function DashboardPage() {
                     <TableCell>合計</TableCell>
                     <TableCell className="text-right">{formatCurrency(totalBudget)}</TableCell>
                     <TableCell className="text-right">{formatCurrency(totalActual)}</TableCell>
-                    <TableCell className={`text-right ${totalDifference >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {totalDifference >= 0 ? '+' : ''}{formatCurrency(totalDifference)}
+                    <TableCell
+                      className={`text-right ${totalDifference >= 0 ? "text-green-600" : "text-red-600"}`}
+                    >
+                      {totalDifference >= 0 ? "+" : ""}
+                      {formatCurrency(totalDifference)}
                     </TableCell>
-                    <TableCell className="text-right">{formatPercentage(totalAchievementRate)}</TableCell>
+                    <TableCell className="text-right">
+                      {formatPercentage(totalAchievementRate)}
+                    </TableCell>
                   </TableRow>
                 </TableBody>
               </Table>
@@ -278,4 +296,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-

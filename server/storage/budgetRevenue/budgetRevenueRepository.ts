@@ -27,12 +27,7 @@ export class BudgetRevenueRepository {
       createdAt: budgetsRevenue.createdAt,
     }[sortBy];
 
-    const query = db
-      .select()
-      .from(budgetsRevenue)
-      .where(conditions)
-      .limit(limit)
-      .offset(offset);
+    const query = db.select().from(budgetsRevenue).where(conditions).limit(limit).offset(offset);
 
     if (sortOrder === "asc") {
       return await query.orderBy(orderByColumn);
@@ -52,11 +47,7 @@ export class BudgetRevenueRepository {
   }
 
   async findById(id: string): Promise<BudgetRevenue | null> {
-    const result = await db
-      .select()
-      .from(budgetsRevenue)
-      .where(eq(budgetsRevenue.id, id))
-      .limit(1);
+    const result = await db.select().from(budgetsRevenue).where(eq(budgetsRevenue.id, id)).limit(1);
 
     return result[0] || null;
   }
@@ -85,10 +76,7 @@ export class BudgetRevenueRepository {
   }
 
   async delete(id: string): Promise<boolean> {
-    const result = await db
-      .delete(budgetsRevenue)
-      .where(eq(budgetsRevenue.id, id))
-      .returning();
+    const result = await db.delete(budgetsRevenue).where(eq(budgetsRevenue.id, id)).returning();
 
     return result.length > 0;
   }
@@ -99,12 +87,12 @@ export class BudgetRevenueRepository {
       .from(budgetsRevenue)
       .where(eq(budgetsRevenue.fiscalYear, fiscalYear));
 
-    return parseFloat(result[0]?.total?.toString() || '0');
+    return parseFloat(result[0]?.total?.toString() || "0");
   }
 
   /**
    * サービス区分ごとの売上予算を集計
-   * 
+   *
    * @param fiscalYear - 年度
    * @returns サービス区分 => 予算額のMap
    */
@@ -120,7 +108,7 @@ export class BudgetRevenueRepository {
 
     const budgetMap = new Map<string, number>();
     for (const row of result) {
-      budgetMap.set(row.serviceType, parseFloat(row.total?.toString() || '0'));
+      budgetMap.set(row.serviceType, parseFloat(row.total?.toString() || "0"));
     }
 
     return budgetMap;
@@ -144,4 +132,3 @@ export class BudgetRevenueRepository {
     return conditions.length > 0 ? and(...conditions) : undefined;
   }
 }
-

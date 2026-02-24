@@ -1,4 +1,11 @@
-import type { BudgetExpense, BudgetRevenue, BudgetTarget, NewBudgetExpense, NewBudgetRevenue, NewBudgetTarget } from "@shared/schema";
+import type {
+  BudgetExpense,
+  BudgetRevenue,
+  BudgetTarget,
+  NewBudgetExpense,
+  NewBudgetRevenue,
+  NewBudgetTarget,
+} from "@shared/schema";
 import { DollarSign, Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 
@@ -116,14 +123,21 @@ export default function BudgetPage() {
   });
 
   // Fetch budgets
-  const { data: revenuebudgets = [], isLoading: revenueLoading } = useBudgetsRevenue({ fiscalYear: selectedYear });
-  const { data: expenseBudgets = [], isLoading: expenseLoading } = useBudgetsExpense({ fiscalYear: selectedYear });
-  const { data: targetBudgets = [], isLoading: targetLoading } = useBudgetsTarget({ fiscalYear: selectedYear });
-  
-  // 計上科目マスタを取得（売上系コード510-519を除外）
-  const { data: accountingItems = { items: [], total: 0 }, isLoading: accountingItemsLoading } = useAccountingItems({ 
-    excludeRevenueCodes: true 
+  const { data: revenuebudgets = [], isLoading: revenueLoading } = useBudgetsRevenue({
+    fiscalYear: selectedYear,
   });
+  const { data: expenseBudgets = [], isLoading: expenseLoading } = useBudgetsExpense({
+    fiscalYear: selectedYear,
+  });
+  const { data: targetBudgets = [], isLoading: targetLoading } = useBudgetsTarget({
+    fiscalYear: selectedYear,
+  });
+
+  // 計上科目マスタを取得（売上系コード510-519を除外）
+  const { data: accountingItems = { items: [], total: 0 }, isLoading: accountingItemsLoading } =
+    useAccountingItems({
+      excludeRevenueCodes: true,
+    });
 
   // Revenue mutations
   const createRevenueMutation = useCreateBudgetRevenue();
@@ -384,7 +398,11 @@ export default function BudgetPage() {
   };
 
   const handleTargetSave = () => {
-    if (!targetFormData.serviceType || !targetFormData.analysisType || !targetFormData.targetValue) {
+    if (
+      !targetFormData.serviceType ||
+      !targetFormData.analysisType ||
+      !targetFormData.targetValue
+    ) {
       toast({
         title: "入力エラー",
         description: "サービス区分、分析区分、目標値を入力してください",
@@ -414,7 +432,7 @@ export default function BudgetPage() {
         });
         return;
       }
-      
+
       if (targetValue > 999999999) {
         toast({
           title: "入力エラー",
@@ -432,7 +450,7 @@ export default function BudgetPage() {
         });
         return;
       }
-      
+
       if (targetValue > 999999999999) {
         toast({
           title: "入力エラー",
@@ -527,7 +545,11 @@ export default function BudgetPage() {
               value={selectedYear.toString()}
               onValueChange={(value) => setSelectedYear(parseInt(value))}
             >
-              <SelectTrigger id="fiscal-year-select" className="w-[150px]" data-testid="select-fiscal-year">
+              <SelectTrigger
+                id="fiscal-year-select"
+                className="w-[150px]"
+                data-testid="select-fiscal-year"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -540,7 +562,9 @@ export default function BudgetPage() {
             </Select>
           </div>
         </div>
-        <p className="text-muted-foreground mt-1">年度ごとの売上予算・原価・販管費予算・目標値を管理します</p>
+        <p className="text-muted-foreground mt-1">
+          年度ごとの売上予算・原価・販管費予算・目標値を管理します
+        </p>
       </div>
 
       <Tabs defaultValue="revenue" className="w-full">
@@ -575,7 +599,9 @@ export default function BudgetPage() {
               {revenueLoading ? (
                 <div className="text-center py-8 text-muted-foreground">読み込み中...</div>
               ) : revenuebudgets.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">売上予算が登録されていません</div>
+                <div className="text-center py-8 text-muted-foreground">
+                  売上予算が登録されていません
+                </div>
               ) : (
                 <Table>
                   <TableHeader>
@@ -649,7 +675,9 @@ export default function BudgetPage() {
               {expenseLoading ? (
                 <div className="text-center py-8 text-muted-foreground">読み込み中...</div>
               ) : expenseBudgets.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">原価・販管費予算が登録されていません</div>
+                <div className="text-center py-8 text-muted-foreground">
+                  原価・販管費予算が登録されていません
+                </div>
               ) : (
                 <Table>
                   <TableHeader>
@@ -723,7 +751,9 @@ export default function BudgetPage() {
               {targetLoading ? (
                 <div className="text-center py-8 text-muted-foreground">読み込み中...</div>
               ) : targetBudgets.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">目標値が登録されていません</div>
+                <div className="text-center py-8 text-muted-foreground">
+                  目標値が登録されていません
+                </div>
               ) : (
                 <Table>
                   <TableHeader>
@@ -807,7 +837,9 @@ export default function BudgetPage() {
               <Label htmlFor="revenue-service-type">サービス区分</Label>
               <Select
                 value={revenueFormData.serviceType}
-                onValueChange={(value) => setRevenueFormData({ ...revenueFormData, serviceType: value })}
+                onValueChange={(value) =>
+                  setRevenueFormData({ ...revenueFormData, serviceType: value })
+                }
               >
                 <SelectTrigger id="revenue-service-type" data-testid="select-revenue-service-type">
                   <SelectValue placeholder="サービス区分を選択" />
@@ -827,7 +859,9 @@ export default function BudgetPage() {
                 id="revenue-budget-amount"
                 type="number"
                 value={revenueFormData.budgetAmount}
-                onChange={(e) => setRevenueFormData({ ...revenueFormData, budgetAmount: e.target.value })}
+                onChange={(e) =>
+                  setRevenueFormData({ ...revenueFormData, budgetAmount: e.target.value })
+                }
                 placeholder="10000000"
                 data-testid="input-revenue-budget-amount"
               />
@@ -837,14 +871,20 @@ export default function BudgetPage() {
               <Textarea
                 id="revenue-remarks"
                 value={revenueFormData.remarks || ""}
-                onChange={(e) => setRevenueFormData({ ...revenueFormData, remarks: e.target.value })}
+                onChange={(e) =>
+                  setRevenueFormData({ ...revenueFormData, remarks: e.target.value })
+                }
                 placeholder="備考を入力"
                 data-testid="textarea-revenue-remarks"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRevenueDialogOpen(false)} data-testid="button-cancel-revenue">
+            <Button
+              variant="outline"
+              onClick={() => setRevenueDialogOpen(false)}
+              data-testid="button-cancel-revenue"
+            >
               キャンセル
             </Button>
             <Button onClick={handleRevenueSave} data-testid="button-submit-revenue">
@@ -858,7 +898,9 @@ export default function BudgetPage() {
       <Dialog open={expenseDialogOpen} onOpenChange={setExpenseDialogOpen}>
         <DialogContent data-testid="dialog-expense">
           <DialogHeader>
-            <DialogTitle>{expenseEditMode ? "原価・販管費予算編集" : "原価・販管費予算新規作成"}</DialogTitle>
+            <DialogTitle>
+              {expenseEditMode ? "原価・販管費予算編集" : "原価・販管費予算新規作成"}
+            </DialogTitle>
             <DialogDescription>原価・販管費予算情報を入力してください</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4">
@@ -878,14 +920,21 @@ export default function BudgetPage() {
               <Label htmlFor="expense-accounting-item">科目</Label>
               <Select
                 value={expenseFormData.accountingItem}
-                onValueChange={(value) => setExpenseFormData({ ...expenseFormData, accountingItem: value })}
+                onValueChange={(value) =>
+                  setExpenseFormData({ ...expenseFormData, accountingItem: value })
+                }
               >
-                <SelectTrigger id="expense-accounting-item" data-testid="select-expense-accounting-item">
+                <SelectTrigger
+                  id="expense-accounting-item"
+                  data-testid="select-expense-accounting-item"
+                >
                   <SelectValue placeholder="科目を選択" />
                 </SelectTrigger>
                 <SelectContent>
                   {accountingItemsLoading ? (
-                    <SelectItem value="" disabled>読み込み中...</SelectItem>
+                    <SelectItem value="" disabled>
+                      読み込み中...
+                    </SelectItem>
                   ) : (
                     accountingItems.items.map((item) => (
                       <SelectItem key={item.id} value={item.name}>
@@ -902,7 +951,9 @@ export default function BudgetPage() {
                 id="expense-budget-amount"
                 type="number"
                 value={expenseFormData.budgetAmount}
-                onChange={(e) => setExpenseFormData({ ...expenseFormData, budgetAmount: e.target.value })}
+                onChange={(e) =>
+                  setExpenseFormData({ ...expenseFormData, budgetAmount: e.target.value })
+                }
                 placeholder="5000000"
                 data-testid="input-expense-budget-amount"
               />
@@ -912,14 +963,20 @@ export default function BudgetPage() {
               <Textarea
                 id="expense-remarks"
                 value={expenseFormData.remarks || ""}
-                onChange={(e) => setExpenseFormData({ ...expenseFormData, remarks: e.target.value })}
+                onChange={(e) =>
+                  setExpenseFormData({ ...expenseFormData, remarks: e.target.value })
+                }
                 placeholder="備考を入力"
                 data-testid="textarea-expense-remarks"
               />
             </div>
-      </div>
+          </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setExpenseDialogOpen(false)} data-testid="button-cancel-expense">
+            <Button
+              variant="outline"
+              onClick={() => setExpenseDialogOpen(false)}
+              data-testid="button-cancel-expense"
+            >
               キャンセル
             </Button>
             <Button onClick={handleExpenseSave} data-testid="button-submit-expense">
@@ -953,7 +1010,9 @@ export default function BudgetPage() {
               <Label htmlFor="target-service-type">サービス区分</Label>
               <Select
                 value={targetFormData.serviceType}
-                onValueChange={(value) => setTargetFormData({ ...targetFormData, serviceType: value })}
+                onValueChange={(value) =>
+                  setTargetFormData({ ...targetFormData, serviceType: value })
+                }
               >
                 <SelectTrigger id="target-service-type" data-testid="select-target-service-type">
                   <SelectValue placeholder="サービス区分を選択" />
@@ -971,7 +1030,9 @@ export default function BudgetPage() {
               <Label htmlFor="target-analysis-type">分析区分</Label>
               <Select
                 value={targetFormData.analysisType}
-                onValueChange={(value) => setTargetFormData({ ...targetFormData, analysisType: value as "生産性" | "粗利" })}
+                onValueChange={(value) =>
+                  setTargetFormData({ ...targetFormData, analysisType: value as "生産性" | "粗利" })
+                }
               >
                 <SelectTrigger id="target-analysis-type" data-testid="select-target-analysis-type">
                   <SelectValue placeholder="分析区分を選択" />
@@ -993,13 +1054,15 @@ export default function BudgetPage() {
                 step="1"
                 max={targetFormData.analysisType === "生産性" ? 999999999 : 999999999999}
                 value={targetFormData.targetValue}
-                onChange={(e) => setTargetFormData({ ...targetFormData, targetValue: e.target.value })}
+                onChange={(e) =>
+                  setTargetFormData({ ...targetFormData, targetValue: e.target.value })
+                }
                 placeholder={targetFormData.analysisType === "生産性" ? "100000" : "5000"}
                 data-testid="input-target-value"
               />
               <p className="text-xs text-muted-foreground">
-                {targetFormData.analysisType === "生産性" 
-                  ? "生産性: 999,999,999以下の整数（例: 100,000/人月）" 
+                {targetFormData.analysisType === "生産性"
+                  ? "生産性: 999,999,999以下の整数（例: 100,000/人月）"
                   : "粗利: 999,999,999,999以下の整数（例: ¥5,000）"}
               </p>
             </div>
@@ -1015,7 +1078,11 @@ export default function BudgetPage() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setTargetDialogOpen(false)} data-testid="button-cancel-target">
+            <Button
+              variant="outline"
+              onClick={() => setTargetDialogOpen(false)}
+              data-testid="button-cancel-target"
+            >
               キャンセル
             </Button>
             <Button onClick={handleTargetSave} data-testid="button-submit-target">
@@ -1035,8 +1102,13 @@ export default function BudgetPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete-revenue">キャンセル</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRevenueDelete} data-testid="button-confirm-delete-revenue">
+            <AlertDialogCancel data-testid="button-cancel-delete-revenue">
+              キャンセル
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleRevenueDelete}
+              data-testid="button-confirm-delete-revenue"
+            >
               削除
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -1053,8 +1125,13 @@ export default function BudgetPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete-expense">キャンセル</AlertDialogCancel>
-            <AlertDialogAction onClick={handleExpenseDelete} data-testid="button-confirm-delete-expense">
+            <AlertDialogCancel data-testid="button-cancel-delete-expense">
+              キャンセル
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleExpenseDelete}
+              data-testid="button-confirm-delete-expense"
+            >
               削除
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -1071,8 +1148,13 @@ export default function BudgetPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete-target">キャンセル</AlertDialogCancel>
-            <AlertDialogAction onClick={handleTargetDelete} data-testid="button-confirm-delete-target">
+            <AlertDialogCancel data-testid="button-cancel-delete-target">
+              キャンセル
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleTargetDelete}
+              data-testid="button-confirm-delete-target"
+            >
               削除
             </AlertDialogAction>
           </AlertDialogFooter>

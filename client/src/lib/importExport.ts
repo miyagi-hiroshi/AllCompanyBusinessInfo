@@ -56,10 +56,8 @@ export function parseCSV<T = any>(
     Papa.parse(file, {
       ...config,
       complete: (results) => {
-        const errors = results.errors.map(error => 
-          `行 ${error.row}: ${error.message}`
-        );
-        
+        const errors = results.errors.map((error) => `行 ${error.row}: ${error.message}`);
+
         resolve({
           success: errors.length === 0,
           data: results.data as T[],
@@ -93,24 +91,24 @@ export async function parseExcel<T = any>(
   try {
     const data = await file.arrayBuffer();
     const workbook = XLSX.read(data, { type: "array" });
-    
+
     // シート名を取得
     const targetSheet = sheetName || workbook.SheetNames[0];
-    
+
     if (!workbook.Sheets[targetSheet]) {
       throw new Error(`シート "${targetSheet}" が見つかりません`);
     }
-    
+
     // シートをJSONに変換
     const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[targetSheet], {
       header: 1,
       defval: "",
     });
-    
+
     // ヘッダー行を取得
     const headers = jsonData[0] as string[];
     const rows = jsonData.slice(1) as any[][];
-    
+
     // データをオブジェクト配列に変換
     const dataObjects = rows.map((row, _index) => {
       const obj: any = {};
@@ -119,7 +117,7 @@ export async function parseExcel<T = any>(
       });
       return obj;
     });
-    
+
     return {
       success: true,
       data: dataObjects as T[],
@@ -162,8 +160,11 @@ export async function exportToCSV<T extends Record<string, any>>(
 
     // ファイルをダウンロード
     downloadFile(csv, `${config.filename}.csv`, "text/csv");
-    
-    showSuccessToast("エクスポート完了", `${data.length}件のデータをCSVファイルでエクスポートしました`);
+
+    showSuccessToast(
+      "エクスポート完了",
+      `${data.length}件のデータをCSVファイルでエクスポートしました`
+    );
   } catch (error) {
     const appError = await handleError(error, false);
     showErrorToast(appError);
@@ -185,21 +186,20 @@ export async function exportToExcel<T extends Record<string, any>>(
 
     // ワークブックを作成
     const workbook = XLSX.utils.book_new();
-    
+
     // ワークシートを作成
     const worksheet = XLSX.utils.json_to_sheet(data);
-    
+
     // ワークシートをワークブックに追加
-    XLSX.utils.book_append_sheet(
-      workbook, 
-      worksheet, 
-      config.sheetName || "Sheet1"
-    );
+    XLSX.utils.book_append_sheet(workbook, worksheet, config.sheetName || "Sheet1");
 
     // ファイルをダウンロード
     XLSX.writeFile(workbook, `${config.filename}.xlsx`);
-    
-    showSuccessToast("エクスポート完了", `${data.length}件のデータをExcelファイルでエクスポートしました`);
+
+    showSuccessToast(
+      "エクスポート完了",
+      `${data.length}件のデータをExcelファイルでエクスポートしました`
+    );
   } catch (error) {
     const appError = await handleError(error, false);
     showErrorToast(appError);
@@ -220,10 +220,13 @@ export async function exportToJSON<T extends Record<string, any>>(
     }
 
     const jsonString = JSON.stringify(data, null, 2);
-    
+
     downloadFile(jsonString, `${config.filename}.json`, "application/json");
-    
-    showSuccessToast("エクスポート完了", `${data.length}件のデータをJSONファイルでエクスポートしました`);
+
+    showSuccessToast(
+      "エクスポート完了",
+      `${data.length}件のデータをJSONファイルでエクスポートしました`
+    );
   } catch (error) {
     const appError = await handleError(error, false);
     showErrorToast(appError);
@@ -236,14 +239,14 @@ export async function exportToJSON<T extends Record<string, any>>(
 function downloadFile(content: string, filename: string, mimeType: string): void {
   const blob = new Blob([content], { type: mimeType });
   const url = URL.createObjectURL(blob);
-  
+
   const link = document.createElement("a");
   link.href = url;
   link.download = filename;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  
+
   URL.revokeObjectURL(url);
 }
 
@@ -252,7 +255,7 @@ function downloadFile(content: string, filename: string, mimeType: string): void
  */
 export function detectFileFormat(file: File): FileFormat {
   const extension = file.name.split(".").pop()?.toLowerCase();
-  
+
   switch (extension) {
     case "xlsx":
     case "xls":
@@ -278,7 +281,7 @@ export async function parseFile<T = any>(
 ): Promise<ImportResult<T>> {
   try {
     const format = detectFileFormat(file);
-    
+
     switch (format) {
       case FileFormat.CSV:
         return await parseCSV<T>(file, { delimiter: options?.delimiter });
@@ -322,8 +325,8 @@ export async function generateTemplate<T extends Record<string, any>>(
   try {
     // サンプルデータからヘッダーを抽出
     const headers = Object.keys(sampleData[0] || {});
-    const templateData = headers.map(header => ({ [header]: "" }));
-    
+    const templateData = headers.map((header) => ({ [header]: "" }));
+
     switch (config.format) {
       case FileFormat.CSV:
         exportToCSV(templateData, { ...config, filename: `${config.filename}_template` });
@@ -335,7 +338,7 @@ export async function generateTemplate<T extends Record<string, any>>(
         exportToJSON(templateData, { ...config, filename: `${config.filename}_template` });
         break;
     }
-    
+
     showSuccessToast("テンプレート生成完了", "テンプレートファイルをダウンロードしました");
   } catch (error) {
     const appError = await handleError(error, false);

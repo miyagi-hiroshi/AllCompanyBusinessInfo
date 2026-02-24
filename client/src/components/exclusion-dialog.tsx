@@ -43,9 +43,7 @@ export function ExclusionDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>
-            {isExcluding ? "突合対象外設定" : "突合対象外解除"}
-          </DialogTitle>
+          <DialogTitle>{isExcluding ? "突合対象外設定" : "突合対象外解除"}</DialogTitle>
           <DialogDescription>
             {isExcluding
               ? `選択した${selectedCount}件の明細を突合対象外に設定します。`
@@ -68,10 +66,7 @@ export function ExclusionDialog({
           <Button variant="outline" onClick={handleCancel}>
             キャンセル
           </Button>
-          <Button
-            onClick={handleConfirm}
-            variant={isExcluding ? "destructive" : "default"}
-          >
+          <Button onClick={handleConfirm} variant={isExcluding ? "destructive" : "default"}>
             {isExcluding ? "除外" : "除外解除"}
           </Button>
         </DialogFooter>

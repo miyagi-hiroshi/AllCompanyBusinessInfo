@@ -1,10 +1,10 @@
-import type { NextFunction,Request, Response } from 'express';
+import type { NextFunction, Request, Response } from "express";
 
-import { auditLogRepository } from '../storage/auditLog';
+import { auditLogRepository } from "../storage/auditLog";
 
 /**
  * 監査ログミドルウェア
- * 
+ *
  * 責務:
  * - 自動的な操作ログ記録
  * - データ変更の追跡
@@ -19,7 +19,7 @@ export function auditDataChanges(req: Request, res: Response, next: NextFunction
   const startTime = Date.now();
 
   // レスポンスをキャプチャ
-  res.json = function(body: any) {
+  res.json = function (body: any) {
     const duration = Date.now() - startTime;
 
     // データ変更操作をログ記録
@@ -38,27 +38,38 @@ export function auditDataChanges(req: Request, res: Response, next: NextFunction
  */
 function shouldLogOperation(method: string, path: string): boolean {
   // GETリクエストは除外
-  if (method === 'GET') {return false;}
-  
+  if (method === "GET") {
+    return false;
+  }
+
   // APIエンドポイントのみ対象
-  if (!path.startsWith('/api/')) {return false;}
-  
+  if (!path.startsWith("/api/")) {
+    return false;
+  }
+
   // 認証関連のエンドポイントは除外
-  if (path.startsWith('/api/auth/')) {return false;}
-  
+  if (path.startsWith("/api/auth/")) {
+    return false;
+  }
+
   return true;
 }
 
 /**
  * データ操作をログ記録
  */
-async function logDataOperation(req: Request, res: Response, responseBody: any, duration: number): Promise<void> {
+async function logDataOperation(
+  req: Request,
+  res: Response,
+  responseBody: any,
+  duration: number
+): Promise<void> {
   try {
     const user = req.user!;
     const action = getActionFromMethod(req.method);
     const resource = getResourceFromPath(req.path);
     const resourceId = getResourceIdFromPath(req.path);
-    
+
     // 成功した場合のみログ記録
     if (res.statusCode >= 200 && res.statusCode < 300) {
       await auditLogRepository.create({
@@ -69,9 +80,9 @@ async function logDataOperation(req: Request, res: Response, responseBody: any, 
         resourceId,
         oldValues: getOldValues(req),
         newValues: getNewValues(req, responseBody),
-        ipAddress: req.ip ?? 'unknown',
-        userAgent: req.get('User-Agent') ?? 'unknown',
-        sessionId: req.headers.authorization?.replace('Bearer ', ''),
+        ipAddress: req.ip ?? "unknown",
+        userAgent: req.get("User-Agent") ?? "unknown",
+        sessionId: req.headers.authorization?.replace("Bearer ", ""),
         details: {
           method: req.method,
           path: req.path,
@@ -82,7 +93,7 @@ async function logDataOperation(req: Request, res: Response, responseBody: any, 
       });
     }
   } catch (error) {
-    console.error('監査ログ記録エラー:', error);
+    console.error("監査ログ記録エラー:", error);
   }
 }
 
@@ -91,15 +102,15 @@ async function logDataOperation(req: Request, res: Response, responseBody: any, 
  */
 function getActionFromMethod(method: string): string {
   switch (method) {
-    case 'POST':
-      return 'CREATE';
-    case 'PUT':
-    case 'PATCH':
-      return 'UPDATE';
-    case 'DELETE':
-      return 'DELETE';
+    case "POST":
+      return "CREATE";
+    case "PUT":
+    case "PATCH":
+      return "UPDATE";
+    case "DELETE":
+      return "DELETE";
     default:
-      return 'UNKNOWN';
+      return "UNKNOWN";
   }
 }
 
@@ -107,26 +118,26 @@ function getActionFromMethod(method: string): string {
  * パスからリソース名を取得
  */
 function getResourceFromPath(path: string): string {
-  const segments = path.split('/').filter(Boolean);
-  
+  const segments = path.split("/").filter(Boolean);
+
   if (segments.length >= 2) {
     return segments[1].toUpperCase(); // /api/customers -> CUSTOMERS
   }
-  
-  return 'UNKNOWN';
+
+  return "UNKNOWN";
 }
 
 /**
  * パスからリソースIDを取得
  */
 function getResourceIdFromPath(path: string): string | undefined {
-  const segments = path.split('/').filter(Boolean);
-  
+  const segments = path.split("/").filter(Boolean);
+
   // /api/customers/123 -> 123
   if (segments.length >= 3 && !isNaN(Number(segments[2]))) {
     return segments[2];
   }
-  
+
   return undefined;
 }
 
@@ -135,14 +146,14 @@ function getResourceIdFromPath(path: string): string | undefined {
  */
 function getOldValues(req: Request): Record<string, any> | undefined {
   // PUT/PATCH/DELETEの場合、既存データの情報を含める
-  if (['PUT', 'PATCH', 'DELETE'].includes(req.method)) {
+  if (["PUT", "PATCH", "DELETE"].includes(req.method)) {
     // 実際の実装では、データベースから既存データを取得
     // ここでは簡易的な実装
     return {
       // 既存データの情報
     };
   }
-  
+
   return undefined;
 }
 
@@ -150,16 +161,16 @@ function getOldValues(req: Request): Record<string, any> | undefined {
  * 変更後の値を取得
  */
 function getNewValues(req: Request, responseBody: any): Record<string, any> | undefined {
-  if (['POST', 'PUT', 'PATCH'].includes(req.method)) {
+  if (["POST", "PUT", "PATCH"].includes(req.method)) {
     // レスポンスからデータを取得
-    if (responseBody && typeof responseBody === 'object') {
+    if (responseBody && typeof responseBody === "object") {
       if (responseBody.data) {
         return responseBody.data;
       }
       return responseBody;
     }
   }
-  
+
   return undefined;
 }
 
@@ -178,13 +189,13 @@ export async function logLoginAttempt(
         userId,
         employeeId,
         success,
-        req.ip ?? 'unknown',
-        req.get('User-Agent') ?? 'unknown',
-        req.headers.authorization?.replace('Bearer ', '')
+        req.ip ?? "unknown",
+        req.get("User-Agent") ?? "unknown",
+        req.headers.authorization?.replace("Bearer ", "")
       );
     }
   } catch (error) {
-    console.error('ログインログ記録エラー:', error);
+    console.error("ログインログ記録エラー:", error);
   }
 }
 
@@ -196,12 +207,12 @@ export async function logLogout(req: Request, userId: string, employeeId: string
     await auditLogRepository.logLogout(
       userId,
       employeeId,
-      req.ip ?? 'unknown',
-      req.get('User-Agent') ?? 'unknown',
-      req.headers.authorization?.replace('Bearer ', '')
+      req.ip ?? "unknown",
+      req.get("User-Agent") ?? "unknown",
+      req.headers.authorization?.replace("Bearer ", "")
     );
   } catch (error) {
-    console.error('ログアウトログ記録エラー:', error);
+    console.error("ログアウトログ記録エラー:", error);
   }
 }
 
@@ -220,13 +231,13 @@ export async function logFileUpload(
         String(req.user.employeeId),
         filename,
         fileSize,
-        req.ip ?? 'unknown',
-        req.get('User-Agent') ?? 'unknown',
-        req.headers.authorization?.replace('Bearer ', '')
+        req.ip ?? "unknown",
+        req.get("User-Agent") ?? "unknown",
+        req.headers.authorization?.replace("Bearer ", "")
       );
     }
   } catch (error) {
-    console.error('ファイルアップロードログ記録エラー:', error);
+    console.error("ファイルアップロードログ記録エラー:", error);
   }
 }
 
@@ -247,12 +258,12 @@ export async function logDataExport(
         resource,
         recordCount,
         exportFormat,
-        req.ip ?? 'unknown',
-        req.get('User-Agent') ?? 'unknown',
-        req.headers.authorization?.replace('Bearer ', '')
+        req.ip ?? "unknown",
+        req.get("User-Agent") ?? "unknown",
+        req.headers.authorization?.replace("Bearer ", "")
       );
     }
   } catch (error) {
-    console.error('データエクスポートログ記録エラー:', error);
+    console.error("データエクスポートログ記録エラー:", error);
   }
 }

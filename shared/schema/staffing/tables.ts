@@ -6,7 +6,9 @@ const appSchema = pgSchema("app");
 
 // 配員計画データ (Staffing Plan Data)
 export const staffing = appSchema.table("staffing", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  id: varchar("id")
+    .primaryKey()
+    .default(sql`gen_random_uuid()`),
   projectId: varchar("project_id").notNull(), // プロジェクトID
   projectCode: text("project_code").notNull(), // プロジェクトコード
   projectName: text("project_name").notNull(), // プロジェクト名
@@ -16,11 +18,10 @@ export const staffing = appSchema.table("staffing", {
   employeeName: text("employee_name").notNull(), // 従業員名
   workHours: decimal("work_hours", { precision: 5, scale: 2 }).notNull(), // 工数（人月、小数第2位まで）
   remarks: text("remarks"), // 備考
-  
+
   // 既存システムとの関連（参照専用、外部キー制約なし）
   createdByUserId: varchar("created_by_user_id"), // 作成者ユーザーID（参照専用）
   createdByEmployeeId: varchar("created_by_employee_id"), // 作成者従業員ID（参照専用）
-  
+
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
-
