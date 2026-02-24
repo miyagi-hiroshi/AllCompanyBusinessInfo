@@ -1,16 +1,22 @@
-import { CreateProjectData, Project, ProjectAnalysisSummary,ProjectFilter, UpdateProjectData } from '@shared/schema/integrated';
+import {
+  CreateProjectData,
+  Project,
+  ProjectAnalysisSummary,
+  ProjectFilter,
+  UpdateProjectData,
+} from "@shared/schema/integrated";
 
 // import { db } from '../db'; // 未使用のためコメントアウト
-import { AppError } from '../middleware/errorHandler';
-import { BudgetTargetRepository } from '../storage/budgetTarget';
-import { CustomerRepository } from '../storage/customer';
-import { OrderForecastRepository } from '../storage/orderForecast';
-import { ProjectRepository } from '../storage/project';
-import { StaffingRepository } from '../storage/staffing';
+import { AppError } from "../middleware/errorHandler";
+import { BudgetTargetRepository } from "../storage/budgetTarget";
+import { CustomerRepository } from "../storage/customer";
+import { OrderForecastRepository } from "../storage/orderForecast";
+import { ProjectRepository } from "../storage/project";
+import { StaffingRepository } from "../storage/staffing";
 
 /**
  * プロジェクト管理サービスクラス
- * 
+ *
  * @description プロジェクトに関するビジネスロジックを担当
  * @responsibility プロジェクトの作成・更新・削除時のビジネスルール適用
  */
@@ -25,7 +31,7 @@ export class ProjectService {
 
   /**
    * プロジェクト一覧取得
-   * 
+   *
    * @param filter - 検索フィルター
    * @param limit - 取得件数制限
    * @param offset - オフセット
@@ -37,8 +43,8 @@ export class ProjectService {
     filter: ProjectFilter = {},
     limit: number = 20,
     offset: number = 0,
-    sortBy: 'code' | 'name' | 'fiscalYear' | 'createdAt' = 'createdAt',
-    sortOrder: 'asc' | 'desc' = 'desc'
+    sortBy: "code" | "name" | "fiscalYear" | "createdAt" = "createdAt",
+    sortOrder: "asc" | "desc" = "desc"
   ): Promise<{ projects: Project[]; totalCount: number }> {
     try {
       const [projects, totalCount] = await Promise.all([
@@ -54,14 +60,14 @@ export class ProjectService {
 
       return { projects, totalCount };
     } catch (error) {
-      console.error('プロジェクト一覧取得エラー:', error);
-      throw new AppError('プロジェクト一覧の取得中にエラーが発生しました', 500);
+      console.error("プロジェクト一覧取得エラー:", error);
+      throw new AppError("プロジェクト一覧の取得中にエラーが発生しました", 500);
     }
   }
 
   /**
    * プロジェクト詳細取得
-   * 
+   *
    * @param id - プロジェクトID
    * @returns プロジェクト詳細情報
    * @throws AppError - プロジェクトが見つからない場合
@@ -69,9 +75,9 @@ export class ProjectService {
   async getProjectById(id: string): Promise<Project> {
     try {
       const project = await this.projectRepository.findById(id);
-      
+
       if (!project) {
-        throw new AppError('プロジェクトが見つかりません', 404);
+        throw new AppError("プロジェクトが見つかりません", 404);
       }
 
       return project;
@@ -79,14 +85,14 @@ export class ProjectService {
       if (error instanceof AppError) {
         throw error;
       }
-      console.error('プロジェクト詳細取得エラー:', error);
-      throw new AppError('プロジェクト詳細の取得中にエラーが発生しました', 500);
+      console.error("プロジェクト詳細取得エラー:", error);
+      throw new AppError("プロジェクト詳細の取得中にエラーが発生しました", 500);
     }
   }
 
   /**
    * 年度別プロジェクト取得
-   * 
+   *
    * @param fiscalYear - 年度
    * @returns 年度別プロジェクト一覧
    */
@@ -94,14 +100,14 @@ export class ProjectService {
     try {
       return await this.projectRepository.findByFiscalYear(fiscalYear);
     } catch (error) {
-      console.error('年度別プロジェクト取得エラー:', error);
-      throw new AppError('年度別プロジェクトの取得中にエラーが発生しました', 500);
+      console.error("年度別プロジェクト取得エラー:", error);
+      throw new AppError("年度別プロジェクトの取得中にエラーが発生しました", 500);
     }
   }
 
   /**
    * 顧客別プロジェクト取得
-   * 
+   *
    * @param customerId - 顧客ID
    * @returns 顧客別プロジェクト一覧
    */
@@ -109,14 +115,14 @@ export class ProjectService {
     try {
       return await this.projectRepository.findByCustomerId(customerId);
     } catch (error) {
-      console.error('顧客別プロジェクト取得エラー:', error);
-      throw new AppError('顧客別プロジェクトの取得中にエラーが発生しました', 500);
+      console.error("顧客別プロジェクト取得エラー:", error);
+      throw new AppError("顧客別プロジェクトの取得中にエラーが発生しました", 500);
     }
   }
 
   /**
    * プロジェクト作成
-   * 
+   *
    * @param data - プロジェクト作成データ
    * @returns 作成されたプロジェクト情報
    * @throws AppError - プロジェクトコード重複時、顧客不存在時
@@ -126,30 +132,30 @@ export class ProjectService {
       // プロジェクトコードの重複チェック（年度を含める）
       const codeExists = await this.projectRepository.isCodeExists(data.code, data.fiscalYear);
       if (codeExists) {
-        throw new AppError('プロジェクトコードが既に存在します', 409);
+        throw new AppError("プロジェクトコードが既に存在します", 409);
       }
 
       // 顧客の存在チェック
       const customer = await this.customerRepository.findById(data.customerId);
       if (!customer) {
-        throw new AppError('指定された顧客が見つかりません', 404);
+        throw new AppError("指定された顧客が見つかりません", 404);
       }
 
       const project = await this.projectRepository.create(data);
-      
+
       return project;
     } catch (error) {
       if (error instanceof AppError) {
         throw error;
       }
-      console.error('プロジェクト作成エラー:', error);
-      throw new AppError('プロジェクトの作成中にエラーが発生しました', 500);
+      console.error("プロジェクト作成エラー:", error);
+      throw new AppError("プロジェクトの作成中にエラーが発生しました", 500);
     }
   }
 
   /**
    * プロジェクト更新
-   * 
+   *
    * @param id - プロジェクトID
    * @param data - プロジェクト更新データ
    * @returns 更新されたプロジェクト情報
@@ -160,7 +166,7 @@ export class ProjectService {
       // プロジェクトの存在チェック
       const existingProject = await this.projectRepository.findById(id);
       if (!existingProject) {
-        throw new AppError('プロジェクトが見つかりません', 404);
+        throw new AppError("プロジェクトが見つかりません", 404);
       }
 
       // プロジェクトコードの重複チェック（更新時、年度を含める）
@@ -168,7 +174,7 @@ export class ProjectService {
         const fiscalYear = data.fiscalYear ?? existingProject.fiscalYear;
         const codeExists = await this.projectRepository.isCodeExists(data.code, fiscalYear, id);
         if (codeExists) {
-          throw new AppError('プロジェクトコードが既に存在します', 409);
+          throw new AppError("プロジェクトコードが既に存在します", 409);
         }
       }
 
@@ -176,14 +182,14 @@ export class ProjectService {
       if (data.customerId && data.customerId !== existingProject.customerId) {
         const customer = await this.customerRepository.findById(data.customerId);
         if (!customer) {
-          throw new AppError('指定された顧客が見つかりません', 404);
+          throw new AppError("指定された顧客が見つかりません", 404);
         }
       }
 
       const project = await this.projectRepository.update(id, data);
-      
+
       if (!project) {
-        throw new AppError('プロジェクトの更新に失敗しました', 500);
+        throw new AppError("プロジェクトの更新に失敗しました", 500);
       }
 
       return project;
@@ -191,14 +197,14 @@ export class ProjectService {
       if (error instanceof AppError) {
         throw error;
       }
-      console.error('プロジェクト更新エラー:', error);
-      throw new AppError('プロジェクトの更新中にエラーが発生しました', 500);
+      console.error("プロジェクト更新エラー:", error);
+      throw new AppError("プロジェクトの更新中にエラーが発生しました", 500);
     }
   }
 
   /**
    * プロジェクト削除
-   * 
+   *
    * @param id - プロジェクトID
    * @returns 削除成功フラグ
    * @throws AppError - プロジェクトが見つからない場合、関連受発注データ存在時
@@ -208,7 +214,7 @@ export class ProjectService {
       // プロジェクトの存在チェック
       const existingProject = await this.projectRepository.findById(id);
       if (!existingProject) {
-        throw new AppError('プロジェクトが見つかりません', 404);
+        throw new AppError("プロジェクトが見つかりません", 404);
       }
 
       // 関連受発注データの存在チェック
@@ -216,8 +222,8 @@ export class ProjectService {
         filter: { projectId: id },
         limit: 1,
         offset: 0,
-        sortBy: 'createdAt',
-        sortOrder: 'desc',
+        sortBy: "createdAt",
+        sortOrder: "desc",
       });
       if (relatedOrderForecasts.length > 0) {
         throw new AppError(
@@ -227,9 +233,9 @@ export class ProjectService {
       }
 
       const deleted = await this.projectRepository.delete(id);
-      
+
       if (!deleted) {
-        throw new AppError('プロジェクトの削除に失敗しました', 500);
+        throw new AppError("プロジェクトの削除に失敗しました", 500);
       }
 
       return true;
@@ -237,14 +243,14 @@ export class ProjectService {
       if (error instanceof AppError) {
         throw error;
       }
-      console.error('プロジェクト削除エラー:', error);
-      throw new AppError('プロジェクトの削除中にエラーが発生しました', 500);
+      console.error("プロジェクト削除エラー:", error);
+      throw new AppError("プロジェクトの削除中にエラーが発生しました", 500);
     }
   }
 
   /**
    * プロジェクトコード重複チェック
-   * 
+   *
    * @param code - プロジェクトコード
    * @param fiscalYear - 年度
    * @param excludeId - 除外するプロジェクトID（更新時）
@@ -254,14 +260,14 @@ export class ProjectService {
     try {
       return await this.projectRepository.isCodeExists(code, fiscalYear, excludeId);
     } catch (error) {
-      console.error('プロジェクトコード重複チェックエラー:', error);
-      throw new AppError('プロジェクトコードの重複チェック中にエラーが発生しました', 500);
+      console.error("プロジェクトコード重複チェックエラー:", error);
+      throw new AppError("プロジェクトコードの重複チェック中にエラーが発生しました", 500);
     }
   }
 
   /**
    * プロジェクト統計情報取得
-   * 
+   *
    * @param fiscalYear - 年度（オプション）
    * @returns プロジェクト統計情報
    */
@@ -279,10 +285,14 @@ export class ProjectService {
       const statistics = projects.reduce(
         (acc, project: any) => {
           acc.totalProjects++;
-          if (project.status === 'active') {acc.activeProjects++;}
-          if (project.status === 'completed') {acc.completedProjects++;}
-          acc.totalBudget += parseFloat(project.budget || '0');
-          acc.totalActualCost += parseFloat(project.actualCost || '0');
+          if (project.status === "active") {
+            acc.activeProjects++;
+          }
+          if (project.status === "completed") {
+            acc.completedProjects++;
+          }
+          acc.totalBudget += parseFloat(project.budget || "0");
+          acc.totalActualCost += parseFloat(project.actualCost || "0");
           return acc;
         },
         {
@@ -296,14 +306,14 @@ export class ProjectService {
 
       return statistics;
     } catch (error) {
-      console.error('プロジェクト統計情報取得エラー:', error);
-      throw new AppError('プロジェクト統計情報の取得中にエラーが発生しました', 500);
+      console.error("プロジェクト統計情報取得エラー:", error);
+      throw new AppError("プロジェクト統計情報の取得中にエラーが発生しました", 500);
     }
   }
 
   /**
    * 前年度からプロジェクトをコピー
-   * 
+   *
    * @param targetYear - コピー先の年度
    * @returns コピーされたプロジェクト情報と件数
    * @throws AppError - 前年度のプロジェクトが見つからない場合、対象年度に既存プロジェクトが存在する場合
@@ -311,14 +321,14 @@ export class ProjectService {
   async copyFromPreviousYear(targetYear: number): Promise<{ count: number; projects: Project[] }> {
     try {
       const previousYear = targetYear - 1;
-      
+
       // 前年度のプロジェクトを取得
       const previousProjects = await this.projectRepository.findByFiscalYear(previousYear);
-      
+
       if (previousProjects.length === 0) {
         throw new AppError(`前年度（${previousYear}年）のプロジェクトが見つかりません`, 404);
       }
-      
+
       // コピー先年度に既にプロジェクトが存在するかチェック
       const existingProjects = await this.projectRepository.findByFiscalYear(targetYear);
       if (existingProjects.length > 0) {
@@ -327,21 +337,21 @@ export class ProjectService {
           409
         );
       }
-      
+
       const copiedProjects: Project[] = [];
-      
+
       // 各プロジェクトをコピー
       for (const project of previousProjects) {
         // プロジェクトコードはそのまま使用（年度が異なるため重複しない）
         const newCode = project.code;
-        
+
         // コードの重複チェック（年度を含める）
         const codeExists = await this.projectRepository.isCodeExists(newCode, targetYear);
         if (codeExists) {
           // コードが重複する場合はスキップ
           continue;
         }
-        
+
         // 新しいプロジェクトを作成
         const newProject = await this.projectRepository.create({
           code: newCode,
@@ -352,14 +362,14 @@ export class ProjectService {
           salesPerson: project.salesPerson,
           serviceType: project.serviceType,
           analysisType: project.analysisType,
-          status: 'active',
+          status: "active",
           budget: project.budget,
           actualCost: null, // 実績コストはリセット
         });
-        
+
         copiedProjects.push(newProject);
       }
-      
+
       return {
         count: copiedProjects.length,
         projects: copiedProjects,
@@ -368,14 +378,14 @@ export class ProjectService {
       if (error instanceof AppError) {
         throw error;
       }
-      console.error('前年度からのコピーエラー:', error);
-      throw new AppError('前年度からのコピー中にエラーが発生しました', 500);
+      console.error("前年度からのコピーエラー:", error);
+      throw new AppError("前年度からのコピー中にエラーが発生しました", 500);
     }
   }
 
   /**
    * プロジェクト分析サマリー取得
-   * 
+   *
    * @param fiscalYear - 年度
    * @returns プロジェクト分析サマリー一覧
    */
@@ -383,14 +393,14 @@ export class ProjectService {
     try {
       // 年度のプロジェクト一覧取得
       const projects = await this.projectRepository.findByFiscalYear(fiscalYear);
-      
+
       if (projects.length === 0) {
         return [];
       }
 
       // プロジェクトIDリストを作成
-      const projectIds = projects.map(p => p.id);
-      
+      const projectIds = projects.map((p) => p.id);
+
       // 並列でデータを一括取得
       const [budgetTargets, orderForecastSummary, workHoursSummary] = await Promise.all([
         // 目標値を取得
@@ -398,22 +408,22 @@ export class ProjectService {
           filter: { fiscalYear },
           limit: undefined,
           offset: 0,
-          sortBy: 'serviceType',
-          sortOrder: 'asc'
+          sortBy: "serviceType",
+          sortOrder: "asc",
         }),
         // 受発注データ一括集計
         this.orderForecastRepository.getProjectAnalysisSummary(fiscalYear, projectIds),
         // 配員計画データ一括集計
-        this.staffingRepository.getProjectWorkHoursSummary(fiscalYear, projectIds)
+        this.staffingRepository.getProjectWorkHoursSummary(fiscalYear, projectIds),
       ]);
-      
+
       // Map作成: "サービス区分_分析区分" => 目標値
       const targetMap = new Map<string, number>();
       for (const target of budgetTargets) {
         const key = `${target.serviceType}_${target.analysisType}`;
         targetMap.set(key, parseFloat(target.targetValue));
       }
-      
+
       const analysisSummaries: ProjectAnalysisSummary[] = [];
 
       // プロジェクトごとにデータをマージ（DBアクセスなし）
@@ -422,16 +432,17 @@ export class ProjectService {
         const orderSummary = orderForecastSummary.get(project.id) || {
           revenue: 0,
           costOfSales: 0,
-          sgaExpenses: 0
+          sgaExpenses: 0,
         };
-        
+
         // 配員計画データの工数を取得
         const workHoursRaw = workHoursSummary.get(project.id) || 0;
         // 画面表示と同じ精度（小数点第1位）で丸める
         const workHours = parseFloat(workHoursRaw.toFixed(1));
 
         // 分析区分別の計算
-        const grossProfit = orderSummary.revenue - orderSummary.costOfSales - orderSummary.sgaExpenses;
+        const grossProfit =
+          orderSummary.revenue - orderSummary.costOfSales - orderSummary.sgaExpenses;
         const productivity = workHours > 0 ? grossProfit / workHours : 0;
 
         const summary: ProjectAnalysisSummary = {
@@ -444,16 +455,21 @@ export class ProjectService {
           costOfSales: orderSummary.costOfSales,
           sgaExpenses: orderSummary.sgaExpenses,
           workHours,
-          ...(project.analysisType === '生産性' ? { productivity } : { grossProfit }),
-          targetValue: targetMap.get(`${project.serviceType}_${project.analysisType}`)
+          ...(project.analysisType === "生産性" ? { productivity } : { grossProfit }),
+          targetValue: targetMap.get(`${project.serviceType}_${project.analysisType}`),
         };
 
         analysisSummaries.push(summary);
       }
 
       // サービス区分→分析区分→プロジェクトコードの順でソート
-      const serviceOrder = ['インテグレーション', 'エンジニアリング', 'ソフトウェアマネージド', 'リセール'];
-      const analysisTypeOrder = ['生産性', '粗利'];
+      const serviceOrder = [
+        "インテグレーション",
+        "エンジニアリング",
+        "ソフトウェアマネージド",
+        "リセール",
+      ];
+      const analysisTypeOrder = ["生産性", "粗利"];
 
       return analysisSummaries.sort((a, b) => {
         // サービス区分でソート
@@ -474,8 +490,28 @@ export class ProjectService {
         return a.code.localeCompare(b.code);
       });
     } catch (error) {
-      console.error('プロジェクト分析サマリー取得エラー:', error);
-      throw new AppError('プロジェクト分析サマリーの取得中にエラーが発生しました', 500);
+      console.error("プロジェクト分析サマリー取得エラー:", error);
+      throw new AppError("プロジェクト分析サマリーの取得中にエラーが発生しました", 500);
     }
+  }
+
+  /**
+   * プロジェクト分析の集計元明細取得
+   *
+   * @param projectId - プロジェクトID
+   * @param fiscalYear - 年度
+   * @param category - カテゴリ（revenue / costOfSales / sgaExpenses）
+   * @returns 明細行の配列
+   */
+  async getProjectAnalysisDetailLines(
+    projectId: string,
+    fiscalYear: number,
+    category: "revenue" | "costOfSales" | "sgaExpenses"
+  ) {
+    return this.orderForecastRepository.getProjectAnalysisDetailLines(
+      projectId,
+      fiscalYear,
+      category
+    );
   }
 }

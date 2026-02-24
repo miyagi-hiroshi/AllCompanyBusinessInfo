@@ -1,15 +1,15 @@
-import { insertProjectSchema } from '@shared/schema/integrated';
-import express, { type Request, Response } from 'express';
-import { z } from 'zod';
+import { insertProjectSchema } from "@shared/schema/integrated";
+import express, { type Request, Response } from "express";
+import { z } from "zod";
 
-import { requireAuth } from '../middleware/auth';
-import { ProjectService } from '../services/projectService';
-import { BudgetTargetRepository } from '../storage/budgetTarget';
-import { CustomerRepository } from '../storage/customer';
-import { OrderForecastRepository } from '../storage/orderForecast';
-import { ProjectRepository } from '../storage/project';
-import { ProjectAnalysisSnapshotRepository } from '../storage/projectAnalysisSnapshot';
-import { StaffingRepository } from '../storage/staffing';
+import { requireAuth } from "../middleware/auth";
+import { ProjectService } from "../services/projectService";
+import { BudgetTargetRepository } from "../storage/budgetTarget";
+import { CustomerRepository } from "../storage/customer";
+import { OrderForecastRepository } from "../storage/orderForecast";
+import { ProjectRepository } from "../storage/project";
+import { ProjectAnalysisSnapshotRepository } from "../storage/projectAnalysisSnapshot";
+import { StaffingRepository } from "../storage/staffing";
 
 const router = express.Router();
 const projectRepository = new ProjectRepository();
@@ -17,7 +17,13 @@ const customerRepository = new CustomerRepository();
 const orderForecastRepository = new OrderForecastRepository();
 const staffingRepository = new StaffingRepository();
 const budgetTargetRepository = new BudgetTargetRepository();
-const projectService = new ProjectService(projectRepository, customerRepository, orderForecastRepository, staffingRepository, budgetTargetRepository);
+const projectService = new ProjectService(
+  projectRepository,
+  customerRepository,
+  orderForecastRepository,
+  staffingRepository,
+  budgetTargetRepository
+);
 const projectAnalysisSnapshotRepository = new ProjectAnalysisSnapshotRepository();
 
 // プロジェクト作成スキーマ
@@ -37,10 +43,10 @@ const searchProjectSchema = z.object({
   salesPerson: z.string().optional(),
   serviceType: z.string().optional(),
   analysisType: z.string().optional(),
-  page: z.string().transform(Number).optional().default('1'),
-  limit: z.string().transform(Number).optional().default('20'),
-  sortBy: z.enum(['code', 'name', 'fiscalYear', 'createdAt']).optional().default('createdAt'),
-  sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+  page: z.string().transform(Number).optional().default("1"),
+  limit: z.string().transform(Number).optional().default("20"),
+  sortBy: z.enum(["code", "name", "fiscalYear", "createdAt"]).optional().default("createdAt"),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
 });
 
 // 前年度コピーリクエストスキーマ
@@ -52,19 +58,19 @@ const copyFromPreviousYearSchema = z.object({
  * 営業担当者一覧取得API
  * GET /api/projects/sales-persons
  */
-router.get('/sales-persons', requireAuth, async (req: Request, res: Response) => {
+router.get("/sales-persons", requireAuth, async (req: Request, res: Response) => {
   try {
     const salesPersons = await projectRepository.getSalesPersons();
-    
+
     res.json({
       success: true,
       data: salesPersons,
     });
   } catch (error) {
-    console.error('営業担当者一覧取得エラー:', error);
+    console.error("営業担当者一覧取得エラー:", error);
     res.status(500).json({
       success: false,
-      message: '営業担当者一覧の取得中にエラーが発生しました',
+      message: "営業担当者一覧の取得中にエラーが発生しました",
     });
   }
 });
@@ -73,11 +79,11 @@ router.get('/sales-persons', requireAuth, async (req: Request, res: Response) =>
  * プロジェクト一覧取得API
  * GET /api/projects
  */
-router.get('/', requireAuth, async (req: Request, res: Response) => {
+router.get("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const query = searchProjectSchema.parse(req.query);
     const offset = (query.page - 1) * query.limit;
-    
+
     const [projects, totalCount] = await Promise.all([
       projectRepository.findAll({
         filter: {
@@ -123,15 +129,62 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '検索パラメータが正しくありません',
+        message: "検索パラメータが正しくありません",
         errors: error.errors,
       });
     }
 
-    console.error('プロジェクト一覧取得エラー:', error);
+    console.error("プロジェクト一覧取得エラー:", error);
     res.status(500).json({
       success: false,
-      message: 'プロジェクト一覧の取得中にエラーが発生しました',
+      message: "プロジェクト一覧の取得中にエラーが発生しました",
+    });
+  }
+});
+
+/**
+ * プロジェクト分析の集計元明細取得API
+ * GET /api/projects/analysis-summary/detail-lines
+ * （具体的なパスを analysis-summary より先に定義）
+ */
+const detailLinesQuerySchema = z.object({
+  fiscalYear: z.string().transform((v) => parseInt(v, 10)),
+  projectId: z.string().min(1),
+  category: z.enum(["revenue", "costOfSales", "sgaExpenses"]),
+});
+router.get("/analysis-summary/detail-lines", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const parsed = detailLinesQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "fiscalYear, projectId, category は必須です。category は revenue / costOfSales / sgaExpenses のいずれか",
+      });
+    }
+    const { fiscalYear, projectId, category } = parsed.data;
+    if (isNaN(fiscalYear)) {
+      return res.status(400).json({
+        success: false,
+        message: "年度が正しくありません",
+      });
+    }
+    const lines = await projectService.getProjectAnalysisDetailLines(
+      projectId,
+      fiscalYear,
+      category
+    );
+    res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate");
+    return res.json({
+      success: true,
+      data: { lines },
+    });
+  } catch (error: unknown) {
+    const err = error as { statusCode?: number; message?: string };
+    console.error("プロジェクト分析明細取得エラー:", error);
+    return res.status(err.statusCode ?? 500).json({
+      success: false,
+      message: err.message ?? "プロジェクト分析明細の取得中にエラーが発生しました",
     });
   }
 });
@@ -140,25 +193,25 @@ router.get('/', requireAuth, async (req: Request, res: Response) => {
  * プロジェクト分析サマリー取得API
  * GET /api/projects/analysis-summary
  */
-router.get('/analysis-summary', requireAuth, async (req: Request, res: Response) => {
+router.get("/analysis-summary", requireAuth, async (req: Request, res: Response) => {
   try {
     const { fiscalYear } = req.query;
-    
-    if (!fiscalYear || typeof fiscalYear !== 'string') {
+
+    if (!fiscalYear || typeof fiscalYear !== "string") {
       return res.status(400).json({
         success: false,
-        message: '年度パラメータが必要です',
+        message: "年度パラメータが必要です",
       });
     }
-    
+
     const fiscalYearNum = parseInt(fiscalYear);
     if (isNaN(fiscalYearNum)) {
       return res.status(400).json({
         success: false,
-        message: '年度が正しくありません',
+        message: "年度が正しくありません",
       });
     }
-    
+
     const analysisSummaries = await projectService.getProjectAnalysisSummary(fiscalYearNum);
 
     res.json({
@@ -168,10 +221,10 @@ router.get('/analysis-summary', requireAuth, async (req: Request, res: Response)
       },
     });
   } catch (error: any) {
-    console.error('プロジェクト分析サマリー取得エラー:', error);
+    console.error("プロジェクト分析サマリー取得エラー:", error);
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'プロジェクト分析サマリーの取得中にエラーが発生しました',
+      message: error.message || "プロジェクト分析サマリーの取得中にエラーが発生しました",
     });
   }
 });
@@ -180,7 +233,7 @@ router.get('/analysis-summary', requireAuth, async (req: Request, res: Response)
  * プロジェクト分析スナップショット作成API
  * POST /api/projects/analysis-snapshots
  */
-router.post('/analysis-snapshots', requireAuth, async (req: Request, res: Response) => {
+router.post("/analysis-snapshots", requireAuth, async (req: Request, res: Response) => {
   try {
     const { fiscalYear, name, snapshotData } = req.body;
     const employeeId = req.user!.employeeId;
@@ -188,12 +241,12 @@ router.post('/analysis-snapshots', requireAuth, async (req: Request, res: Respon
     if (fiscalYear === undefined || !name || !snapshotData) {
       return res.status(400).json({
         success: false,
-        message: '年度、スナップショット名、スナップショットデータが必要です',
+        message: "年度、スナップショット名、スナップショットデータが必要です",
       });
     }
 
     const snapshot = await projectAnalysisSnapshotRepository.create({
-      fiscalYear: typeof fiscalYear === 'number' ? fiscalYear : parseInt(String(fiscalYear)),
+      fiscalYear: typeof fiscalYear === "number" ? fiscalYear : parseInt(String(fiscalYear)),
       name: String(name),
       snapshotData: snapshotData,
       createdByEmployeeId: String(employeeId),
@@ -204,10 +257,10 @@ router.post('/analysis-snapshots', requireAuth, async (req: Request, res: Respon
       data: snapshot,
     });
   } catch (error: any) {
-    console.error('スナップショット作成エラー:', error);
+    console.error("スナップショット作成エラー:", error);
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'スナップショットの作成中にエラーが発生しました',
+      message: error.message || "スナップショットの作成中にエラーが発生しました",
     });
   }
 });
@@ -216,12 +269,10 @@ router.post('/analysis-snapshots', requireAuth, async (req: Request, res: Respon
  * プロジェクト分析スナップショット一覧取得API
  * GET /api/projects/analysis-snapshots
  */
-router.get('/analysis-snapshots', requireAuth, async (req: Request, res: Response) => {
+router.get("/analysis-snapshots", requireAuth, async (req: Request, res: Response) => {
   try {
-    const fiscalYear = req.query.fiscalYear 
-      ? parseInt(req.query.fiscalYear as string) 
-      : undefined;
-    
+    const fiscalYear = req.query.fiscalYear ? parseInt(req.query.fiscalYear as string) : undefined;
+
     const snapshots = await projectAnalysisSnapshotRepository.findAll(fiscalYear);
 
     res.json({
@@ -229,10 +280,10 @@ router.get('/analysis-snapshots', requireAuth, async (req: Request, res: Respons
       data: snapshots,
     });
   } catch (error: any) {
-    console.error('スナップショット一覧取得エラー:', error);
+    console.error("スナップショット一覧取得エラー:", error);
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'スナップショット一覧の取得中にエラーが発生しました',
+      message: error.message || "スナップショット一覧の取得中にエラーが発生しました",
     });
   }
 });
@@ -241,7 +292,7 @@ router.get('/analysis-snapshots', requireAuth, async (req: Request, res: Respons
  * プロジェクト分析スナップショット詳細取得API
  * GET /api/projects/analysis-snapshots/:id
  */
-router.get('/analysis-snapshots/:id', requireAuth, async (req: Request, res: Response) => {
+router.get("/analysis-snapshots/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const snapshot = await projectAnalysisSnapshotRepository.findById(id);
@@ -249,7 +300,7 @@ router.get('/analysis-snapshots/:id', requireAuth, async (req: Request, res: Res
     if (!snapshot) {
       return res.status(404).json({
         success: false,
-        message: 'スナップショットが見つかりません',
+        message: "スナップショットが見つかりません",
       });
     }
 
@@ -258,10 +309,10 @@ router.get('/analysis-snapshots/:id', requireAuth, async (req: Request, res: Res
       data: snapshot,
     });
   } catch (error: any) {
-    console.error('スナップショット詳細取得エラー:', error);
+    console.error("スナップショット詳細取得エラー:", error);
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'スナップショットの取得中にエラーが発生しました',
+      message: error.message || "スナップショットの取得中にエラーが発生しました",
     });
   }
 });
@@ -270,52 +321,56 @@ router.get('/analysis-snapshots/:id', requireAuth, async (req: Request, res: Res
  * プロジェクト分析スナップショット比較API
  * GET /api/projects/analysis-snapshots/compare/:id1/:id2
  */
-router.get('/analysis-snapshots/compare/:id1/:id2', requireAuth, async (req: Request, res: Response) => {
-  try {
-    const { id1, id2 } = req.params;
-    
-    const [snapshot1, snapshot2] = await Promise.all([
-      projectAnalysisSnapshotRepository.findById(id1),
-      projectAnalysisSnapshotRepository.findById(id2),
-    ]);
+router.get(
+  "/analysis-snapshots/compare/:id1/:id2",
+  requireAuth,
+  async (req: Request, res: Response) => {
+    try {
+      const { id1, id2 } = req.params;
 
-    if (!snapshot1 || !snapshot2) {
-      return res.status(404).json({
+      const [snapshot1, snapshot2] = await Promise.all([
+        projectAnalysisSnapshotRepository.findById(id1),
+        projectAnalysisSnapshotRepository.findById(id2),
+      ]);
+
+      if (!snapshot1 || !snapshot2) {
+        return res.status(404).json({
+          success: false,
+          message: "スナップショットが見つかりません",
+        });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          snapshot1,
+          snapshot2,
+        },
+      });
+    } catch (error: any) {
+      console.error("スナップショット比較エラー:", error);
+      res.status(error.statusCode || 500).json({
         success: false,
-        message: 'スナップショットが見つかりません',
+        message: error.message || "スナップショットの比較中にエラーが発生しました",
       });
     }
-
-    res.json({
-      success: true,
-      data: {
-        snapshot1,
-        snapshot2,
-      },
-    });
-  } catch (error: any) {
-    console.error('スナップショット比較エラー:', error);
-    res.status(error.statusCode || 500).json({
-      success: false,
-      message: error.message || 'スナップショットの比較中にエラーが発生しました',
-    });
   }
-});
+);
 
 /**
  * プロジェクト詳細取得API
  * GET /api/projects/:id
  */
-router.get('/:id', requireAuth, async (req: Request, res: Response) => {
+router.get("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
+
     const project = await projectRepository.findById(id);
-    
+
     if (!project) {
       return res.status(404).json({
         success: false,
-        message: 'プロジェクトが見つかりません',
+        message: "プロジェクトが見つかりません",
       });
     }
 
@@ -324,10 +379,10 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
       data: project,
     });
   } catch (error) {
-    console.error('プロジェクト詳細取得エラー:', error);
+    console.error("プロジェクト詳細取得エラー:", error);
     res.status(500).json({
       success: false,
-      message: 'プロジェクト詳細の取得中にエラーが発生しました',
+      message: "プロジェクト詳細の取得中にエラーが発生しました",
     });
   }
 });
@@ -336,18 +391,18 @@ router.get('/:id', requireAuth, async (req: Request, res: Response) => {
  * 年度別プロジェクト取得API
  * GET /api/projects/fiscal-year/:fiscalYear
  */
-router.get('/fiscal-year/:fiscalYear', requireAuth, async (req: Request, res: Response) => {
+router.get("/fiscal-year/:fiscalYear", requireAuth, async (req: Request, res: Response) => {
   try {
     const { fiscalYear } = req.params;
     const fiscalYearNum = parseInt(fiscalYear);
-    
+
     if (isNaN(fiscalYearNum)) {
       return res.status(400).json({
         success: false,
-        message: '年度が正しくありません',
+        message: "年度が正しくありません",
       });
     }
-    
+
     const projects = await projectRepository.findByFiscalYear(fiscalYearNum);
 
     res.json({
@@ -355,10 +410,10 @@ router.get('/fiscal-year/:fiscalYear', requireAuth, async (req: Request, res: Re
       data: projects,
     });
   } catch (error) {
-    console.error('年度別プロジェクト取得エラー:', error);
+    console.error("年度別プロジェクト取得エラー:", error);
     res.status(500).json({
       success: false,
-      message: '年度別プロジェクトの取得中にエラーが発生しました',
+      message: "年度別プロジェクトの取得中にエラーが発生しました",
     });
   }
 });
@@ -367,10 +422,10 @@ router.get('/fiscal-year/:fiscalYear', requireAuth, async (req: Request, res: Re
  * 顧客別プロジェクト取得API
  * GET /api/projects/customer/:customerId
  */
-router.get('/customer/:customerId', requireAuth, async (req: Request, res: Response) => {
+router.get("/customer/:customerId", requireAuth, async (req: Request, res: Response) => {
   try {
     const { customerId } = req.params;
-    
+
     const projects = await projectRepository.findByCustomerId(customerId);
 
     res.json({
@@ -378,10 +433,10 @@ router.get('/customer/:customerId', requireAuth, async (req: Request, res: Respo
       data: projects,
     });
   } catch (error) {
-    console.error('顧客別プロジェクト取得エラー:', error);
+    console.error("顧客別プロジェクト取得エラー:", error);
     res.status(500).json({
       success: false,
-      message: '顧客別プロジェクトの取得中にエラーが発生しました',
+      message: "顧客別プロジェクトの取得中にエラーが発生しました",
     });
   }
 });
@@ -390,17 +445,17 @@ router.get('/customer/:customerId', requireAuth, async (req: Request, res: Respo
  * プロジェクト作成API
  * POST /api/projects
  */
-router.post('/', requireAuth, async (req: Request, res: Response) => {
+router.post("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const data = createProjectSchema.parse(req.body);
     const _user = (req as any).user;
-    
+
     // プロジェクトコードの重複チェック（年度を含める）
     const codeExists = await projectRepository.isCodeExists(data.code, data.fiscalYear);
     if (codeExists) {
       return res.status(409).json({
         success: false,
-        message: 'プロジェクトコードが既に存在します',
+        message: "プロジェクトコードが既に存在します",
       });
     }
 
@@ -409,21 +464,21 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
     res.status(201).json({
       success: true,
       data: project,
-      message: 'プロジェクトが正常に作成されました',
+      message: "プロジェクトが正常に作成されました",
     });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '入力値が正しくありません',
+        message: "入力値が正しくありません",
         errors: error.errors,
       });
     }
 
-    console.error('プロジェクト作成エラー:', error);
+    console.error("プロジェクト作成エラー:", error);
     res.status(500).json({
       success: false,
-      message: 'プロジェクトの作成中にエラーが発生しました',
+      message: "プロジェクトの作成中にエラーが発生しました",
     });
   }
 });
@@ -432,12 +487,12 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
  * 前年度からプロジェクトをコピーAPI
  * POST /api/projects/copy-from-previous-year
  */
-router.post('/copy-from-previous-year', requireAuth, async (req: Request, res: Response) => {
+router.post("/copy-from-previous-year", requireAuth, async (req: Request, res: Response) => {
   try {
     const { targetYear } = copyFromPreviousYearSchema.parse(req.body);
-    
+
     const result = await projectService.copyFromPreviousYear(targetYear);
-    
+
     res.json({
       success: true,
       data: {
@@ -449,14 +504,14 @@ router.post('/copy-from-previous-year', requireAuth, async (req: Request, res: R
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '入力値が正しくありません',
+        message: "入力値が正しくありません",
         errors: error.errors,
       });
     }
-    
+
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || '前年度からのコピー中にエラーが発生しました',
+      message: error.message || "前年度からのコピー中にエラーが発生しました",
     });
   }
 });
@@ -465,30 +520,30 @@ router.post('/copy-from-previous-year', requireAuth, async (req: Request, res: R
  * プロジェクト更新API
  * PUT /api/projects/:id
  */
-router.put('/:id', requireAuth, async (req: Request, res: Response) => {
+router.put("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
     const data = updateProjectSchema.parse(req.body);
-    
+
     const project = await projectService.updateProject(id, data);
 
     res.json({
       success: true,
       data: project,
-      message: 'プロジェクトが正常に更新されました',
+      message: "プロジェクトが正常に更新されました",
     });
   } catch (error: any) {
     if (error instanceof z.ZodError) {
       return res.status(400).json({
         success: false,
-        message: '入力値が正しくありません',
+        message: "入力値が正しくありません",
         errors: error.errors,
       });
     }
 
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'プロジェクトの更新中にエラーが発生しました',
+      message: error.message || "プロジェクトの更新中にエラーが発生しました",
     });
   }
 });
@@ -497,20 +552,20 @@ router.put('/:id', requireAuth, async (req: Request, res: Response) => {
  * プロジェクト削除API
  * DELETE /api/projects/:id
  */
-router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
+router.delete("/:id", requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
-    
+
     await projectService.deleteProject(id);
 
     res.json({
       success: true,
-      message: 'プロジェクトが正常に削除されました',
+      message: "プロジェクトが正常に削除されました",
     });
   } catch (error: any) {
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'プロジェクトの削除中にエラーが発生しました',
+      message: error.message || "プロジェクトの削除中にエラーが発生しました",
     });
   }
 });
@@ -519,28 +574,28 @@ router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
  * プロジェクトコード重複チェックAPI
  * GET /api/projects/check-code/:code
  */
-router.get('/check-code/:code', requireAuth, async (req: Request, res: Response) => {
+router.get("/check-code/:code", requireAuth, async (req: Request, res: Response) => {
   try {
     const { code } = req.params;
     const { excludeId, fiscalYear } = req.query;
-    
-    if (!fiscalYear || typeof fiscalYear !== 'string') {
+
+    if (!fiscalYear || typeof fiscalYear !== "string") {
       return res.status(400).json({
         success: false,
-        message: '年度パラメータが必要です',
+        message: "年度パラメータが必要です",
       });
     }
-    
+
     const fiscalYearNum = parseInt(fiscalYear);
     if (isNaN(fiscalYearNum)) {
       return res.status(400).json({
         success: false,
-        message: '年度が正しくありません',
+        message: "年度が正しくありません",
       });
     }
-    
+
     const exists = await projectService.checkCodeExists(code, fiscalYearNum, excludeId as string);
-    
+
     res.json({
       success: true,
       data: {
@@ -551,7 +606,7 @@ router.get('/check-code/:code', requireAuth, async (req: Request, res: Response)
   } catch (error: any) {
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'プロジェクトコードの重複チェック中にエラーが発生しました',
+      message: error.message || "プロジェクトコードの重複チェック中にエラーが発生しました",
     });
   }
 });

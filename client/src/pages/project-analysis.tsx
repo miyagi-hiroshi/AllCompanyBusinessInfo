@@ -22,11 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -43,7 +39,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { type ProjectAnalysisSummary, useProjectAnalysis } from "@/hooks/useProjectAnalysis";
+import {
+  type ProjectAnalysisSummary,
+  useProjectAnalysis,
+  useProjectAnalysisDetailLines,
+} from "@/hooks/useProjectAnalysis";
 import {
   useCreateProjectAnalysisSnapshot,
   useProjectAnalysisSnapshots,
@@ -54,18 +54,28 @@ import { cn } from "@/lib/utils";
 const FISCAL_YEARS = [2023, 2024, 2025, 2026];
 
 // サービス区分の表示順序
-const SERVICE_ORDER = ['インテグレーション', 'エンジニアリング', 'ソフトウェアマネージド', 'リセール'];
+const SERVICE_ORDER = [
+  "インテグレーション",
+  "エンジニアリング",
+  "ソフトウェアマネージド",
+  "リセール",
+];
 
 // 分析区分の表示順序
-const ANALYSIS_TYPE_ORDER = ['生産性', '粗利'];
+const ANALYSIS_TYPE_ORDER = ["生産性", "粗利"];
 
 export default function ProjectAnalysisPage() {
   const [selectedYear, setSelectedYear] = useState<number>(2025);
-  const [selectedSnapshots, setSelectedSnapshots] = useState<string[]>(['current']);
+  const [selectedSnapshots, setSelectedSnapshots] = useState<string[]>(["current"]);
   const [isSnapshotDialogOpen, setIsSnapshotDialogOpen] = useState(false);
   const [snapshotName, setSnapshotName] = useState<string>("");
   const [isMultiSelectOpen, setIsMultiSelectOpen] = useState(false);
   const [isCompareDialogOpen, setIsCompareDialogOpen] = useState(false);
+  const [detailDialog, setDetailDialog] = useState<{
+    projectId: string;
+    projectName: string;
+    category: "revenue" | "costOfSales" | "sgaExpenses";
+  } | null>(null);
 
   const { toast } = useToast();
 
@@ -75,6 +85,13 @@ export default function ProjectAnalysisPage() {
   // スナップショット一覧取得
   const { data: snapshotsData } = useProjectAnalysisSnapshots(selectedYear);
   const snapshots = snapshotsData?.data || [];
+
+  // 集計元明細取得（ダイアログ表示時のみ）
+  const { data: detailLinesData, isLoading: isDetailLoading } = useProjectAnalysisDetailLines(
+    detailDialog?.projectId ?? null,
+    selectedYear,
+    detailDialog?.category ?? null
+  );
 
   // スナップショット作成Mutation
   const createSnapshotMutation = useCreateProjectAnalysisSnapshot();
@@ -95,20 +112,20 @@ export default function ProjectAnalysisPage() {
   // 達成度による色分けを返す関数
   const getAchievementColor = (actualValue: number, targetValue?: number): string => {
     if (targetValue === undefined || targetValue === 0) {
-      return ''; // 目標値がない場合は色分けなし
+      return ""; // 目標値がない場合は色分けなし
     }
-    
+
     const achievementRate = actualValue / targetValue;
-    
+
     if (achievementRate >= 1.1) {
       // 大幅達成（110%以上）：緑
-      return 'text-green-600 bg-green-50 font-semibold';
+      return "text-green-600 bg-green-50 font-semibold";
     } else if (achievementRate >= 1.0) {
       // 達成（100%以上110%未満）：青
-      return 'text-blue-600 bg-blue-50 font-semibold';
+      return "text-blue-600 bg-blue-50 font-semibold";
     } else {
       // 未達（100%未満）：赤
-      return 'text-red-600 bg-red-50 font-semibold';
+      return "text-red-600 bg-red-50 font-semibold";
     }
   };
 
@@ -134,8 +151,9 @@ export default function ProjectAnalysisPage() {
   // データを平坦化する関数
   const flattenData = (projects: ProjectAnalysisSummary[]) => {
     const rows: Array<{
-      type: 'project' | 'subtotal';
+      type: "project" | "subtotal";
       serviceType: string;
+      projectId?: string;
       projectName?: string;
       projectCode?: string;
       analysisType: string;
@@ -148,30 +166,33 @@ export default function ProjectAnalysisPage() {
     }> = [];
 
     // サービス区分→分析区分でグループ化
-    const grouped = projects.reduce((acc, project) => {
-      const key = `${project.serviceType}_${project.analysisType}`;
-      if (!acc[key]) {
-        acc[key] = {
-          serviceType: project.serviceType,
-          analysisType: project.analysisType,
-          projects: []
-        };
-      }
-      acc[key].projects.push(project);
-      return acc;
-    }, {} as Record<string, any>);
+    const grouped = projects.reduce(
+      (acc, project) => {
+        const key = `${project.serviceType}_${project.analysisType}`;
+        if (!acc[key]) {
+          acc[key] = {
+            serviceType: project.serviceType,
+            analysisType: project.analysisType,
+            projects: [],
+          };
+        }
+        acc[key].projects.push(project);
+        return acc;
+      },
+      {} as Record<string, any>
+    );
 
     // サービス順、分析区分順でソート
     const sortedKeys = Object.keys(grouped).sort((a, b) => {
-      const [serviceA, analysisA] = a.split('_');
-      const [serviceB, analysisB] = b.split('_');
-      
+      const [serviceA, analysisA] = a.split("_");
+      const [serviceB, analysisB] = b.split("_");
+
       const serviceIndexA = SERVICE_ORDER.indexOf(serviceA);
       const serviceIndexB = SERVICE_ORDER.indexOf(serviceB);
       if (serviceIndexA !== serviceIndexB) {
         return serviceIndexA - serviceIndexB;
       }
-      
+
       const analysisIndexA = ANALYSIS_TYPE_ORDER.indexOf(analysisA);
       const analysisIndexB = ANALYSIS_TYPE_ORDER.indexOf(analysisB);
       return analysisIndexA - analysisIndexB;
@@ -180,12 +201,13 @@ export default function ProjectAnalysisPage() {
     // 各グループのプロジェクト行と小計行を追加
     for (const key of sortedKeys) {
       const group = grouped[key];
-      
+
       // プロジェクト行
       for (const project of group.projects) {
         rows.push({
-          type: 'project',
+          type: "project",
           serviceType: project.serviceType,
+          projectId: project.id,
           projectName: project.name,
           projectCode: project.code,
           analysisType: project.analysisType,
@@ -193,14 +215,15 @@ export default function ProjectAnalysisPage() {
           costOfSales: project.costOfSales,
           sgaExpenses: project.sgaExpenses,
           workHours: project.workHours,
-          actualValue: project.analysisType === '生産性' ? project.productivity : project.grossProfit
+          actualValue:
+            project.analysisType === "生産性" ? project.productivity : project.grossProfit,
         });
       }
 
       // 小計行
       const summary = calculateGroupSummary(group.projects);
       rows.push({
-        type: 'subtotal',
+        type: "subtotal",
         serviceType: group.serviceType,
         analysisType: group.analysisType,
         revenue: summary.totalRevenue,
@@ -208,9 +231,8 @@ export default function ProjectAnalysisPage() {
         sgaExpenses: summary.totalSgaExpenses,
         workHours: summary.totalWorkHours,
         targetValue: group.projects[0]?.targetValue,
-        actualValue: group.analysisType === '生産性' 
-          ? summary.totalProductivity 
-          : summary.totalGrossProfit
+        actualValue:
+          group.analysisType === "生産性" ? summary.totalProductivity : summary.totalGrossProfit,
       });
     }
 
@@ -246,7 +268,7 @@ export default function ProjectAnalysisPage() {
     }
 
     try {
-      const rows = flattenData(analysisData.data.projects);
+      const rows = flattenData(analysisData.data.projects).map(({ projectId: _pid, ...r }) => r);
       await createSnapshotMutation.mutateAsync({
         fiscalYear: selectedYear,
         name: snapshotName.trim(),
@@ -271,20 +293,20 @@ export default function ProjectAnalysisPage() {
 
   // スナップショット選択ハンドラー
   const handleSnapshotToggle = (value: string) => {
-    if (value === 'current') {
+    if (value === "current") {
       // 「現在」のトグル
-      if (selectedSnapshots.includes('current')) {
+      if (selectedSnapshots.includes("current")) {
         // 「現在」を解除する場合
-        setSelectedSnapshots(selectedSnapshots.filter(id => id !== 'current'));
+        setSelectedSnapshots(selectedSnapshots.filter((id) => id !== "current"));
       } else {
         // 「現在」を追加する場合（既存の選択を保持）
-        setSelectedSnapshots([...selectedSnapshots, 'current']);
+        setSelectedSnapshots([...selectedSnapshots, "current"]);
       }
     } else {
       // スナップショットのトグル
       if (selectedSnapshots.includes(value)) {
         // スナップショットを解除する場合
-        setSelectedSnapshots(selectedSnapshots.filter(id => id !== value));
+        setSelectedSnapshots(selectedSnapshots.filter((id) => id !== value));
       } else {
         // スナップショットを追加する場合（「現在」を含めて既存の選択を保持）
         setSelectedSnapshots([...selectedSnapshots, value]);
@@ -294,14 +316,14 @@ export default function ProjectAnalysisPage() {
 
   // 表示用データの取得
   const displayRows = useMemo(() => {
-    if (selectedSnapshots.length === 0 || selectedSnapshots.includes('current')) {
+    if (selectedSnapshots.length === 0 || selectedSnapshots.includes("current")) {
       // 「現在」が選択されている場合、または何も選択されていない場合
       return flattenData(analysisData?.data?.projects || []);
     } else {
       // スナップショットが選択されている場合
-      const selectedSnapshotId = selectedSnapshots.find(id => id !== 'current');
+      const selectedSnapshotId = selectedSnapshots.find((id) => id !== "current");
       if (selectedSnapshotId) {
-        const snapshot = snapshots.find(s => s.id === selectedSnapshotId);
+        const snapshot = snapshots.find((s) => s.id === selectedSnapshotId);
         return snapshot?.snapshotData.rows || [];
       }
       return [];
@@ -311,9 +333,9 @@ export default function ProjectAnalysisPage() {
   // マルチセレクトの選択肢
   const snapshotOptions = useMemo(() => {
     const options = [
-      { label: '現在', value: 'current' },
-      ...snapshots.map(snapshot => ({
-        label: `${snapshot.name} (${new Date(snapshot.createdAt).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })})`,
+      { label: "現在", value: "current" },
+      ...snapshots.map((snapshot) => ({
+        label: `${snapshot.name} (${new Date(snapshot.createdAt).toLocaleString("ja-JP", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" })})`,
         value: snapshot.id,
       })),
     ];
@@ -322,18 +344,18 @@ export default function ProjectAnalysisPage() {
 
   // 比較分析ボタンの有効化判定
   const canCompare = useMemo(() => {
-    const hasCurrent = selectedSnapshots.includes('current');
-    const snapshotIds = selectedSnapshots.filter(id => id !== 'current');
-    
+    const hasCurrent = selectedSnapshots.includes("current");
+    const snapshotIds = selectedSnapshots.filter((id) => id !== "current");
+
     // 「現在」+ スナップショット1件、またはスナップショット2件
     return (hasCurrent && snapshotIds.length === 1) || snapshotIds.length === 2;
   }, [selectedSnapshots]);
 
   // 比較分析実行
   const handleCompare = () => {
-    const hasCurrent = selectedSnapshots.includes('current');
-    const snapshotIds = selectedSnapshots.filter(id => id !== 'current');
-    
+    const hasCurrent = selectedSnapshots.includes("current");
+    const snapshotIds = selectedSnapshots.filter((id) => id !== "current");
+
     if ((hasCurrent && snapshotIds.length === 1) || snapshotIds.length === 2) {
       setIsCompareDialogOpen(true);
     }
@@ -341,39 +363,39 @@ export default function ProjectAnalysisPage() {
 
   // 比較対象のスナップショットID取得（作成日時でソート：古い→新しい）
   const compareSnapshotIds = useMemo(() => {
-    const hasCurrent = selectedSnapshots.includes('current');
-    const snapshotIds = selectedSnapshots.filter(id => id !== 'current');
-    
+    const hasCurrent = selectedSnapshots.includes("current");
+    const snapshotIds = selectedSnapshots.filter((id) => id !== "current");
+
     if (hasCurrent && snapshotIds.length === 1) {
       // 「現在」+ スナップショット1件の場合
-      const snapshot = snapshots.find(s => snapshotIds.includes(s.id));
+      const snapshot = snapshots.find((s) => snapshotIds.includes(s.id));
       if (!snapshot) {
-        return ['current', ''];
+        return ["current", ""];
       }
-      
+
       // 「現在」を常に最新のデータとして扱い、スナップショットより新しいと仮定
       // 古い方が左、新しい方が右
       // 「現在」は常に最新なので、スナップショットが古い場合は左に配置
-      return [snapshot.id, 'current'];
+      return [snapshot.id, "current"];
     } else if (snapshotIds.length === 2) {
       // スナップショット2件の場合（既存ロジック）
-      const selectedSnapshotsData = snapshots.filter(s => snapshotIds.includes(s.id));
-      
+      const selectedSnapshotsData = snapshots.filter((s) => snapshotIds.includes(s.id));
+
       if (selectedSnapshotsData.length !== 2) {
         // スナップショットが見つからない場合はフォールバック
         return snapshotIds;
       }
-      
+
       // createdAtでソート（古い順）
       const sortedSnapshots = [...selectedSnapshotsData].sort(
         (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       );
-      
+
       // 古い方が左（snapshot1）、新しい方が右（snapshot2）
       return [sortedSnapshots[0].id, sortedSnapshots[1].id];
     }
-    
-    return ['', ''];
+
+    return ["", ""];
   }, [selectedSnapshots, snapshots]);
 
   return (
@@ -387,11 +409,14 @@ export default function ProjectAnalysisPage() {
           </div>
           <div className="flex items-center gap-2">
             {/* 年度選択 */}
-            <Select value={selectedYear.toString()} onValueChange={(value) => {
-              setSelectedYear(parseInt(value));
-              // 年度変更時に選択を「現在」にリセット
-              setSelectedSnapshots(['current']);
-            }}>
+            <Select
+              value={selectedYear.toString()}
+              onValueChange={(value) => {
+                setSelectedYear(parseInt(value));
+                // 年度変更時に選択を「現在」にリセット
+                setSelectedSnapshots(["current"]);
+              }}
+            >
               <SelectTrigger className="w-[120px]">
                 <SelectValue />
               </SelectTrigger>
@@ -419,15 +444,14 @@ export default function ProjectAnalysisPage() {
             <Popover open={isMultiSelectOpen} onOpenChange={setIsMultiSelectOpen}>
               <PopoverTrigger asChild>
                 <Button variant="outline" className="w-[200px] justify-between">
-                  {selectedSnapshots.length === 0 ? (
-                    "現在"
-                  ) : selectedSnapshots.length === 1 ? (
-                    selectedSnapshots[0] === 'current' 
-                      ? '現在'
-                      : snapshotOptions.find(opt => opt.value === selectedSnapshots[0])?.label || '選択中'
-                  ) : (
-                    `${selectedSnapshots.length}件選択中`
-                  )}
+                  {selectedSnapshots.length === 0
+                    ? "現在"
+                    : selectedSnapshots.length === 1
+                      ? selectedSnapshots[0] === "current"
+                        ? "現在"
+                        : snapshotOptions.find((opt) => opt.value === selectedSnapshots[0])
+                            ?.label || "選択中"
+                      : `${selectedSnapshots.length}件選択中`}
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
@@ -438,16 +462,15 @@ export default function ProjectAnalysisPage() {
                     <CommandEmpty>見つかりません</CommandEmpty>
                     <CommandGroup>
                       {/* 「現在」オプション */}
-                      <CommandItem
-                        value="current"
-                        onSelect={() => handleSnapshotToggle("current")}
-                      >
-                        <div className={cn(
-                          "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                          selectedSnapshots.includes("current")
-                            ? "bg-primary text-primary-foreground"
-                            : "opacity-50 [&_svg]:invisible"
-                        )}>
+                      <CommandItem value="current" onSelect={() => handleSnapshotToggle("current")}>
+                        <div
+                          className={cn(
+                            "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                            selectedSnapshots.includes("current")
+                              ? "bg-primary text-primary-foreground"
+                              : "opacity-50 [&_svg]:invisible"
+                          )}
+                        >
                           <Check className="h-4 w-4" />
                         </div>
                         現在
@@ -460,15 +483,25 @@ export default function ProjectAnalysisPage() {
                           value={snapshot.id}
                           onSelect={() => handleSnapshotToggle(snapshot.id)}
                         >
-                          <div className={cn(
-                            "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                            selectedSnapshots.includes(snapshot.id)
-                              ? "bg-primary text-primary-foreground"
-                              : "opacity-50 [&_svg]:invisible"
-                          )}>
+                          <div
+                            className={cn(
+                              "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                              selectedSnapshots.includes(snapshot.id)
+                                ? "bg-primary text-primary-foreground"
+                                : "opacity-50 [&_svg]:invisible"
+                            )}
+                          >
                             <Check className="h-4 w-4" />
                           </div>
-                          {snapshot.name} ({new Date(snapshot.createdAt).toLocaleString('ja-JP', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })})
+                          {snapshot.name} (
+                          {new Date(snapshot.createdAt).toLocaleString("ja-JP", {
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })}
+                          )
                         </CommandItem>
                       ))}
                     </CommandGroup>
@@ -477,11 +510,7 @@ export default function ProjectAnalysisPage() {
 
                 {/* 比較分析ボタン（PopoverContent内） */}
                 <div className="border-t p-2">
-                  <Button
-                    className="w-full"
-                    disabled={!canCompare}
-                    onClick={handleCompare}
-                  >
+                  <Button className="w-full" disabled={!canCompare} onClick={handleCompare}>
                     <GitCompare className="mr-2 h-4 w-4" />
                     比較分析
                   </Button>
@@ -513,10 +542,7 @@ export default function ProjectAnalysisPage() {
               </div>
             </div>
             <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => setIsSnapshotDialogOpen(false)}
-              >
+              <Button variant="outline" onClick={() => setIsSnapshotDialogOpen(false)}>
                 キャンセル
               </Button>
               <Button
@@ -529,14 +555,68 @@ export default function ProjectAnalysisPage() {
           </DialogContent>
         </Dialog>
 
+        {/* 集計元明細ダイアログ */}
+        <Dialog open={!!detailDialog} onOpenChange={(open) => !open && setDetailDialog(null)}>
+          <DialogContent className="max-w-2xl max-h-[80vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle>
+                {detailDialog?.category === "revenue" && "売上 明細"}
+                {detailDialog?.category === "costOfSales" && "売上原価 明細"}
+                {detailDialog?.category === "sgaExpenses" && "販管費 明細"}
+              </DialogTitle>
+              <DialogDescription>
+                {detailDialog?.projectName}（{selectedYear}年度）
+              </DialogDescription>
+            </DialogHeader>
+            <div className="overflow-auto flex-1 min-h-0">
+              {isDetailLoading ? (
+                <Skeleton className="h-32 w-full" />
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[120px]">計上科目</TableHead>
+                      <TableHead className="w-[90px]">計上年月</TableHead>
+                      <TableHead>摘要文</TableHead>
+                      <TableHead className="text-right w-[100px]">金額</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {detailLinesData?.data?.lines?.length ? (
+                      detailLinesData.data.lines.map((line, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="text-sm">{line.accountingItem}</TableCell>
+                          <TableCell className="text-sm">{line.accountingPeriod}</TableCell>
+                          <TableCell className="text-sm">{line.description}</TableCell>
+                          <TableCell className="text-right font-mono text-sm">
+                            ¥{parseFloat(line.amount).toLocaleString()}
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground">
+                          明細データがありません
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {/* 比較分析ダイアログ */}
         {compareSnapshotIds[0] && compareSnapshotIds[1] && (
           <ProjectAnalysisSnapshotCompare
             snapshotId1={compareSnapshotIds[0]}
             snapshotId2={compareSnapshotIds[1]}
-            currentData={compareSnapshotIds[0] === 'current' || compareSnapshotIds[1] === 'current' 
-              ? flattenData(analysisData?.data?.projects || [])
-              : undefined}
+            currentData={
+              compareSnapshotIds[0] === "current" || compareSnapshotIds[1] === "current"
+                ? flattenData(analysisData?.data?.projects || [])
+                : undefined
+            }
             currentLabel="現在"
             open={isCompareDialogOpen}
             onOpenChange={setIsCompareDialogOpen}
@@ -565,82 +645,142 @@ export default function ProjectAnalysisPage() {
                       <TableHead className="w-[80px] text-xs py-1 px-2">分析区分</TableHead>
                       <TableHead className="w-[180px] text-xs py-1 px-2">プロジェクト名</TableHead>
                       <TableHead className="text-right w-[100px] text-xs py-1 px-2">売上</TableHead>
-                      <TableHead className="text-right w-[100px] text-xs py-1 px-2">売上原価</TableHead>
-                      <TableHead className="text-right w-[100px] text-xs py-1 px-2">販管費</TableHead>
-                      <TableHead className="text-right w-[100px] text-xs py-1 px-2">山積み工数</TableHead>
-                      <TableHead className="text-right w-[110px] text-xs py-1 px-2">生産性/粗利(目標)</TableHead>
-                      <TableHead className="text-right w-[110px] text-xs py-1 px-2">生産性/粗利(実績)</TableHead>
+                      <TableHead className="text-right w-[100px] text-xs py-1 px-2">
+                        売上原価
+                      </TableHead>
+                      <TableHead className="text-right w-[100px] text-xs py-1 px-2">
+                        販管費
+                      </TableHead>
+                      <TableHead className="text-right w-[100px] text-xs py-1 px-2">
+                        山積み工数
+                      </TableHead>
+                      <TableHead className="text-right w-[110px] text-xs py-1 px-2">
+                        生産性/粗利(目標)
+                      </TableHead>
+                      <TableHead className="text-right w-[110px] text-xs py-1 px-2">
+                        生産性/粗利(実績)
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {displayRows.map((row, index) => (
-                      <TableRow 
-                        key={index} 
-                        className={row.type === 'subtotal' ? 'font-bold bg-muted/50' : ''}
+                      <TableRow
+                        key={index}
+                        className={row.type === "subtotal" ? "font-bold bg-muted/50" : ""}
                       >
                         {/* サービス列 */}
                         <TableCell className="text-xs py-1 px-2">
-                          {row.type === 'subtotal' ? row.serviceType : ''}
+                          {row.type === "subtotal" ? row.serviceType : ""}
                         </TableCell>
-                        
+
                         {/* 分析区分列 */}
                         <TableCell className="text-xs py-1 px-2">
-                          {row.type === 'subtotal' ? row.analysisType : ''}
+                          {row.type === "subtotal" ? row.analysisType : ""}
                         </TableCell>
-                        
+
                         {/* プロジェクト名列 */}
                         <TableCell className="text-xs py-1 px-2">
-                          {row.type === 'project' ? (
+                          {row.type === "project" ? (
                             <div>
                               <div className="font-semibold">{row.projectName}</div>
                               <div className="text-muted-foreground">{row.projectCode}</div>
                             </div>
-                          ) : '-'}
+                          ) : (
+                            "-"
+                          )}
                         </TableCell>
-                        
+
                         {/* 売上列 */}
                         <TableCell className="text-right font-mono text-xs py-1 px-2">
-                          {formatCurrency(row.revenue)}
+                          {row.type === "project" && "projectId" in row && row.projectId ? (
+                            <Button
+                              variant="ghost"
+                              className="h-auto p-0 font-mono text-inherit underline-offset-2 hover:underline"
+                              onClick={() =>
+                                setDetailDialog({
+                                  projectId: row.projectId as string,
+                                  projectName: row.projectName ?? "",
+                                  category: "revenue",
+                                })
+                              }
+                            >
+                              {formatCurrency(row.revenue)}
+                            </Button>
+                          ) : (
+                            formatCurrency(row.revenue)
+                          )}
                         </TableCell>
-                        
+
                         {/* 売上原価列 */}
                         <TableCell className="text-right font-mono text-xs py-1 px-2">
-                          {formatCurrency(row.costOfSales)}
+                          {row.type === "project" && "projectId" in row && row.projectId ? (
+                            <Button
+                              variant="ghost"
+                              className="h-auto p-0 font-mono text-inherit underline-offset-2 hover:underline"
+                              onClick={() =>
+                                setDetailDialog({
+                                  projectId: row.projectId as string,
+                                  projectName: row.projectName ?? "",
+                                  category: "costOfSales",
+                                })
+                              }
+                            >
+                              {formatCurrency(row.costOfSales)}
+                            </Button>
+                          ) : (
+                            formatCurrency(row.costOfSales)
+                          )}
                         </TableCell>
-                        
+
                         {/* 販管費列 */}
                         <TableCell className="text-right font-mono text-xs py-1 px-2">
-                          {formatCurrency(row.sgaExpenses)}
+                          {row.type === "project" && "projectId" in row && row.projectId ? (
+                            <Button
+                              variant="ghost"
+                              className="h-auto p-0 font-mono text-inherit underline-offset-2 hover:underline"
+                              onClick={() =>
+                                setDetailDialog({
+                                  projectId: row.projectId as string,
+                                  projectName: row.projectName ?? "",
+                                  category: "sgaExpenses",
+                                })
+                              }
+                            >
+                              {formatCurrency(row.sgaExpenses)}
+                            </Button>
+                          ) : (
+                            formatCurrency(row.sgaExpenses)
+                          )}
                         </TableCell>
-                        
+
                         {/* 山積み工数列 */}
                         <TableCell className="text-right font-mono text-xs py-1 px-2">
-                          {row.analysisType === '生産性' ? formatHours(row.workHours) : '-'}
+                          {row.analysisType === "生産性" ? formatHours(row.workHours) : "-"}
                         </TableCell>
-                        
+
                         {/* 生産性/粗利(目標)列 */}
                         <TableCell className="text-right font-mono text-xs py-1 px-2">
-                          {row.type === 'subtotal' && row.targetValue !== undefined
-                            ? (row.analysisType === '生産性'
-                                ? formatProductivity(row.targetValue)
-                                : formatCurrency(row.targetValue))
-                            : '-'
-                          }
+                          {row.type === "subtotal" && row.targetValue !== undefined
+                            ? row.analysisType === "生産性"
+                              ? formatProductivity(row.targetValue)
+                              : formatCurrency(row.targetValue)
+                            : "-"}
                         </TableCell>
-                        
+
                         {/* 生産性/粗利(実績)列 */}
-                        <TableCell className={cn(
-                          "text-right font-mono text-xs py-1 px-2",
-                          row.type === 'subtotal' 
-                            ? getAchievementColor(row.actualValue || 0, row.targetValue)
-                            : ''
-                        )}>
+                        <TableCell
+                          className={cn(
+                            "text-right font-mono text-xs py-1 px-2",
+                            row.type === "subtotal"
+                              ? getAchievementColor(row.actualValue || 0, row.targetValue)
+                              : ""
+                          )}
+                        >
                           {row.actualValue !== undefined
-                            ? (row.analysisType === '生産性'
-                                ? formatProductivity(row.actualValue)
-                                : formatCurrency(row.actualValue))
-                            : '-'
-                          }
+                            ? row.analysisType === "生産性"
+                              ? formatProductivity(row.actualValue)
+                              : formatCurrency(row.actualValue)
+                            : "-"}
                         </TableCell>
                       </TableRow>
                     ))}
