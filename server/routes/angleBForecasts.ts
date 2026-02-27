@@ -161,7 +161,12 @@ router.get("/:id", requireAuth, async (req: Request, res: Response) => {
 router.post("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const data = createAngleBForecastSchema.parse(req.body);
-    const angleBForecast = await angleBForecastService.createAngleBForecast(data);
+    const user = (req as any).user;
+    const angleBForecast = await angleBForecastService.createAngleBForecast({
+      ...data,
+      createdByUserId: user.id,
+      createdByEmployeeId: user.employee?.id?.toString(),
+    });
     res.status(201).json({
       success: true,
       data: angleBForecast,
