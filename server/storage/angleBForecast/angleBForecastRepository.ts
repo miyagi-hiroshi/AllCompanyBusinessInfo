@@ -1,8 +1,18 @@
 import type { AngleBForecast, AngleBForecastFilter, NewAngleBForecast } from "@shared/schema";
 import { angleBForecasts, projects } from "@shared/schema";
-import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import type { ProjectAnalysisDetailLine } from "@shared/schema/orderForecast";
+import { and, asc, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 
 import { db } from "../../db";
+
+/** プロジェクト分析の売上計上科目（orderForecastRepository の REVENUE_ITEMS と同一） */
+const REVENUE_ITEMS = [
+  "保守売上",
+  "ソフト売上",
+  "商品売上",
+  "消耗品売上",
+  "その他売上",
+] as const;
 
 export class AngleBForecastRepository {
   /**
@@ -243,6 +253,93 @@ export class AngleBForecastRepository {
         total_amount: string;
       } => row.sales_person !== null && row.service_type !== null && row.analysis_type !== null
     );
+  }
+
+  /**
+   * プロジェクト分析サマリー用の角度B案件売上集計
+   *
+   * @param fiscalYear - 年度
+   * @param projectIds - プロジェクトIDリスト
+   * @returns プロジェクトID別の売上合計Map
+   */
+  async getProjectRevenueSummary(
+    fiscalYear: number,
+    projectIds: string[]
+  ): Promise<Map<string, number>> {
+    if (projectIds.length === 0) {
+      return new Map();
+    }
+
+    const startPeriod = `${fiscalYear}-04`;
+    const endPeriod = `${fiscalYear + 1}-03`;
+
+    const result = await db
+      .select({
+        projectId: angleBForecasts.projectId,
+        accountingItem: angleBForecasts.accountingItem,
+        totalAmount: sql<string>`COALESCE(SUM(${angleBForecasts.amount}::numeric), 0)`,
+      })
+      .from(angleBForecasts)
+      .where(
+        and(
+          inArray(angleBForecasts.projectId, projectIds),
+          sql`${angleBForecasts.accountingPeriod} >= ${startPeriod}`,
+          sql`${angleBForecasts.accountingPeriod} <= ${endPeriod}`,
+          inArray(angleBForecasts.accountingItem, [...REVENUE_ITEMS])
+        )
+      )
+      .groupBy(angleBForecasts.projectId, angleBForecasts.accountingItem);
+
+    const summaryMap = new Map<string, number>();
+
+    for (const row of result) {
+      if (!row.projectId) continue;
+
+      const current = summaryMap.get(row.projectId) ?? 0;
+      summaryMap.set(row.projectId, current + parseFloat(row.totalAmount));
+    }
+
+    return summaryMap;
+  }
+
+  /**
+   * プロジェクト分析の角度B案件売上明細取得
+   *
+   * @param projectId - プロジェクトID
+   * @param fiscalYear - 年度
+   * @returns 明細行の配列（計上科目・計上年月・摘要文・金額）
+   */
+  async getProjectAngleBRevenueDetailLines(
+    projectId: string,
+    fiscalYear: number
+  ): Promise<ProjectAnalysisDetailLine[]> {
+    const startPeriod = `${fiscalYear}-04`;
+    const endPeriod = `${fiscalYear + 1}-03`;
+
+    const rows = await db
+      .select({
+        accountingItem: angleBForecasts.accountingItem,
+        accountingPeriod: angleBForecasts.accountingPeriod,
+        description: angleBForecasts.description,
+        amount: angleBForecasts.amount,
+      })
+      .from(angleBForecasts)
+      .where(
+        and(
+          eq(angleBForecasts.projectId, projectId),
+          sql`${angleBForecasts.accountingPeriod} >= ${startPeriod}`,
+          sql`${angleBForecasts.accountingPeriod} <= ${endPeriod}`,
+          inArray(angleBForecasts.accountingItem, [...REVENUE_ITEMS])
+        )
+      )
+      .orderBy(asc(angleBForecasts.accountingPeriod), asc(angleBForecasts.accountingItem));
+
+    return rows.map((r) => ({
+      accountingItem: r.accountingItem,
+      accountingPeriod: r.accountingPeriod,
+      description: r.description,
+      amount: String(r.amount ?? "0"),
+    }));
   }
 
   private buildWhereConditions(filter?: AngleBForecastFilter) {

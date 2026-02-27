@@ -8,6 +8,7 @@ import {
 
 // import { db } from '../db'; // 未使用のためコメントアウト
 import { AppError } from "../middleware/errorHandler";
+import { AngleBForecastRepository } from "../storage/angleBForecast";
 import { BudgetTargetRepository } from "../storage/budgetTarget";
 import { CustomerRepository } from "../storage/customer";
 import { OrderForecastRepository } from "../storage/orderForecast";
@@ -26,7 +27,8 @@ export class ProjectService {
     private customerRepository: CustomerRepository,
     private orderForecastRepository: OrderForecastRepository,
     private staffingRepository: StaffingRepository,
-    private budgetTargetRepository: BudgetTargetRepository
+    private budgetTargetRepository: BudgetTargetRepository,
+    private angleBForecastRepository: AngleBForecastRepository
   ) {}
 
   /**
@@ -402,20 +404,23 @@ export class ProjectService {
       const projectIds = projects.map((p) => p.id);
 
       // 並列でデータを一括取得
-      const [budgetTargets, orderForecastSummary, workHoursSummary] = await Promise.all([
-        // 目標値を取得
-        this.budgetTargetRepository.findAll({
-          filter: { fiscalYear },
-          limit: undefined,
-          offset: 0,
-          sortBy: "serviceType",
-          sortOrder: "asc",
-        }),
-        // 受発注データ一括集計
-        this.orderForecastRepository.getProjectAnalysisSummary(fiscalYear, projectIds),
-        // 配員計画データ一括集計
-        this.staffingRepository.getProjectWorkHoursSummary(fiscalYear, projectIds),
-      ]);
+      const [budgetTargets, orderForecastSummary, workHoursSummary, angleBRevenueSummary] =
+        await Promise.all([
+          // 目標値を取得
+          this.budgetTargetRepository.findAll({
+            filter: { fiscalYear },
+            limit: undefined,
+            offset: 0,
+            sortBy: "serviceType",
+            sortOrder: "asc",
+          }),
+          // 受発注データ一括集計
+          this.orderForecastRepository.getProjectAnalysisSummary(fiscalYear, projectIds),
+          // 配員計画データ一括集計
+          this.staffingRepository.getProjectWorkHoursSummary(fiscalYear, projectIds),
+          // 角度B案件売上一括集計
+          this.angleBForecastRepository.getProjectRevenueSummary(fiscalYear, projectIds),
+        ]);
 
       // Map作成: "サービス区分_分析区分" => 目標値
       const targetMap = new Map<string, number>();
@@ -445,6 +450,8 @@ export class ProjectService {
           orderSummary.revenue - orderSummary.costOfSales - orderSummary.sgaExpenses;
         const productivity = workHours > 0 ? grossProfit / workHours : 0;
 
+        const angleBRevenue = angleBRevenueSummary.get(project.id) ?? 0;
+
         const summary: ProjectAnalysisSummary = {
           id: project.id,
           code: project.code,
@@ -455,6 +462,7 @@ export class ProjectService {
           costOfSales: orderSummary.costOfSales,
           sgaExpenses: orderSummary.sgaExpenses,
           workHours,
+          angleBRevenue,
           ...(project.analysisType === "生産性" ? { productivity } : { grossProfit }),
           targetValue: targetMap.get(`${project.serviceType}_${project.analysisType}`),
         };
@@ -500,14 +508,20 @@ export class ProjectService {
    *
    * @param projectId - プロジェクトID
    * @param fiscalYear - 年度
-   * @param category - カテゴリ（revenue / costOfSales / sgaExpenses）
+   * @param category - カテゴリ（revenue / costOfSales / sgaExpenses / angleBRevenue）
    * @returns 明細行の配列
    */
   async getProjectAnalysisDetailLines(
     projectId: string,
     fiscalYear: number,
-    category: "revenue" | "costOfSales" | "sgaExpenses"
+    category: "revenue" | "costOfSales" | "sgaExpenses" | "angleBRevenue"
   ) {
+    if (category === "angleBRevenue") {
+      return this.angleBForecastRepository.getProjectAngleBRevenueDetailLines(
+        projectId,
+        fiscalYear
+      );
+    }
     return this.orderForecastRepository.getProjectAnalysisDetailLines(
       projectId,
       fiscalYear,

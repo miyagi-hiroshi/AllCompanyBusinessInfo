@@ -13,6 +13,7 @@ export interface ProjectAnalysisSummary {
   costOfSales: number; // 売上原価（期首製品棚卸高 + 期首商品棚卸高 + 仕入高 - 期末製品棚卸高 - 期末商品棚卸高）
   sgaExpenses: number; // 販管費（727,737,740,745,9999）
   workHours: number; // 山積み工数
+  angleBRevenue?: number; // 角度B案件の売上
   productivity?: number; // 生産性（分析区分=生産性の場合）
   grossProfit?: number; // 粗利（分析区分=粗利の場合）
   targetValue?: number; // 目標値
@@ -65,12 +66,12 @@ export interface ProjectAnalysisDetailLinesResponse {
  *
  * @param projectId - プロジェクトID（null の場合は取得しない）
  * @param fiscalYear - 年度
- * @param category - カテゴリ（revenue / costOfSales / sgaExpenses）
+ * @param category - カテゴリ（revenue / costOfSales / sgaExpenses / angleBRevenue）
  */
 export function useProjectAnalysisDetailLines(
   projectId: string | null,
   fiscalYear: number,
-  category: "revenue" | "costOfSales" | "sgaExpenses" | null
+  category: "revenue" | "costOfSales" | "sgaExpenses" | "angleBRevenue" | null
 ) {
   return useQuery<ProjectAnalysisDetailLinesResponse>({
     queryKey: ["/api/projects/analysis-summary/detail-lines", projectId, fiscalYear, category],

@@ -10,6 +10,7 @@ export interface SnapshotDataRow {
   projectCode?: string; // type === 'project' の場合のみ
   analysisType: string;
   revenue: number;
+  angleBRevenue?: number; // 角度B案件の売上
   costOfSales: number;
   sgaExpenses: number;
   workHours: number;
@@ -46,6 +47,7 @@ export const snapshotDataRowSchema = z.object({
   projectCode: z.string().optional(),
   analysisType: z.string(),
   revenue: z.number(),
+  angleBRevenue: z.number().optional(),
   costOfSales: z.number(),
   sgaExpenses: z.number(),
   workHours: z.number(),

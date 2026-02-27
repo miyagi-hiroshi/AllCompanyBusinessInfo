@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { requireAuth } from "../middleware/auth";
 import { ProjectService } from "../services/projectService";
+import { AngleBForecastRepository } from "../storage/angleBForecast";
 import { BudgetTargetRepository } from "../storage/budgetTarget";
 import { CustomerRepository } from "../storage/customer";
 import { OrderForecastRepository } from "../storage/orderForecast";
@@ -17,12 +18,14 @@ const customerRepository = new CustomerRepository();
 const orderForecastRepository = new OrderForecastRepository();
 const staffingRepository = new StaffingRepository();
 const budgetTargetRepository = new BudgetTargetRepository();
+const angleBForecastRepository = new AngleBForecastRepository();
 const projectService = new ProjectService(
   projectRepository,
   customerRepository,
   orderForecastRepository,
   staffingRepository,
-  budgetTargetRepository
+  budgetTargetRepository,
+  angleBForecastRepository
 );
 const projectAnalysisSnapshotRepository = new ProjectAnalysisSnapshotRepository();
 
@@ -150,7 +153,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
 const detailLinesQuerySchema = z.object({
   fiscalYear: z.string().transform((v) => parseInt(v, 10)),
   projectId: z.string().min(1),
-  category: z.enum(["revenue", "costOfSales", "sgaExpenses"]),
+  category: z.enum(["revenue", "costOfSales", "sgaExpenses", "angleBRevenue"]),
 });
 router.get("/analysis-summary/detail-lines", requireAuth, async (req: Request, res: Response) => {
   try {
@@ -159,7 +162,7 @@ router.get("/analysis-summary/detail-lines", requireAuth, async (req: Request, r
       return res.status(400).json({
         success: false,
         message:
-          "fiscalYear, projectId, category は必須です。category は revenue / costOfSales / sgaExpenses のいずれか",
+          "fiscalYear, projectId, category は必須です。category は revenue / costOfSales / sgaExpenses / angleBRevenue のいずれか",
       });
     }
     const { fiscalYear, projectId, category } = parsed.data;

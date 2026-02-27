@@ -74,7 +74,7 @@ export default function ProjectAnalysisPage() {
   const [detailDialog, setDetailDialog] = useState<{
     projectId: string;
     projectName: string;
-    category: "revenue" | "costOfSales" | "sgaExpenses";
+    category: "revenue" | "costOfSales" | "sgaExpenses" | "angleBRevenue";
   } | null>(null);
 
   const { toast } = useToast();
@@ -135,6 +135,10 @@ export default function ProjectAnalysisPage() {
     const totalCostOfSales = projects.reduce((sum, p) => sum + p.costOfSales, 0);
     const totalSgaExpenses = projects.reduce((sum, p) => sum + p.sgaExpenses, 0);
     const totalWorkHours = projects.reduce((sum, p) => sum + p.workHours, 0);
+    const totalAngleBRevenue = projects.reduce(
+      (sum, p) => sum + (p.angleBRevenue ?? 0),
+      0
+    );
     const totalGrossProfit = totalRevenue - totalCostOfSales - totalSgaExpenses;
     const totalProductivity = totalWorkHours > 0 ? totalGrossProfit / totalWorkHours : 0;
 
@@ -143,6 +147,7 @@ export default function ProjectAnalysisPage() {
       totalCostOfSales,
       totalSgaExpenses,
       totalWorkHours,
+      totalAngleBRevenue,
       totalGrossProfit,
       totalProductivity,
     };
@@ -158,6 +163,7 @@ export default function ProjectAnalysisPage() {
       projectCode?: string;
       analysisType: string;
       revenue: number;
+      angleBRevenue?: number;
       costOfSales: number;
       sgaExpenses: number;
       workHours: number;
@@ -212,6 +218,7 @@ export default function ProjectAnalysisPage() {
           projectCode: project.code,
           analysisType: project.analysisType,
           revenue: project.revenue,
+          angleBRevenue: project.angleBRevenue ?? 0,
           costOfSales: project.costOfSales,
           sgaExpenses: project.sgaExpenses,
           workHours: project.workHours,
@@ -227,6 +234,7 @@ export default function ProjectAnalysisPage() {
         serviceType: group.serviceType,
         analysisType: group.analysisType,
         revenue: summary.totalRevenue,
+        angleBRevenue: summary.totalAngleBRevenue,
         costOfSales: summary.totalCostOfSales,
         sgaExpenses: summary.totalSgaExpenses,
         workHours: summary.totalWorkHours,
@@ -561,6 +569,7 @@ export default function ProjectAnalysisPage() {
             <DialogHeader>
               <DialogTitle>
                 {detailDialog?.category === "revenue" && "売上 明細"}
+                {detailDialog?.category === "angleBRevenue" && "角度B案件の売上 明細"}
                 {detailDialog?.category === "costOfSales" && "売上原価 明細"}
                 {detailDialog?.category === "sgaExpenses" && "販管費 明細"}
               </DialogTitle>
@@ -659,6 +668,9 @@ export default function ProjectAnalysisPage() {
                       </TableHead>
                       <TableHead className="text-right w-[110px] text-xs py-1 px-2">
                         生産性/粗利(実績)
+                      </TableHead>
+                      <TableHead className="text-right w-[100px] text-xs py-1 px-2">
+                        角度B案件の売上
                       </TableHead>
                     </TableRow>
                   </TableHeader>
@@ -781,6 +793,27 @@ export default function ProjectAnalysisPage() {
                               ? formatProductivity(row.actualValue)
                               : formatCurrency(row.actualValue)
                             : "-"}
+                        </TableCell>
+
+                        {/* 角度B案件の売上列 */}
+                        <TableCell className="text-right font-mono text-xs py-1 px-2">
+                          {row.type === "project" && "projectId" in row && row.projectId ? (
+                            <Button
+                              variant="ghost"
+                              className="h-auto p-0 font-mono text-inherit underline-offset-2 hover:underline"
+                              onClick={() =>
+                                setDetailDialog({
+                                  projectId: row.projectId as string,
+                                  projectName: row.projectName ?? "",
+                                  category: "angleBRevenue",
+                                })
+                              }
+                            >
+                              {formatCurrency(row.angleBRevenue ?? 0)}
+                            </Button>
+                          ) : (
+                            formatCurrency(row.angleBRevenue ?? 0)
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}

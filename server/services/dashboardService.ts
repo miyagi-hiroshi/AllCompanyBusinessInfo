@@ -57,7 +57,8 @@ export class DashboardService {
       customerRepository,
       orderForecastRepository,
       staffingRepository,
-      budgetTargetRepository
+      budgetTargetRepository,
+      angleBForecastRepository
     );
   }
 
