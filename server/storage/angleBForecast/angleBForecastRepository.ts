@@ -16,8 +16,9 @@ export class AngleBForecastRepository {
     sortBy?: "accountingPeriod" | "amount" | "probability" | "createdAt";
     sortOrder?: "asc" | "desc";
   }): Promise<AngleBForecast[]> {
-    const { filter, limit = 100, offset = 0, sortBy = "createdAt", sortOrder = "desc" } = options;
+    const { filter, limit, offset, sortBy = "createdAt", sortOrder = "desc" } = options;
 
+    const effectiveLimit = limit ?? 10000;
     const conditions = this.buildWhereConditions(filter);
     const needsJoin = filter?.salesPerson;
 
@@ -56,7 +57,10 @@ export class AngleBForecastRepository {
       query = query.leftJoin(projects, eq(angleBForecasts.projectId, projects.id));
     }
 
-    query = query.where(conditions).limit(limit).offset(offset);
+    query = query.where(conditions).limit(effectiveLimit);
+    if (offset !== undefined) {
+      query = query.offset(offset);
+    }
 
     if (sortOrder === "asc") {
       return await query.orderBy(orderByColumn);

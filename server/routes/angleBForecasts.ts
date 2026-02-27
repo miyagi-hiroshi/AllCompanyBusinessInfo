@@ -48,8 +48,8 @@ const searchAngleBForecastSchema = z.object({
   createdByEmployeeId: z.string().optional(),
   salesPerson: z.string().optional(),
   searchText: z.string().optional(),
-  page: z.string().transform(Number).optional().default("1"),
-  limit: z.string().transform(Number).optional().default("20"),
+  page: z.string().transform(Number).optional(),
+  limit: z.string().transform(Number).optional(),
   sortBy: z
     .enum(["accountingPeriod", "amount", "probability", "createdAt"])
     .optional()
@@ -64,7 +64,9 @@ const searchAngleBForecastSchema = z.object({
 router.get("/", requireAuth, async (req: Request, res: Response) => {
   try {
     const query = searchAngleBForecastSchema.parse(req.query);
-    const offset = (query.page - 1) * query.limit;
+    const limit = query.limit;
+    const page = query.page || 1;
+    const offset = limit != null ? (page - 1) * limit : undefined;
 
     const [angleBForecasts, totalCount] = await Promise.all([
       angleBForecastRepository.findAll({
@@ -84,7 +86,7 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
           salesPerson: query.salesPerson,
           searchText: query.searchText,
         },
-        limit: query.limit,
+        limit,
         offset,
         sortBy: query.sortBy,
         sortOrder: query.sortOrder,
@@ -112,9 +114,9 @@ router.get("/", requireAuth, async (req: Request, res: Response) => {
       data: {
         items: angleBForecasts,
         total: totalCount,
-        page: query.page,
-        limit: query.limit,
-        totalPages: Math.ceil(totalCount / query.limit),
+        page,
+        limit: limit ?? totalCount,
+        totalPages: limit ? Math.ceil(totalCount / limit) : 1,
       },
     });
   } catch (error) {
