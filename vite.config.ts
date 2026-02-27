@@ -13,8 +13,8 @@ export default {
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "apple-touch-icon.png", "masked-icon.svg"],
       manifest: {
-        name: "受発注見込み入力システム",
-        short_name: "受発注システム",
+        name: "OrderLinX",
+        short_name: "OrderLinX",
         description:
           "Excel相当以上の入力体験とGL（総勘定元帳）との月次突合を半自動化するWebシステム",
         theme_color: "#3b82f6",
