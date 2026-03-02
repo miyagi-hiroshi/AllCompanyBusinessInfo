@@ -48,7 +48,7 @@ export default function DashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="h-full p-6 space-y-6">
+      <div className="h-full min-h-0 overflow-y-auto p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <BarChart3 className="h-6 w-6" />
@@ -74,7 +74,7 @@ export default function DashboardPage() {
 
   if (!dashboardData?.success || !dashboardData.data) {
     return (
-      <div className="h-full p-6">
+      <div className="h-full min-h-0 overflow-y-auto p-6">
         <div className="flex items-center space-x-2">
           <BarChart3 className="h-6 w-6" />
           <h1 className="text-2xl font-bold">ダッシュボード</h1>
@@ -100,7 +100,7 @@ export default function DashboardPage() {
   const totalAchievementRate = totalBudget > 0 ? (totalActual / totalBudget) * 100 : 0;
 
   return (
-    <div className="h-full p-6 space-y-6">
+    <div className="h-full min-h-0 overflow-y-auto p-6 space-y-6">
       {/* ヘッダー */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
