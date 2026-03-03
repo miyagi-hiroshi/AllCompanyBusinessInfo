@@ -105,4 +105,40 @@ export class AngleBForecastService {
 
     return { orderForecast, deleted };
   }
+
+  /**
+   * 受発注見込みを角度B案件に降格
+   * 受発注見込を取得して角度B案件を作成し、受発注見込を削除（昇格の逆操作）
+   */
+  async demoteFromOrderForecast(
+    id: string
+  ): Promise<{ angleBForecast: AngleBForecast; deleted: boolean }> {
+    const orderForecast = await this.orderForecastRepository.findById(id);
+    if (!orderForecast) {
+      throw new Error(`受発注見込みが見つかりません: ${id}`);
+    }
+
+    const angleBForecastData: NewAngleBForecast = {
+      projectId: orderForecast.projectId,
+      projectCode: orderForecast.projectCode,
+      projectName: orderForecast.projectName,
+      customerId: orderForecast.customerId ?? undefined,
+      customerCode: orderForecast.customerCode ?? undefined,
+      customerName: orderForecast.customerName ?? undefined,
+      accountingPeriod: orderForecast.accountingPeriod,
+      accountingItem: orderForecast.accountingItem,
+      description: orderForecast.description,
+      amount: orderForecast.amount,
+      probability: 50,
+      remarks: orderForecast.remarks ?? "",
+      period: orderForecast.period,
+      createdByUserId: orderForecast.createdByUserId ?? undefined,
+      createdByEmployeeId: orderForecast.createdByEmployeeId ?? undefined,
+    };
+
+    const angleBForecast = await this.angleBForecastRepository.create(angleBForecastData);
+    const deleted = await this.orderForecastRepository.delete(id);
+
+    return { angleBForecast, deleted };
+  }
 }

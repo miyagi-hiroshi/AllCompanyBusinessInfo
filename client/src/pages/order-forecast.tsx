@@ -1,5 +1,5 @@
 import type { NewOrderForecast, OrderForecast } from "@shared/schema";
-import { FileSpreadsheet } from "lucide-react";
+import { ArrowDownCircle, FileSpreadsheet } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { AdvancedFilterPanel, type FilterState } from "@/components/advanced-filter-panel";
@@ -9,12 +9,14 @@ import { KeyboardShortcutsPanel } from "@/components/keyboard-shortcuts-panel";
 import { ReconciliationStatusBadge } from "@/components/reconciliation-status-badge";
 import { type SearchFilter, SearchFilterPanel } from "@/components/search-filter-panel";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGLEntries } from "@/hooks/useGLEntries";
 import { useAccountingItems, useCustomers, useProjects } from "@/hooks/useMasters";
 import {
   useCreateOrderForecast,
   useDeleteOrderForecast,
+  useDemoteOrderForecastToAngleB,
   useOrderForecasts,
   useSetOrderForecastsExclusion,
   useUpdateOrderForecast,
@@ -74,6 +76,7 @@ export default function OrderForecastPage() {
   const createMutation = useCreateOrderForecast();
   const updateMutation = useUpdateOrderForecast();
   const deleteMutation = useDeleteOrderForecast();
+  const demoteMutation = useDemoteOrderForecastToAngleB();
   const reconcileMutation = useReconciliation();
   const setOrderExclusion = useSetOrderForecastsExclusion();
 
@@ -396,6 +399,7 @@ export default function OrderForecastPage() {
         reconciliationStatus: order.reconciliationStatus,
         _modified: false,
         _readonly: order.reconciliationStatus === "matched",
+        _selected: false,
       }));
       setLocalRows(freshGridRows);
       lastSyncedDataRef.current = orderForecasts;
@@ -687,6 +691,83 @@ export default function OrderForecastPage() {
     });
   };
 
+  const handleDemote = async () => {
+    const selectedRows = localRows.filter(
+      (row) => row._selected && !row.id.startsWith("temp-")
+    );
+    if (selectedRows.length === 0) {
+      toast({
+        title: "行を選択してください",
+        description: "角度B案件に降格する受発注見込みを選択してください",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const demotableRows = selectedRows.filter(
+      (row) => row.reconciliationStatus !== "matched"
+    );
+    const skippedCount = selectedRows.length - demotableRows.length;
+    if (skippedCount > 0) {
+      toast({
+        title: "突合済みの行はスキップしました",
+        description: `突合済みの${skippedCount}件は降格できません`,
+        variant: "destructive",
+      });
+    }
+    if (demotableRows.length === 0) {
+      return;
+    }
+
+    let successCount = 0;
+    let failCount = 0;
+    for (const row of demotableRows) {
+      try {
+        await demoteMutation.mutateAsync({ id: row.id });
+        successCount++;
+      } catch {
+        failCount++;
+      }
+    }
+
+    const { data: freshData } = await refetchOrders();
+    if (freshData) {
+      const freshRows: GridRowData[] = freshData.map((order) => ({
+        id: order.id,
+        isExcluded: order.isExcluded,
+        projectId: order.projectId,
+        projectCode: order.projectCode,
+        projectName: order.projectName,
+        customerId: order.customerId || undefined,
+        customerCode: order.customerCode || undefined,
+        customerName: order.customerName || undefined,
+        accountingPeriod: order.accountingPeriod,
+        accountingItem: order.accountingItem,
+        description: order.description,
+        amount: order.amount,
+        remarks: order.remarks || "",
+        reconciliationStatus: order.reconciliationStatus,
+        _modified: false,
+        _readonly: order.reconciliationStatus === "matched",
+        _selected: false,
+      }));
+      setLocalRows(freshRows);
+    }
+
+    if (failCount === 0) {
+      toast({
+        title: "角度B案件に降格しました",
+        description: `${successCount}件を角度B案件に降格しました`,
+      });
+    } else {
+      toast({
+        title: "一部の降格に失敗しました",
+        description: `${successCount}件を降格、${failCount}件が失敗しました`,
+        variant: "destructive",
+      });
+    }
+  };
+
   const matchedCount = orderForecasts.filter((o) => o.reconciliationStatus === "matched").length;
   const fuzzyCount = orderForecasts.filter((o) => o.reconciliationStatus === "fuzzy").length;
   const unmatchedCount = orderForecasts.filter(
@@ -739,6 +820,15 @@ export default function OrderForecastPage() {
               <span className="text-sm font-medium">{unmatchedCount}</span>
             </div>
           </div>
+
+          <Button
+            onClick={handleDemote}
+            variant="outline"
+            data-testid="button-demote-to-angle-b"
+          >
+            <ArrowDownCircle className="h-4 w-4 mr-2" />
+            角度B降格
+          </Button>
 
           <SearchFilterPanel
             open={isSearchPanelOpen}

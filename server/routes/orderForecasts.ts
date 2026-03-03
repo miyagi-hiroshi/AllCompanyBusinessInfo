@@ -3,6 +3,7 @@ import express, { type Request, Response } from "express";
 import { z } from "zod";
 
 import { requireAuth } from "../middleware/auth";
+import { AngleBForecastService } from "../services/angleBForecastService";
 import { OrderForecastService } from "../services/orderForecastService";
 import { AccountingItemRepository } from "../storage/accountingItem";
 import { AngleBForecastRepository } from "../storage/angleBForecast";
@@ -16,6 +17,10 @@ const projectRepository = new ProjectRepository();
 const glEntryRepository = new GLEntryRepository();
 const accountingItemRepository = new AccountingItemRepository();
 const angleBForecastRepository = new AngleBForecastRepository();
+const angleBForecastService = new AngleBForecastService(
+  angleBForecastRepository,
+  orderForecastRepository
+);
 const orderForecastService = new OrderForecastService(
   orderForecastRepository,
   projectRepository,
@@ -391,6 +396,50 @@ router.post("/", requireAuth, async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: "受発注データの作成中にエラーが発生しました",
+    });
+  }
+});
+
+/**
+ * 受発注見込みを角度B案件に降格API
+ * POST /api/order-forecasts/:id/demote-to-angle-b
+ * 認証済みユーザー全員が利用可能
+ */
+const demoteIdParamSchema = z.object({
+  id: z.string().uuid("IDは有効なUUID形式である必要があります"),
+});
+
+router.post("/:id/demote-to-angle-b", requireAuth, async (req: Request, res: Response) => {
+  try {
+    const parseResult = demoteIdParamSchema.safeParse({ id: req.params.id });
+    if (!parseResult.success) {
+      return res.status(400).json({
+        success: false,
+        message: parseResult.error.errors[0]?.message ?? "IDが正しくありません",
+      });
+    }
+    const { id } = parseResult.data;
+
+    const result = await angleBForecastService.demoteFromOrderForecast(id);
+
+    res.json({
+      success: true,
+      data: result,
+      message: "受発注見込みを角度B案件に降格しました",
+    });
+  } catch (error: unknown) {
+    console.error("角度B降格エラー:", error);
+
+    if (error instanceof Error && error.message.includes("見つかりません")) {
+      return res.status(404).json({
+        success: false,
+        message: "受発注見込みが見つかりません",
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: "角度B案件への降格中にエラーが発生しました",
     });
   }
 });

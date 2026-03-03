@@ -125,6 +125,19 @@ export function useDeleteOrderForecast() {
   });
 }
 
+export function useDemoteOrderForecastToAngleB() {
+  return useMutation({
+    mutationFn: async ({ id }: { id: string }) => {
+      const res = await apiRequest("POST", `/api/order-forecasts/${id}/demote-to-angle-b`, undefined);
+      return await res.json();
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["/api/order-forecasts"] });
+      void queryClient.invalidateQueries({ queryKey: ["/api/angle-b-forecasts"] });
+    },
+  });
+}
+
 export function useSetOrderForecastsExclusion() {
   return useMutation({
     mutationFn: async ({
