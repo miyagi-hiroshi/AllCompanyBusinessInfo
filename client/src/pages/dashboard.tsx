@@ -63,8 +63,8 @@ export default function DashboardPage() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {Array.from({ length: 4 }).map((_, i) => (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-32" />
           ))}
         </div>
@@ -148,8 +148,8 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* KPI指標（2列レイアウト） */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* KPI指標（3列レイアウト） */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* 利益率カード */}
         <Card>
           <CardHeader>
@@ -167,29 +167,6 @@ export default function DashboardPage() {
                 <p className="text-sm font-medium text-muted-foreground">実績</p>
                 <p className="text-2xl font-bold text-purple-600">
                   {formatPercentage(data.profitMarginActual)}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 原価率カード */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-semibold">原価率</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-muted-foreground">予算</p>
-                <p className="text-2xl font-bold text-blue-600">
-                  {formatPercentage(data.costRateBudget)}
-                </p>
-              </div>
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium text-muted-foreground">実績</p>
-                <p className="text-2xl font-bold text-purple-600">
-                  {formatPercentage(data.costRateActual)}
                 </p>
               </div>
             </div>
