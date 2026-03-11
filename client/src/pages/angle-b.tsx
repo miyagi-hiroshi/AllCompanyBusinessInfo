@@ -214,6 +214,7 @@ export default function AngleBPage() {
       type: "text",
       width: 250,
       required: true,
+      sortable: true,
     },
     {
       key: "amount",

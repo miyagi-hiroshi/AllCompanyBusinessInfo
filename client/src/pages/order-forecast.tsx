@@ -308,6 +308,7 @@ export default function OrderForecastPage() {
       type: "text",
       width: 250,
       required: true,
+      sortable: true,
     },
     {
       key: "amount",
