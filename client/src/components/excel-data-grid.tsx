@@ -81,9 +81,9 @@ export function ExcelDataGrid({
   isSaving = false,
 }: ExcelDataGridProps) {
   const { state: sidebarState } = useSidebar();
-  const [activeCell, setActiveCell] = useState<{ rowIndex: number; colKey: string } | null>(null);
-  const [editingCell, setEditingCell] = useState<{ rowIndex: number; colKey: string } | null>(null);
-  const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
+  const [activeCell, setActiveCell] = useState<{ rowId: string; colKey: string } | null>(null);
+  const [editingCell, setEditingCell] = useState<{ rowId: string; colKey: string } | null>(null);
+  const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
   const [sortBy, setSortBy] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<"asc" | "desc" | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -94,10 +94,10 @@ export function ExcelDataGrid({
 
   // Sync selectedRows with _selected property
   useEffect(() => {
-    const newSelectedRows = new Set<number>();
-    rows.forEach((row, index) => {
+    const newSelectedRows = new Set<string>();
+    rows.forEach((row) => {
       if (row._selected) {
-        newSelectedRows.add(index);
+        newSelectedRows.add(row.id);
       }
     });
     setSelectedRows(newSelectedRows);
@@ -106,13 +106,15 @@ export function ExcelDataGrid({
   // Focus on active cell when it changes
   useEffect(() => {
     if (activeCell && !editingCell) {
-      const cellKey = `${activeCell.rowIndex}-${activeCell.colKey}`;
+      const cellKey = `${activeCell.rowId}-${activeCell.colKey}`;
       const cellElement = cellRefs.current.get(cellKey);
       if (cellElement) {
         cellElement.focus();
       }
     }
   }, [activeCell, editingCell]);
+
+  const getRowIndexById = (rowId: string): number => rows.findIndex((r) => r.id === rowId);
 
   // Ctrl+Enter: Save
   useHotkeys(
@@ -155,7 +157,7 @@ export function ExcelDataGrid({
     (e) => {
       e.preventDefault();
       if (activeCell) {
-        handleDuplicateRow(activeCell.rowIndex);
+        handleDuplicateRow(activeCell.rowId);
       }
     },
     { enabled: enableKeyboardShortcuts }
@@ -193,30 +195,32 @@ export function ExcelDataGrid({
 
     // activeCellがある場合はその行の直下に挿入、ない場合は最下行に追加
     let newRows: GridRowData[];
-    let insertedRowIndex: number;
+    const newRowId = newRow.id;
 
     if (activeCell) {
+      const insertAt = getRowIndexById(activeCell.rowId) + 1;
       newRows = [...rows];
-      insertedRowIndex = activeCell.rowIndex + 1;
-      newRows.splice(insertedRowIndex, 0, newRow);
+      newRows.splice(insertAt, 0, newRow);
     } else {
       newRows = [...rows, newRow];
-      insertedRowIndex = newRows.length - 1;
     }
 
     onRowsChange(newRows);
 
     // Focus on first cell of new row
     setTimeout(() => {
-      setActiveCell({ rowIndex: insertedRowIndex, colKey: columns[0].key });
+      setActiveCell({ rowId: newRowId, colKey: columns[0].key });
     }, 0);
   };
 
   const handleDeleteRows = () => {
     // 削除可能な行のみをフィルタリング（読み取り専用の行は削除しない）
-    const deletableRows = Array.from(selectedRows).filter((index) => !rows[index]._readonly);
+    const deletableRowIds = Array.from(selectedRows).filter((rowId) => {
+      const row = rows.find((r) => r.id === rowId);
+      return row && !row._readonly;
+    });
 
-    if (deletableRows.length === 0) {
+    if (deletableRowIds.length === 0) {
       toast({
         title: "削除できません",
         description: "選択された行は突合済みのため削除できません",
@@ -225,19 +229,21 @@ export function ExcelDataGrid({
       return;
     }
 
-    const newRows = rows.filter((_, index) => !deletableRows.includes(index));
+    const newRows = rows.filter((r) => !deletableRowIds.includes(r.id));
     onRowsChange(newRows);
     setSelectedRows(new Set());
     setActiveCell(null);
 
     toast({
       title: "削除対象に設定しました",
-      description: `${deletableRows.length}行を削除対象に設定しました。保存ボタン（Ctrl+Enter）で確定してください。`,
+      description: `${deletableRowIds.length}行を削除対象に設定しました。保存ボタン（Ctrl+Enter）で確定してください。`,
     });
   };
 
-  const handleDuplicateRow = (rowIndex: number) => {
-    const sourceRow = rows[rowIndex];
+  const handleDuplicateRow = (rowId: string) => {
+    const sourceIndex = getRowIndexById(rowId);
+    if (sourceIndex < 0) return;
+    const sourceRow = rows[sourceIndex];
     const newRow: GridRowData = {
       ...sourceRow,
       id: `temp-${Date.now()}`,
@@ -245,7 +251,7 @@ export function ExcelDataGrid({
     };
 
     const newRows = [...rows];
-    newRows.splice(rowIndex + 1, 0, newRow);
+    newRows.splice(sourceIndex + 1, 0, newRow);
     onRowsChange(newRows);
 
     toast({
@@ -254,13 +260,10 @@ export function ExcelDataGrid({
     });
   };
 
-  const handleCellChange = (rowIndex: number, colKey: string, value: string | number) => {
-    const newRows = [...rows];
-    newRows[rowIndex] = {
-      ...newRows[rowIndex],
-      [colKey]: value,
-      _modified: true,
-    };
+  const handleCellChange = (rowId: string, colKey: string, value: string | number) => {
+    const newRows = rows.map((r) =>
+      r.id === rowId ? { ...r, [colKey]: value, _modified: true } : r
+    );
     onRowsChange(newRows);
   };
 
@@ -334,11 +337,12 @@ export function ExcelDataGrid({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent, rowIndex: number, colKey: string) => {
+  const handleKeyDown = (e: React.KeyboardEvent, rowId: string, colKey: string) => {
     if (!activeCell) {
       return;
     }
 
+    const displayIdx = displayedRows.findIndex((r) => r.id === rowId);
     const colIndex = columns.findIndex((col) => col.key === colKey);
 
     switch (e.key) {
@@ -347,16 +351,18 @@ export function ExcelDataGrid({
         if (e.shiftKey) {
           // Shift+Tab: Previous cell
           if (colIndex > 0) {
-            setActiveCell({ rowIndex, colKey: columns[colIndex - 1].key });
-          } else if (rowIndex > 0) {
-            setActiveCell({ rowIndex: rowIndex - 1, colKey: columns[columns.length - 1].key });
+            setActiveCell({ rowId, colKey: columns[colIndex - 1].key });
+          } else if (displayIdx > 0) {
+            const prevRow = displayedRows[displayIdx - 1];
+            setActiveCell({ rowId: prevRow.id, colKey: columns[columns.length - 1].key });
           }
         } else {
           // Tab: Next cell
           if (colIndex < columns.length - 1) {
-            setActiveCell({ rowIndex, colKey: columns[colIndex + 1].key });
-          } else if (rowIndex < rows.length - 1) {
-            setActiveCell({ rowIndex: rowIndex + 1, colKey: columns[0].key });
+            setActiveCell({ rowId, colKey: columns[colIndex + 1].key });
+          } else if (displayIdx < displayedRows.length - 1) {
+            const nextRow = displayedRows[displayIdx + 1];
+            setActiveCell({ rowId: nextRow.id, colKey: columns[0].key });
           }
         }
         setEditingCell(null);
@@ -367,14 +373,16 @@ export function ExcelDataGrid({
         if (editingCell) {
           // Confirm edit and move down
           setEditingCell(null);
-          if (rowIndex < rows.length - 1) {
-            setActiveCell({ rowIndex: rowIndex + 1, colKey });
+          if (displayIdx < displayedRows.length - 1) {
+            const nextRow = displayedRows[displayIdx + 1];
+            setActiveCell({ rowId: nextRow.id, colKey });
           }
         } else {
           // Start editing only if row is not readonly
-          const isRowReadonly = rows[rowIndex]._readonly || false;
+          const row = rows.find((r) => r.id === rowId);
+          const isRowReadonly = row?._readonly ?? false;
           if (!isRowReadonly) {
-            setEditingCell({ rowIndex, colKey });
+            setEditingCell({ rowId, colKey });
           }
         }
         break;
@@ -387,8 +395,9 @@ export function ExcelDataGrid({
       case "ArrowUp":
         if (!editingCell) {
           e.preventDefault();
-          if (rowIndex > 0) {
-            setActiveCell({ rowIndex: rowIndex - 1, colKey });
+          if (displayIdx > 0) {
+            const prevRow = displayedRows[displayIdx - 1];
+            setActiveCell({ rowId: prevRow.id, colKey });
           }
         }
         break;
@@ -396,8 +405,9 @@ export function ExcelDataGrid({
       case "ArrowDown":
         if (!editingCell) {
           e.preventDefault();
-          if (rowIndex < rows.length - 1) {
-            setActiveCell({ rowIndex: rowIndex + 1, colKey });
+          if (displayIdx < displayedRows.length - 1) {
+            const nextRow = displayedRows[displayIdx + 1];
+            setActiveCell({ rowId: nextRow.id, colKey });
           }
         }
         break;
@@ -405,22 +415,22 @@ export function ExcelDataGrid({
       case "ArrowLeft":
         if (!editingCell && colIndex > 0) {
           e.preventDefault();
-          setActiveCell({ rowIndex, colKey: columns[colIndex - 1].key });
+          setActiveCell({ rowId, colKey: columns[colIndex - 1].key });
         }
         break;
 
       case "ArrowRight":
         if (!editingCell && colIndex < columns.length - 1) {
           e.preventDefault();
-          setActiveCell({ rowIndex, colKey: columns[colIndex + 1].key });
+          setActiveCell({ rowId, colKey: columns[colIndex + 1].key });
         }
         break;
     }
   };
 
-  const renderCell = (row: GridRowData, rowIndex: number, column: GridColumn) => {
-    const isActive = activeCell?.rowIndex === rowIndex && activeCell?.colKey === column.key;
-    const isEditing = editingCell?.rowIndex === rowIndex && editingCell?.colKey === column.key;
+  const renderCell = (row: GridRowData, rowId: string, column: GridColumn) => {
+    const isActive = activeCell?.rowId === rowId && activeCell?.colKey === column.key;
+    const isEditing = editingCell?.rowId === rowId && editingCell?.colKey === column.key;
     const value = row[column.key];
     const isRowReadonly = row._readonly || false;
 
@@ -442,17 +452,17 @@ export function ExcelDataGrid({
           key={column.key}
           className={cn(cellClassName, "text-center")}
           ref={(el) => {
-            const cellKey = `${rowIndex}-${column.key}`;
+            const cellKey = `${rowId}-${column.key}`;
             if (el) {
               cellRefs.current.set(cellKey, el);
             } else {
               cellRefs.current.delete(cellKey);
             }
           }}
-          onClick={() => setActiveCell({ rowIndex, colKey: column.key })}
-          onKeyDown={(e) => handleKeyDown(e, rowIndex, column.key)}
+          onClick={() => setActiveCell({ rowId, colKey: column.key })}
+          onKeyDown={(e) => handleKeyDown(e, rowId, column.key)}
           tabIndex={0}
-          data-testid={`cell-${rowIndex}-${column.key}`}
+          data-testid={`cell-${rowId}-${column.key}`}
         >
           {showToggle && (
             <div className="flex items-center justify-center">
@@ -481,17 +491,17 @@ export function ExcelDataGrid({
             key={column.key}
             className={cn(cellClassName, "text-center")}
             ref={(el) => {
-              const cellKey = `${rowIndex}-${column.key}`;
+              const cellKey = `${rowId}-${column.key}`;
               if (el) {
                 cellRefs.current.set(cellKey, el);
               } else {
                 cellRefs.current.delete(cellKey);
               }
             }}
-            onClick={() => setActiveCell({ rowIndex, colKey: column.key })}
-            onKeyDown={(e) => handleKeyDown(e, rowIndex, column.key)}
+            onClick={() => setActiveCell({ rowId, colKey: column.key })}
+            onKeyDown={(e) => handleKeyDown(e, rowId, column.key)}
             tabIndex={0}
-            data-testid={`cell-${rowIndex}-${column.key}`}
+            data-testid={`cell-${rowId}-${column.key}`}
           >
             <div className="flex items-center justify-center">
               <span className="text-xs text-muted-foreground">突合不要</span>
@@ -526,17 +536,17 @@ export function ExcelDataGrid({
           key={column.key}
           className={cn(cellClassName, "text-center")}
           ref={(el) => {
-            const cellKey = `${rowIndex}-${column.key}`;
+            const cellKey = `${rowId}-${column.key}`;
             if (el) {
               cellRefs.current.set(cellKey, el);
             } else {
               cellRefs.current.delete(cellKey);
             }
           }}
-          onClick={() => setActiveCell({ rowIndex, colKey: column.key })}
-          onKeyDown={(e) => handleKeyDown(e, rowIndex, column.key)}
+          onClick={() => setActiveCell({ rowId, colKey: column.key })}
+          onKeyDown={(e) => handleKeyDown(e, rowId, column.key)}
           tabIndex={0}
-          data-testid={`cell-${rowIndex}-${column.key}`}
+          data-testid={`cell-${rowId}-${column.key}`}
         >
           <div className="flex items-center justify-center">
             <Button
@@ -601,17 +611,17 @@ export function ExcelDataGrid({
             column.type === "number" && "text-right"
           )}
           ref={(el) => {
-            const cellKey = `${rowIndex}-${column.key}`;
+            const cellKey = `${rowId}-${column.key}`;
             if (el) {
               cellRefs.current.set(cellKey, el);
             } else {
               cellRefs.current.delete(cellKey);
             }
           }}
-          onClick={() => setActiveCell({ rowIndex, colKey: column.key })}
-          onKeyDown={(e) => handleKeyDown(e, rowIndex, column.key)}
+          onClick={() => setActiveCell({ rowId, colKey: column.key })}
+          onKeyDown={(e) => handleKeyDown(e, rowId, column.key)}
           tabIndex={0}
-          data-testid={`cell-${rowIndex}-${column.key}`}
+          data-testid={`cell-${rowId}-${column.key}`}
         >
           {displayValue}
         </td>
@@ -628,17 +638,17 @@ export function ExcelDataGrid({
             key={column.key}
             className={cn(cellClassName, "text-center")}
             ref={(el) => {
-              const cellKey = `${rowIndex}-${column.key}`;
+              const cellKey = `${rowId}-${column.key}`;
               if (el) {
                 cellRefs.current.set(cellKey, el);
               } else {
                 cellRefs.current.delete(cellKey);
               }
             }}
-            onClick={() => setActiveCell({ rowIndex, colKey: column.key })}
-            onKeyDown={(e) => handleKeyDown(e, rowIndex, column.key)}
+            onClick={() => setActiveCell({ rowId, colKey: column.key })}
+            onKeyDown={(e) => handleKeyDown(e, rowId, column.key)}
             tabIndex={0}
-            data-testid={`cell-${rowIndex}-${column.key}`}
+            data-testid={`cell-${rowId}-${column.key}`}
           >
             <div className="flex items-center justify-center">
               <span className="text-xs text-muted-foreground">突合不要</span>
@@ -673,17 +683,17 @@ export function ExcelDataGrid({
           key={column.key}
           className={cn(cellClassName, "text-center")}
           ref={(el) => {
-            const cellKey = `${rowIndex}-${column.key}`;
+            const cellKey = `${rowId}-${column.key}`;
             if (el) {
               cellRefs.current.set(cellKey, el);
             } else {
               cellRefs.current.delete(cellKey);
             }
           }}
-          onClick={() => setActiveCell({ rowIndex, colKey: column.key })}
-          onKeyDown={(e) => handleKeyDown(e, rowIndex, column.key)}
+          onClick={() => setActiveCell({ rowId, colKey: column.key })}
+          onKeyDown={(e) => handleKeyDown(e, rowId, column.key)}
           tabIndex={0}
-          data-testid={`cell-${rowIndex}-${column.key}`}
+          data-testid={`cell-${rowId}-${column.key}`}
         >
           <div className="flex items-center justify-center">
             <Button
@@ -710,7 +720,7 @@ export function ExcelDataGrid({
           key={column.key}
           className={cellClassName}
           ref={(el) => {
-            const cellKey = `${rowIndex}-${column.key}`;
+            const cellKey = `${rowId}-${column.key}`;
             if (el) {
               cellRefs.current.set(cellKey, el);
             } else {
@@ -718,22 +728,21 @@ export function ExcelDataGrid({
             }
           }}
           onClick={() => {
-            setActiveCell({ rowIndex, colKey: column.key });
+            setActiveCell({ rowId, colKey: column.key });
           }}
           onDoubleClick={() => {
             if (!isRowReadonly) {
-              setEditingCell({ rowIndex, colKey: column.key });
+              setEditingCell({ rowId, colKey: column.key });
             }
           }}
-          onKeyDown={(e) => handleKeyDown(e, rowIndex, column.key)}
+          onKeyDown={(e) => handleKeyDown(e, rowId, column.key)}
           tabIndex={0}
-          data-testid={`cell-${rowIndex}-${column.key}`}
+          data-testid={`cell-${rowId}-${column.key}`}
         >
           {isEditing ? (
             <AutocompleteSelect
               value={value as string | undefined}
               onChange={(val, option) => {
-                const newRows = [...rows];
                 const updates: Record<string, string | number | boolean | undefined> = {
                   [column.key]: val,
                   _modified: true,
@@ -755,10 +764,9 @@ export function ExcelDataGrid({
                   updates.itemName = option.label || undefined;
                 }
 
-                newRows[rowIndex] = {
-                  ...newRows[rowIndex],
-                  ...updates,
-                };
+                const newRows = rows.map((r) =>
+                  r.id === rowId ? { ...r, ...updates } : r
+                );
                 onRowsChange(newRows);
 
                 // Exit editing mode after selection
@@ -789,22 +797,22 @@ export function ExcelDataGrid({
         key={column.key}
         className={cellClassName}
         ref={(el) => {
-          const cellKey = `${rowIndex}-${column.key}`;
+          const cellKey = `${rowId}-${column.key}`;
           if (el) {
             cellRefs.current.set(cellKey, el);
           } else {
             cellRefs.current.delete(cellKey);
           }
         }}
-        onClick={() => setActiveCell({ rowIndex, colKey: column.key })}
+        onClick={() => setActiveCell({ rowId, colKey: column.key })}
         onDoubleClick={() => {
           if (!isRowReadonly) {
-            setEditingCell({ rowIndex, colKey: column.key });
+            setEditingCell({ rowId, colKey: column.key });
           }
         }}
-        onKeyDown={(e) => handleKeyDown(e, rowIndex, column.key)}
+        onKeyDown={(e) => handleKeyDown(e, rowId, column.key)}
         tabIndex={0}
-        data-testid={`cell-${rowIndex}-${column.key}`}
+        data-testid={`cell-${rowId}-${column.key}`}
       >
         {isEditing ? (
           <Input
@@ -820,14 +828,14 @@ export function ExcelDataGrid({
                   ? String(value)
                   : String(value || "")
             }
-            onChange={(e) => handleCellChange(rowIndex, column.key, e.target.value)}
+            onChange={(e) => handleCellChange(rowId, column.key, e.target.value)}
             onBlur={() => setEditingCell(null)}
             autoFocus
             className={cn(
               "h-8 border-0 p-1 focus-visible:ring-0",
               column.type === "number" && "text-right"
             )}
-            data-testid={`input-${rowIndex}-${column.key}`}
+            data-testid={`input-${rowId}-${column.key}`}
           />
         ) : (
           <div className={cn("truncate", column.type === "number" && "font-mono text-right")}>
@@ -878,7 +886,7 @@ export function ExcelDataGrid({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => handleDuplicateRow(activeCell.rowIndex)}
+              onClick={() => handleDuplicateRow(activeCell.rowId)}
               data-testid="button-duplicate-row"
             >
               <Copy className="h-4 w-4 mr-1" />
@@ -967,46 +975,40 @@ export function ExcelDataGrid({
             </tr>
           </thead>
           <tbody>
-            {displayedRows.map((row, displayIndex) => {
-              const actualRowIndex = startIndex + displayIndex; // 実際の行インデックス
-              return (
-                <tr
-                  key={row.id}
-                  className={cn(
-                    "border-b border-border",
-                    selectedRows.has(actualRowIndex) && "bg-primary/10"
-                  )}
-                  data-testid={`row-${actualRowIndex}`}
-                >
-                  <td className="border-r border-border p-2 text-sm text-muted-foreground text-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedRows.has(actualRowIndex)}
-                      onChange={(e) => {
-                        const newSelected = new Set(selectedRows);
-                        if (e.target.checked) {
-                          newSelected.add(actualRowIndex);
-                        } else {
-                          newSelected.delete(actualRowIndex);
-                        }
-                        setSelectedRows(newSelected);
+            {displayedRows.map((row) => (
+              <tr
+                key={row.id}
+                className={cn(
+                  "border-b border-border",
+                  selectedRows.has(row.id) && "bg-primary/10"
+                )}
+                data-testid={`row-${row.id}`}
+              >
+                <td className="border-r border-border p-2 text-sm text-muted-foreground text-center">
+                  <input
+                    type="checkbox"
+                    checked={selectedRows.has(row.id)}
+                    onChange={(e) => {
+                      const newSelected = new Set(selectedRows);
+                      if (e.target.checked) {
+                        newSelected.add(row.id);
+                      } else {
+                        newSelected.delete(row.id);
+                      }
+                      setSelectedRows(newSelected);
 
-                        // 行データの_selectedも更新
-                        const updatedRows = rows.map((r, idx) => {
-                          if (idx === actualRowIndex) {
-                            return { ...r, _selected: e.target.checked };
-                          }
-                          return r;
-                        });
-                        onRowsChange(updatedRows);
-                      }}
-                      data-testid={`checkbox-row-${actualRowIndex}`}
-                    />
-                  </td>
-                  {columns.map((column) => renderCell(row, actualRowIndex, column))}
-                </tr>
-              );
-            })}
+                      // 行データの_selectedも更新
+                      const updatedRows = rows.map((r) =>
+                        r.id === row.id ? { ...r, _selected: e.target.checked } : r
+                      );
+                      onRowsChange(updatedRows);
+                    }}
+                    data-testid={`checkbox-row-${row.id}`}
+                  />
+                </td>
+                {columns.map((column) => renderCell(row, row.id, column))}
+              </tr>
+            ))}
           </tbody>
         </table>
       </div>
